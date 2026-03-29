@@ -1,0 +1,23 @@
+{
+  "name": "製冰機管理系統",
+  "short_name": "製冰機管理",
+  "description": "製冰機租賃管理APP",
+  "start_url": "/ice-machine-app/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
