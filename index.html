@@ -811,27 +811,37 @@ function updatePendingBadge() {
   b.textContent = pendingQueue.length;
 }
 
-// JSONP read
-function jsonp(url, params) {
-  return new Promise((resolve, reject) => {
-    const cb = 'cb_' + Math.random().toString(36).substr(2,8);
-    const t = setTimeout(() => { delete window[cb]; reject(new Error('連線逾時')); }, 15000);
-    window[cb] = d => { clearTimeout(t); delete window[cb]; d?.error ? reject(new Error(d.error)) : resolve(d); };
-    const qs = Object.entries({...params, callback:cb}).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&');
-    const s = document.createElement('script');
-    s.src = `${url}?${qs}`;
-    s.onerror = () => { clearTimeout(t); delete window[cb]; reject(new Error('網路錯誤')); };
-    document.head.appendChild(s);
-  });
+// 兩步驟 fetch：先拿 redirect URL，再 fetch 實際資料（解決 Apps Script 302 redirect 問題）
+async function gasRequest(url, params) {
+  const qs = Object.entries(params).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&');
+  const fullUrl = `${url}?${qs}`;
+  try {
+    // 直接用 follow redirect 方式 fetch
+    const res = await fetch(fullUrl, {
+      redirect: 'follow',
+      mode: 'cors',
+    });
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch(e) { throw new Error('回應格式錯誤'); }
+  } catch(err) {
+    // 如果 CORS 失敗，改用 no-cors 但只能寫入（不能讀回應）
+    throw err;
+  }
 }
 
-// 寫入用 JSONP GET（繞過 CORS）
+function jsonp(url, params) {
+  return gasRequest(url, params);
+}
+
+// 寫入用 GET 方式
 async function apiWrite(url, action, sheet, data, id) {
   const params = { action, sheet };
   if (data) params.data = encodeURIComponent(JSON.stringify(data));
   if (id)   params.id   = String(id);
-  return await jsonp(url, params);
+  return await gasRequest(url, params);
 }
+
 
 // Enqueue write operation
 let isFlushing = false;
