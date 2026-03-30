@@ -1447,7 +1447,7 @@ function getTaskCustomerMachines() {
   return cache.machines.filter(m => {
     const t = norm(m['類型']||'');
     const isType = SHOW_TYPES.some(x=>norm(x)===t);
-    const isCust = String(m['已到客戶']||'').trim()===cust || contractNos.includes(String(m['機號']||'').trim());
+    const isCust = String(m['目前客戶']||'').trim()===cust || contractNos.includes(String(m['機號']||'').trim());
     return isType && isCust;
   });
 }
@@ -1496,7 +1496,7 @@ function getTaskCustomerMachines() {
   const contractNos = cache.contracts.filter(c=>String(c['客戶名稱']||'').trim()===cust).map(c=>String(c['機號']||'').trim());
   return cache.machines.filter(m => {
     const t = norm(m['類型']||'');
-    return SHOW_TYPES.some(x=>norm(x)===t) && (String(m['已到客戶']||'').trim()===cust || contractNos.includes(String(m['機號']||'').trim()));
+    return SHOW_TYPES.some(x=>norm(x)===t) && (String(m['目前客戶']||'').trim()===cust || contractNos.includes(String(m['機號']||'').trim()));
   });
 }
 function showTaskModelSuggestions(val) {
@@ -1776,17 +1776,19 @@ function afterTaskSave(customer, items, model, serial, taskData) {
   const hasMachine = !!(model||serial);
   const dn = taskData['紀錄日期'];
 
+  // 換機：特殊處理，直接開換機浮窗
   if (itemList.includes('換機')) {
     openReplaceModal(customer, model, serial, dn);
     return;
   }
+
+  // 拆機：特殊處理，直接開狀態選擇
   if (itemList.includes('拆機')) {
     if (!hasMachine) {
       appConfirm('沒有填機型機號，是否要新增機器？',
         ()=>{ editMode=false; editId=''; document.getElementById('form-modal-title').textContent='新增機器'; document.getElementById('form-modal-body').innerHTML=machineForm(null); document.getElementById('form-modal').classList.add('open'); }
       );
     } else {
-      // 拆機：直接顯示兩個選項按鈕
       const deck = document.getElementById('confirm-deck');
       document.getElementById('confirm-deck-title').textContent = '拆機後機器狀態';
       document.getElementById('confirm-deck-msg').textContent = '請選擇拆機後此機器的狀態：';
@@ -1798,86 +1800,74 @@ function afterTaskSave(customer, items, model, serial, taskData) {
         <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn3">取消</button>
       `;
       btns.parentNode.replaceChild(newBtns, btns);
-      newBtns.querySelector('#_dm_btn1').onclick = ()=>{
-        deck.classList.remove('open');
-        updateMachineStatus(model, serial, '待出租'); confirmTaskDone();
-      };
-      newBtns.querySelector('#_dm_btn2').onclick = ()=>{
-        deck.classList.remove('open');
-        updateMachineStatus(model, serial, '◎進廠'); confirmTaskDone();
-      };
-      newBtns.querySelector('#_dm_btn3').onclick = ()=>{
-        deck.classList.remove('open');
-        window._pendingDoneTask = null; // 取消，不標記完成
-      };
+      newBtns.querySelector('#_dm_btn1').onclick = ()=>{ deck.classList.remove('open'); updateMachineStatus(model,serial,'待出租'); confirmTaskDone(); };
+      newBtns.querySelector('#_dm_btn2').onclick = ()=>{ deck.classList.remove('open'); updateMachineStatus(model,serial,'◎進廠'); confirmTaskDone(); };
+      newBtns.querySelector('#_dm_btn3').onclick = ()=>{ deck.classList.remove('open'); window._pendingDoneTask=null; };
       deck.classList.add('open');
     }
     return;
   }
-  if (itemList.includes('移機')) {
-    const custIdx = cache.customers.findIndex(x=>x['客戶名稱']===customer);
-    appConfirm('是否要編輯客戶資料（更新地址）？', ()=>{
-      if (custIdx>=0) setTimeout(()=>openEditItem('customer',custIdx),200);
-      if (selfOwned) {
-        setTimeout(()=>{
-          appConfirm('是否要新增收款？',
-            ()=>{ openQuickPayment(customer,taskData,['維修費']); confirmTaskDone(); },
-            ()=>confirmTaskDone()
-          );
-        }, 400);
-      } else confirmTaskDone();
-    }, ()=>{
-      if (selfOwned) {
-        appConfirm('是否要新增收款？',
-          ()=>{ openQuickPayment(customer,taskData,['維修費']); confirmTaskDone(); },
-          ()=>confirmTaskDone()
-        );
-      } else confirmTaskDone();
-    });
-    return;
-  }
+
+  // 裝機：特殊處理
   if (itemList.includes('裝機')) {
     if (!hasMachine) {
-      // 沒填機號：詢問是否新增機器
       appConfirm('沒有填機型機號，是否要新增機器？',
         ()=>{
           window._addMachineForTask = { customer, taskData, goContract: false };
-          editMode=false; editId='';
-          window._prefillMachineType = null;
+          editMode=false; editId=''; window._prefillMachineType = null;
           document.getElementById('form-modal-title').textContent='新增機器';
-          document.getElementById('form-modal-body').innerHTML=machineForm({'已到客戶': customer});
+          document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer});
           document.getElementById('form-modal').classList.add('open');
         },
-        ()=>{
-          // 選否：不標記完成，提示輸入機型機號
-          window._pendingDoneTask = null;
-          showToast('⚠️ 請在工作事項中填入機型機號後再完成');
-        }
+        ()=>{ window._pendingDoneTask=null; showToast('⚠️ 請在工作事項中填入機型機號後再完成'); }
       );
       return;
     }
-    // 有填機號：直接開租機/租送選擇
     setTimeout(()=>openContractTypeChooser(customer, model, serial, dn), 200);
     return;
   }
-  if (itemList.includes('維修')) {
-    if (selfOwned) {
-      appConfirm('是否要新增收款（維修費）？',
-        ()=>{ setTimeout(()=>{ openQuickPayment(customer,taskData,['維修費']); confirmTaskDone(); },200); },
-        ()=>confirmTaskDone()
-      );
-    } else confirmTaskDone();
-    return;
+
+  // 其他工作內容（移機、維修、保養等）：佇列依序詢問
+  // 收集所有要詢問的動作
+  const actions = [];
+
+  if (itemList.includes('移機')) {
+    const custIdx = cache.customers.findIndex(x=>x['客戶名稱']===customer);
+    actions.push(next => appConfirm('是否要編輯客戶資料（更新地址）？',
+      ()=>{ if (custIdx>=0) setTimeout(()=>openEditItem('customer',custIdx),200); next(); },
+      ()=>next()
+    ));
+  }
+  if (itemList.includes('維修') && selfOwned) {
+    actions.push(next => appConfirm('是否要新增收款（維修費）？',
+      ()=>{ setTimeout(()=>openQuickPayment(customer,taskData,['維修費']),200); next(); },
+      ()=>next()
+    ));
   }
   if (itemList.includes('保養')) {
-    appConfirm('是否要新增收款（保養費）？',
-      ()=>{ setTimeout(()=>{ openQuickPayment(customer,taskData,['保養費']); confirmTaskDone(); },200); },
-      ()=>confirmTaskDone()
-    );
+    actions.push(next => appConfirm('是否要新增收款（保養費）？',
+      ()=>{ setTimeout(()=>openQuickPayment(customer,taskData,['保養費']),200); next(); },
+      ()=>next()
+    ));
+  }
+  // 其他非特殊工作
+  const specialItems = ['換機','拆機','裝機','移機','維修','保養'];
+  const otherItems = itemList.filter(i=>!specialItems.includes(i));
+  if (otherItems.length > 0 && actions.length === 0) {
+    actions.push(next => appConfirm(`是否標記「${otherItems.join('、')}」為完成？`, ()=>next(), ()=>{ window._pendingDoneTask=null; }));
+  }
+
+  if (!actions.length) {
+    confirmTaskDone();
     return;
   }
-  // 其他工作
-  appConfirm('是否標記此工作為完成？', ()=>confirmTaskDone(), ()=>{});
+
+  // 依序執行所有詢問，最後標記完成
+  function runNext(i) {
+    if (i >= actions.length) { confirmTaskDone(); return; }
+    actions[i](()=>runNext(i+1));
+  }
+  runNext(0);
 }
 function openReplaceModal(customer, oldModel, oldSerial, taskDateStr) {
   const body = document.getElementById('detail-modal-body');
@@ -2272,7 +2262,7 @@ function showDetail(type, idx) {
 
     // 找該客戶的機器
     const custName = item['客戶名稱']||'';
-    const custMachines = cache.machines.filter(m => String(m['已到客戶']||'').trim()===custName.trim());
+    const custMachines = cache.machines.filter(m => String(m['目前客戶']||'').trim()===custName.trim());
     const custContracts = cache.contracts.filter(c => String(c['客戶名稱']||'').trim()===custName.trim());
     const contractMachineNos = custContracts.map(c=>String(c['機號']||'').trim()).filter(Boolean);
     const contractMachines = cache.machines.filter(m=>contractMachineNos.includes(String(m['機號']||'').trim()) && !custMachines.includes(m));
@@ -2431,7 +2421,7 @@ function showDetail(type, idx) {
           <span class="status-big-label">${chipHtml(item['類型']||'未設定')}</span>
           <span class="status-big-hint">點擊更改 ›</span>
         </button>
-        <div class="det-row" style="margin-top:8px"><span class="det-key">目前客戶</span><span class="det-val">${item['已到客戶']||'—'}</span></div>
+        <div class="det-row" style="margin-top:8px"><span class="det-key">目前客戶</span><span class="det-val">${item['目前客戶']||'—'}</span></div>
         ${contract ? `<div class="det-row"><span class="det-key">租借日期</span><span class="det-val">${String(contract['租借日期']||'').replace('T',' ').substring(0,10).replace(/-/g,'/')}</span></div>` : ''}
         ${contract ? `<div class="det-row"><span class="det-key">到期日期</span><span class="det-val">${String(contract['到期日期']||'').replace('T',' ').substring(0,10).replace(/-/g,'/')}</span></div>` : ''}
       </div>
@@ -2861,7 +2851,16 @@ function machineForm(d) {
     <div class="ff"><label>冷媒</label>${mkChips('chip-coolant','coolant',getCoolants(),'custom_coolants','新增冷媒...')}</div>
     <div class="ff"><label>散熱</label>${mkChips('chip-cooling','cooling',getCoolings(),'custom_cooling','新增散熱...')}</div>
     <div class="ff"><label>類型<span class="req">*</span></label><select class="fi fi-sel" id="f-status"><option value="">請選擇</option>${sel(editMode || window._prefillMachineType ? MACHINE_STATUS_ALL : MACHINE_STATUS_NEW, d?.['類型'])}</select></div>
-    ${d?.['已到客戶'] ? `<div class="ff"><label>已到客戶</label><input class="fi" id="f-arrived-customer" value="${d['已到客戶']}" readonly style="color:var(--text2)"></div>` : ''}
+    <div class="ff"><label>目前客戶</label>
+      <div class="autocomplete-wrap">
+        <input class="fi" id="f-arrived-customer" placeholder="選填，輸入客戶名稱" value="${d?.['目前客戶']||''}"
+          oninput="showArrivedCustomerSuggestions(this.value)"
+          onfocus="showArrivedCustomerSuggestions(this.value)"
+          onblur="setTimeout(()=>hideArrivedCustomerSuggestions(),200)"
+          autocomplete="off">
+        <div class="autocomplete-list" id="arrived-customer-suggestions" style="display:none"></div>
+      </div>
+    </div>
   </div>
   <div class="form-actions">
     <button class="btn-cancel" onclick="closeModal('form-modal')">取消</button>
@@ -3354,13 +3353,29 @@ function selectAssignMachine(machineIdx) {
 }
 
 // 客戶詳細頁+機器：跳新增機器預填客人機
+function showArrivedCustomerSuggestions(val) {
+  const list = document.getElementById('arrived-customer-suggestions');
+  if (!list) return;
+  const q = val.trim();
+  const matches = q ? cache.customers.filter(c=>c['客戶名稱']&&c['客戶名稱'].includes(q)) : cache.customers.slice(0,8);
+  if (!matches.length) { list.style.display='none'; return; }
+  list.innerHTML = matches.map(c=>{const s=c['客戶名稱'].replace(/'/g,'&#39;');return `<div class="autocomplete-item" onmousedown="selectArrivedCustomer('${s}')">${c['客戶名稱']}</div>`;}).join('');
+  list.style.display='block';
+}
+function selectArrivedCustomer(name) {
+  const inp = document.getElementById('f-arrived-customer');
+  if (inp) inp.value = name;
+  hideArrivedCustomerSuggestions();
+}
+function hideArrivedCustomerSuggestions() { const l=document.getElementById('arrived-customer-suggestions'); if(l) l.style.display='none'; }
+
 function openAddMachineForCustomer(customerName) {
   pickerCustomerName = customerName;
   closeModal('detail-modal');
   editMode=false; editId=''; machineSelections={};
   window._prefillMachineType = '客人機';
   document.getElementById('form-modal-title').textContent='新增機器';
-  document.getElementById('form-modal-body').innerHTML=machineForm({'類型':'客人機'});
+  document.getElementById('form-modal-body').innerHTML=machineForm({'類型':'客人機','目前客戶':customerName});
   document.getElementById('form-modal').classList.add('open');
 }
 
@@ -3618,7 +3633,11 @@ async function saveMachine() {
   };
   if (customerEl) data['目前客戶'] = customerEl.value.trim();
   const arrivedEl = document.getElementById('f-arrived-customer');
-  if (arrivedEl) data['已到客戶'] = arrivedEl.value.trim();
+  const arrivedVal = arrivedEl?.value.trim() || '';
+  if (arrivedVal) {
+    data['目前客戶'] = arrivedVal;  // 試算表欄位名稱
+  }
+  console.log('[saveMachine] 目前客戶:', arrivedVal, '→ data keys:', Object.keys(data).join(','));
   await doSave('machine', data);
 
   // 如果是從裝機工作跳來的，新增完後跳新增收款
@@ -3671,7 +3690,7 @@ async function savePayment() {
   const pendingM = cache.machines.find(m => m['_pendingStatus'] === '買 斷');
   if (pendingM) {
     pendingM['類型'] = '買 斷';
-    pendingM['已到客戶'] = customer;
+    pendingM['目前客戶'] = customer;
     delete pendingM['_pendingStatus'];
     saveCache();
     enqueue({ action:'update', sheet:'machines', data: pendingM, id: pendingM['機號'] });
