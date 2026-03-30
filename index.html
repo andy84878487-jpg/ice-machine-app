@@ -1313,10 +1313,10 @@ function toggleTaskDone(idx) {
   if (!t) return;
   // 取消完成：直接取消
   if (isTaskDone(t)) {
-    delete t['完成狀態'];
+    t['完成狀態'] = '未完成';
     delete t['完成時間'];
     saveCache();
-    if (cfg.url) enqueue({action:'update', sheet:'tasks', data:t, id:t['紀錄日期']});
+    if (cfg.url) enqueue({action:'update', sheet:'tasks', data:t, id:t['任務ID']||t['紀錄日期']});
     renderPage();
     showToast('已取消完成');
     return;
@@ -1337,11 +1337,11 @@ function confirmTaskDone() {
   if (!window._pendingDoneTask) return;
   const { idx, t, dateStr } = window._pendingDoneTask;
   window._pendingDoneTask = null;
-  t['完成狀態'] = '是';  // 存字串更相容
+  t['完成狀態'] = '已完成';
   t['完成時間'] = dateStr;
   saveCache();
   if (cfg.url) {
-    enqueue({action:'update', sheet:'tasks', data:t, id:t['紀錄日期']});
+    enqueue({action:'update', sheet:'tasks', data:t, id:t['任務ID']||t['紀錄日期']});
   }
   renderPage();
   showToast('✓ 已標記完成');
@@ -1352,7 +1352,7 @@ function confirmTaskDone() {
 
 function isTaskDone(t) {
   const v = t['完成狀態'];
-  return v === true || v === '是' || v === 'true' || v === 1 || v === '1';
+  return v === true || v === '已完成' || v === '是' || v === 'true' || v === 1 || v === '1';
 }
 const TASK_DEFAULTS = [];
 const TASK_FALLBACK = ['維修','保養','裝機','換機','移機','拆機','領取','送貨','場勘'];
@@ -1619,11 +1619,13 @@ async function saveTask() {
   const dateStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
   const taskModel  = document.getElementById('f-task-model')?.value.trim()||'';
   const taskSerial = document.getElementById('f-task-serial')?.value.trim()||'';
+  const taskId = 'T' + Date.now().toString(36).toUpperCase();
   const data = {
+    '任務ID': taskId,
     '客戶名稱': customer, '電話': c?.['電話']||'', '地址': c?.['地址']||'',
     '工作內容': items, '備註': document.getElementById('f-task-note')?.value.trim()||'',
     '希望施工時間': document.getElementById('f-task-time')?.value.trim()||'',
-    '機型': taskModel, '機號': taskSerial, '紀錄日期': dateStr,
+    '機型': taskModel, '機號': taskSerial, '紀錄日期': dateStr, '完成狀態': '未完成',
   };
   if (!cfg.url) { showToast('請先設定試算表連結'); return; }
   isSaving = true;
@@ -1735,9 +1737,9 @@ function updateMachineStatus(model, serial, newStatus) {
 function markTaskDoneById(dateStr) {
   const t = cache.tasks.find(x=>x['紀錄日期']===dateStr);
   if (!t) return;
-  t['完成狀態'] = '是'; t['完成時間'] = dateStr;
+  t['完成狀態'] = '已完成'; t['完成時間'] = dateStr;
   saveCache();
-  enqueue({action:'update', sheet:'tasks', data:t, id:t['紀錄日期']});
+  enqueue({action:'update', sheet:'tasks', data:t, id:t['任務ID']||t['紀錄日期']});
 }
 function openQuickPayment(customer, taskData, preItems) {
   selectedPayItems = preItems||[]; selectedHandlers=[]; payLineItems=[]; payMethod=''; editMode=false; editId='';
@@ -1784,10 +1786,31 @@ function afterTaskSave(customer, items, model, serial, taskData) {
         ()=>{ editMode=false; editId=''; document.getElementById('form-modal-title').textContent='新增機器'; document.getElementById('form-modal-body').innerHTML=machineForm(null); document.getElementById('form-modal').classList.add('open'); }
       );
     } else {
-      appConfirm('拆機後機器要改成什麼狀態？\n\n「是」→ 待出租\n「否」→ ◎進廠',
-        ()=>{ updateMachineStatus(model, serial, '待出租'); confirmTaskDone(); },
-        ()=>{ updateMachineStatus(model, serial, '◎進廠');  confirmTaskDone(); }
-      );
+      // 拆機：直接顯示兩個選項按鈕
+      const deck = document.getElementById('confirm-deck');
+      document.getElementById('confirm-deck-title').textContent = '拆機後機器狀態';
+      document.getElementById('confirm-deck-msg').textContent = '請選擇拆機後此機器的狀態：';
+      const btns = deck.querySelector('div[style*="display:flex"]');
+      const newBtns = btns.cloneNode(false);
+      newBtns.innerHTML = `
+        <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn1">待出租</button>
+        <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn2">◎進廠</button>
+        <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn3">取消</button>
+      `;
+      btns.parentNode.replaceChild(newBtns, btns);
+      newBtns.querySelector('#_dm_btn1').onclick = ()=>{
+        deck.classList.remove('open');
+        updateMachineStatus(model, serial, '待出租'); confirmTaskDone();
+      };
+      newBtns.querySelector('#_dm_btn2').onclick = ()=>{
+        deck.classList.remove('open');
+        updateMachineStatus(model, serial, '◎進廠'); confirmTaskDone();
+      };
+      newBtns.querySelector('#_dm_btn3').onclick = ()=>{
+        deck.classList.remove('open');
+        window._pendingDoneTask = null; // 取消，不標記完成
+      };
+      deck.classList.add('open');
     }
     return;
   }
