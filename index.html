@@ -3,14 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>製冰機管理</title>
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="製冰機管理">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0f0f0f">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon.png">
+<title>冰機管理系統</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -574,6 +567,20 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
 
 <div class="toast" id="toast"></div>
 
+<!-- 自訂 confirm 對話框 -->
+<div class="deck-overlay" id="confirm-deck" style="z-index:999">
+  <div class="deck" style="max-height:auto">
+    <div class="deck-header">
+      <span class="deck-title" id="confirm-deck-title">確認</span>
+    </div>
+    <div style="padding:16px;color:var(--text);font-size:0.929em;line-height:1.5" id="confirm-deck-msg"></div>
+    <div style="display:flex;gap:10px;padding:12px 16px 20px">
+      <button id="confirm-deck-no" style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:0.929em;font-family:inherit;cursor:pointer">否</button>
+      <button id="confirm-deck-yes" style="flex:1;padding:12px;background:var(--accent2);border:none;border-radius:10px;color:#fff;font-size:0.929em;font-weight:700;font-family:inherit;cursor:pointer">是</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================================
 // AUTH & ROLE
@@ -811,49 +818,53 @@ function updatePendingBadge() {
   b.textContent = pendingQueue.length;
 }
 
-// 兩步驟 fetch：先拿 redirect URL，再 fetch 實際資料（解決 Apps Script 302 redirect 問題）
-async function gasRequest(url, params) {
-  const qs = Object.entries(params).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&');
-  const fullUrl = `${url}?${qs}`;
-  try {
-    // 直接用 follow redirect 方式 fetch
-    const res = await fetch(fullUrl, {
-      redirect: 'follow',
-      mode: 'cors',
-    });
-    const text = await res.text();
-    try { return JSON.parse(text); }
-    catch(e) { throw new Error('回應格式錯誤'); }
-  } catch(err) {
-    // 如果 CORS 失敗，改用 no-cors 但只能寫入（不能讀回應）
-    throw err;
-  }
+// JSONP read
+function jsonp(url, params, timeout) {
+  return new Promise((resolve, reject) => {
+    const cb = 'cb_' + Math.random().toString(36).substr(2,8);
+    const ms = timeout || 25000; // 預設25秒
+    const t = setTimeout(() => { delete window[cb]; s.remove(); reject(new Error('連線逾時')); }, ms);
+    window[cb] = d => { clearTimeout(t); delete window[cb]; s.remove(); d?.error ? reject(new Error(d.error)) : resolve(d); };
+    const qs = Object.entries({...params, callback:cb}).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&');
+    const s = document.createElement('script');
+    s.src = `${url}?${qs}`;
+    s.onerror = () => { clearTimeout(t); delete window[cb]; s.remove(); reject(new Error('網路錯誤')); };
+    document.head.appendChild(s);
+  });
 }
 
-function jsonp(url, params) {
-  return gasRequest(url, params);
-}
-
-// 寫入用 GET 方式
+// 寫入用 JSONP GET
 async function apiWrite(url, action, sheet, data, id) {
   const params = { action, sheet };
-  if (data) params.data = encodeURIComponent(JSON.stringify(data));
+  // 注意：data 直接傳 JSON 字串，jsonp 函式的 qs 會做一次 encodeURIComponent
+  if (data) params.data = JSON.stringify(data);
   if (id)   params.id   = String(id);
-  return await gasRequest(url, params);
+  return await jsonp(url, params);
 }
-
 
 // Enqueue write operation
 let isFlushing = false;
+let _flushRetryCount = 0;
+const MAX_FLUSH_RETRY = 5;
 
 function enqueue(op) {
   pendingQueue.push({ ...op, ts: Date.now() });
   saveQueue();
+  _flushRetryCount = 0; // 新操作重置重試計數
   flushQueue();
 }
 
 async function flushQueue() {
   if (isFlushing || !pendingQueue.length || !cfg.url) return;
+  if (_flushRetryCount >= MAX_FLUSH_RETRY) {
+    // 超過最大重試次數，清除 queue 避免無限重試
+    console.warn('pendingQueue 超過最大重試次數，清除 queue');
+    pendingQueue = [];
+    saveQueue();
+    _flushRetryCount = 0;
+    setSyncDot('ok');
+    return;
+  }
   isFlushing = true;
   setSyncDot('syncing');
   const failed = [];
@@ -866,12 +877,16 @@ async function flushQueue() {
       if (res?.error) throw new Error(res.error);
     } catch(e) {
       console.error('sync error:', e.message, op.action, op.sheet);
+      showToast('❌ 同步錯誤：' + e.message, 5000);
       failed.push(op);
     }
   }
   if (failed.length) {
     pendingQueue = [...failed, ...pendingQueue];
     saveQueue();
+    _flushRetryCount++;
+  } else {
+    _flushRetryCount = 0;
   }
   isFlushing = false;
   setSyncDot(pendingQueue.length ? 'err' : 'ok');
@@ -881,32 +896,33 @@ async function flushQueue() {
 
 // Full sync from sheets
 async function syncAll() {
+  await syncAllExcept(null);
+}
+
+async function syncAllExcept(skip) {
   if (!cfg.url) return;
   setSyncDot('syncing');
+  const sheets = [
+    {key:'customers', sheet:'customers'},
+    {key:'machines',  sheet:'machines'},
+    {key:'contracts', sheet:'contracts'},
+    {key:'payments',  sheet:'payments'},
+    {key:'staff',     sheet:'staff'},
+    {key:'tasks',     sheet:'tasks'},
+    {key:'pricelist', sheet:'pricelist'},
+  ];
   try {
-    const [customers, machines, contracts, payments, staff, tasks, pricelist] = await Promise.all([
-      jsonp(cfg.url, {action:'getAll', sheet:'customers'}),
-      jsonp(cfg.url, {action:'getAll', sheet:'machines'}),
-      jsonp(cfg.url, {action:'getAll', sheet:'contracts'}),
-      jsonp(cfg.url, {action:'getAll', sheet:'payments'}),
-      jsonp(cfg.url, {action:'getAll', sheet:'staff'}),
-      jsonp(cfg.url, {action:'getAll', sheet:'tasks'}),
-      jsonp(cfg.url, {action:'getAll', sheet:'pricelist'}),
-    ]);
-    cache.customers = customers || [];
-    cache.machines  = machines  || [];
-    cache.contracts = contracts || [];
-    cache.payments  = payments  || [];
-    cache.staff     = staff     || [];
-    cache.tasks     = tasks     || [];
-    cache.pricelist = pricelist || [];
-    // 工作事項下拉選項
+    for (const {key, sheet} of sheets) {
+      if (skip === key) continue; // 跳過已抓到的
+      cache[key] = await jsonp(cfg.url, {action:'getAll', sheet}) || [];
+    }
     try {
       const opts = await jsonp(cfg.url, {action:'getValidation', sheet:'tasks', column:'工作內容'});
       if (Array.isArray(opts) && opts.length) cache.taskOptions = opts;
     } catch(e) {}
     saveCache();
     setSyncDot('ok');
+    showToast('✓ 同步完成');
     renderPage();
   } catch(e) {
     setSyncDot('err');
@@ -1170,11 +1186,11 @@ function renderTasks() {
 
   if (!list.length) return `<div class="empty">沒有工作事項${!cfg.url?'<br><br><button onclick="switchTab(6)" style="background:var(--red);border:none;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer">前往設定連結</button>':''}</div>`;
 
-  const undone = list.filter(t=>!t['完成狀態']);
+  const undone = list.filter(t=>!isTaskDone(t));
   // 非管理員：已完成只保留一周內
   const oneWeekAgo = new Date(Date.now() - 7*24*60*60*1000);
   const done = list.filter(t => {
-    if (!t['完成狀態']) return false;
+    if (!isTaskDone(t)) return false;
     if (role === 'admin') return true;
     const doneTime = String(t['完成時間']||t['紀錄日期']||'').substring(0,10).replace(/\//g,'-');
     return doneTime && new Date(doneTime) >= oneWeekAgo;
@@ -1191,7 +1207,7 @@ function renderTasks() {
 
   return tabs + showing.map(t => {
     const realIdx = cache.tasks.indexOf(t);
-    const isDone = !!t['完成狀態'];
+    const isDone = isTaskDone(t);
     const date = String(t['紀錄日期']||'').substring(0,10).replace(/-/g,'/');
     const doneTime = t['完成時間'] ? String(t['完成時間']).substring(0,10).replace(/-/g,'/') : '';
     const assignedPeople = getTaskAssign(t);
@@ -1295,23 +1311,49 @@ async function saveDispatch(type, idx) {
 function toggleTaskDone(idx) {
   const t = cache.tasks[idx];
   if (!t) return;
-  const now = new Date();
-  const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
-  if (t['完成狀態']) {
+  // 取消完成：直接取消
+  if (isTaskDone(t)) {
     delete t['完成狀態'];
     delete t['完成時間'];
-  } else {
-    t['完成狀態'] = true;
-    t['完成時間'] = dateStr;
+    saveCache();
+    if (cfg.url) enqueue({action:'update', sheet:'tasks', data:t, id:t['紀錄日期']});
+    renderPage();
+    showToast('已取消完成');
+    return;
   }
+  // 標記完成：先詢問跳轉，完成後再標記
+  const items = String(t['工作內容']||'');
+  const model  = String(t['機型']||'');
+  const serial = String(t['機號']||'');
+  const customer = String(t['客戶名稱']||'');
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+  // 先暫存完成資料，等跳轉確認後再寫入
+  window._pendingDoneTask = { idx, t, dateStr };
+  afterTaskSave(customer, items, model, serial, t);
+}
+
+function confirmTaskDone() {
+  if (!window._pendingDoneTask) return;
+  const { idx, t, dateStr } = window._pendingDoneTask;
+  window._pendingDoneTask = null;
+  t['完成狀態'] = '是';  // 存字串更相容
+  t['完成時間'] = dateStr;
   saveCache();
-  if (cfg.url) enqueue({action:'update', sheet:'tasks', data:t, id:t['紀錄日期']});
+  if (cfg.url) {
+    enqueue({action:'update', sheet:'tasks', data:t, id:t['紀錄日期']});
+  }
   renderPage();
-  showToast(t['完成狀態'] ? '✓ 已標記完成' : '已取消完成');
+  showToast('✓ 已標記完成');
 }
 
 
 
+
+function isTaskDone(t) {
+  const v = t['完成狀態'];
+  return v === true || v === '是' || v === 'true' || v === 1 || v === '1';
+}
 const TASK_DEFAULTS = [];
 const TASK_FALLBACK = ['維修','保養','裝機','換機','移機','拆機','領取','送貨','場勘'];
 
@@ -1592,8 +1634,82 @@ async function saveTask() {
   renderPage();
   showToast('已新增工作事項');
   setTimeout(()=>{ isSaving=false; }, 500);
-  // 跳轉邏輯（詢問，跳轉後再標記完成）
-  afterTaskSave(customer, items, taskModel, taskSerial, data);
+}
+
+// 裝機選擇合約類型：租機 or 租送
+function openContractTypeChooser(customer, model, serial, taskDateStr) {
+  const mm = getMachineByTaskInfo(model, serial);
+  const priceRow = cache.pricelist.find(p=>p['廠牌']===mm?.['廠牌'] && p['機型']===mm?.['機型']);
+  const body = document.getElementById('detail-modal-body');
+  document.getElementById('detail-edit-btn').style.display='none';
+  document.getElementById('detail-modal-title').textContent = '選擇裝機類型';
+  const cust = customer.replace(/'/g,"&apos;");
+  const mod  = model.replace(/'/g,"&apos;");
+  const ser  = serial.replace(/'/g,"&apos;");
+  body.innerHTML = `
+    <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <div class="status-opt" onclick="openContractFromTask('租賃','${cust}','${mod}','${ser}','${taskDateStr}')" style="padding:16px;border-radius:12px;background:var(--surface2);border:1px solid var(--border)">
+        <div class="status-opt-dot" style="background:var(--green2)"></div>
+        <div>
+          <div class="status-opt-label" style="font-size:1em;font-weight:700">租機（出租中）</div>
+          <div style="font-size:0.786em;color:var(--text2);margin-top:3px">
+            月租金：${priceRow?.['租金'] ? 'NT$'+Number(priceRow['租金']).toLocaleString() : '—'} ／
+            押金：${priceRow?.['租金'] ? 'NT$'+(Number(priceRow['租金'])*2).toLocaleString() : '—'}
+          </div>
+        </div>
+      </div>
+      <div class="status-opt" onclick="openContractFromTask('租送','${cust}','${mod}','${ser}','${taskDateStr}')" style="padding:16px;border-radius:12px;background:var(--surface2);border:1px solid var(--border)">
+        <div class="status-opt-dot" style="background:var(--yellow)"></div>
+        <div>
+          <div class="status-opt-label" style="font-size:1em;font-weight:700">租送機</div>
+          <div style="font-size:0.786em;color:var(--text2);margin-top:3px">
+            月租金：${priceRow?.['租送 租金']||priceRow?.['租送租金'] ? 'NT$'+Number(priceRow['租送 租金']||priceRow['租送租金']).toLocaleString() : '—'} ／
+            押金：${priceRow?.['租送 押金']||priceRow?.['租送押金'] ? 'NT$'+Number(priceRow['租送 押金']||priceRow['租送押金']).toLocaleString() : '免'}
+          </div>
+        </div>
+      </div>
+      <div class="status-opt" onclick="openPaymentFromInstall('${cust}','${mod}','${ser}','${taskDateStr}')" style="padding:16px;border-radius:12px;background:var(--surface2);border:1px solid var(--border)">
+        <div class="status-opt-dot" style="background:var(--blue2)"></div>
+        <div>
+          <div class="status-opt-label" style="font-size:1em;font-weight:700">客人機（裝機費收款）</div>
+          <div style="font-size:0.786em;color:var(--text2);margin-top:3px">跳至新增收款，預填裝機費</div>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function openPaymentFromInstall(customer, model, serial, taskDateStr) {
+  closeModal('detail-modal');
+  const taskData = cache.tasks.find(t=>t['紀錄日期']===taskDateStr) || {'客戶名稱':customer,'機型':model,'機號':serial};
+  openQuickPayment(customer, taskData, ['裝機費']);
+  confirmTaskDone();
+}
+
+function openContractFromTask(type, customer, model, serial, taskDateStr) {
+  closeModal('detail-modal');
+  const mm = getMachineByTaskInfo(model, serial);
+  const priceRow = cache.pricelist.find(p=>p['廠牌']===mm?.['廠牌'] && p['機型']===mm?.['機型']);
+  const contractType = type==='租送' ? '租送機' : '出租中';
+  let rent = 0, deposit = 0, endStr = '';
+  const today = new Date();
+  if (type === '租送') {
+    rent    = Number(priceRow?.['租送 租金']||priceRow?.['租送租金']||0);
+    deposit = Number(priceRow?.['租送 押金']||priceRow?.['租送押金']||0);
+    // 租送預設2年後到期
+    const end = new Date(today); end.setFullYear(end.getFullYear()+2);
+    endStr = end.toISOString().split('T')[0];
+  } else {
+    rent    = Number(priceRow?.['租金']||0);
+    deposit = rent * 2;
+    endStr  = '';
+  }
+  const custObj = cache.customers.find(c=>c['客戶名稱']===customer);
+  editMode=false; editId='';
+  document.getElementById('form-modal-title').textContent='新增合約';
+  document.getElementById('form-modal-body').innerHTML = contractFormAssign(mm, customer, custObj, contractType, rent, deposit, endStr);
+  document.getElementById('form-modal').classList.add('open');
+  confirmTaskDone();
 }
 
 function getMachineByTaskInfo(model, serial) {
@@ -1619,7 +1735,7 @@ function updateMachineStatus(model, serial, newStatus) {
 function markTaskDoneById(dateStr) {
   const t = cache.tasks.find(x=>x['紀錄日期']===dateStr);
   if (!t) return;
-  t['完成狀態'] = true; t['完成時間'] = dateStr;
+  t['完成狀態'] = '是'; t['完成時間'] = dateStr;
   saveCache();
   enqueue({action:'update', sheet:'tasks', data:t, id:t['紀錄日期']});
 }
@@ -1634,6 +1750,23 @@ function openQuickPayment(customer, taskData, preItems) {
   });
   document.getElementById('form-modal').classList.add('open');
 }
+// 自訂 confirm（取代 window.confirm，在手機上也能正常顯示）
+function appConfirm(msg, onYes, onNo, title) {
+  const deck = document.getElementById('confirm-deck');
+  document.getElementById('confirm-deck-title').textContent = title || '確認';
+  document.getElementById('confirm-deck-msg').textContent = msg;
+  const yesBtn = document.getElementById('confirm-deck-yes');
+  const noBtn  = document.getElementById('confirm-deck-no');
+  // 清除舊的事件
+  const newYes = yesBtn.cloneNode(true);
+  const newNo  = noBtn.cloneNode(true);
+  yesBtn.parentNode.replaceChild(newYes, yesBtn);
+  noBtn.parentNode.replaceChild(newNo, noBtn);
+  newYes.onclick = () => { deck.classList.remove('open'); if (onYes) onYes(); };
+  newNo.onclick  = () => { deck.classList.remove('open'); if (onNo)  onNo();  };
+  deck.classList.add('open');
+}
+
 function afterTaskSave(customer, items, model, serial, taskData) {
   const itemList = items.split(/[,、，]/).map(s=>s.trim());
   const status = getMachineStatus(model, serial);
@@ -1647,56 +1780,81 @@ function afterTaskSave(customer, items, model, serial, taskData) {
   }
   if (itemList.includes('拆機')) {
     if (!hasMachine) {
-      if (confirm('沒有填機型機號，是否要新增機器？')) {
-        setTimeout(()=>{ editMode=false; editId=''; document.getElementById('form-modal-title').textContent='新增機器'; document.getElementById('form-modal-body').innerHTML=machineForm(null); document.getElementById('form-modal').classList.add('open'); },400);
-      }
+      appConfirm('沒有填機型機號，是否要新增機器？',
+        ()=>{ editMode=false; editId=''; document.getElementById('form-modal-title').textContent='新增機器'; document.getElementById('form-modal-body').innerHTML=machineForm(null); document.getElementById('form-modal').classList.add('open'); }
+      );
     } else {
-      const choice = confirm('拆機後機器狀態：\n確定 → 待出租\n取消 → ◎進廠');
-      updateMachineStatus(model, serial, choice?'待出租':'◎進廠');
-      markTaskDoneById(dn);
+      appConfirm('拆機後機器要改成什麼狀態？\n\n「是」→ 待出租\n「否」→ ◎進廠',
+        ()=>{ updateMachineStatus(model, serial, '待出租'); confirmTaskDone(); },
+        ()=>{ updateMachineStatus(model, serial, '◎進廠');  confirmTaskDone(); }
+      );
     }
     return;
   }
   if (itemList.includes('移機')) {
     const custIdx = cache.customers.findIndex(x=>x['客戶名稱']===customer);
-    if (confirm('是否要編輯客戶資料（更新地址）？')) {
-      if (custIdx>=0) setTimeout(()=>openEditItem('customer',custIdx),400);
-    }
-    if (selfOwned && confirm('是否要新增收款？')) {
-      setTimeout(()=>{ openQuickPayment(customer,taskData,['維修費']); markTaskDoneById(dn); },600);
-    } else { markTaskDoneById(dn); }
+    appConfirm('是否要編輯客戶資料（更新地址）？', ()=>{
+      if (custIdx>=0) setTimeout(()=>openEditItem('customer',custIdx),200);
+      if (selfOwned) {
+        setTimeout(()=>{
+          appConfirm('是否要新增收款？',
+            ()=>{ openQuickPayment(customer,taskData,['維修費']); confirmTaskDone(); },
+            ()=>confirmTaskDone()
+          );
+        }, 400);
+      } else confirmTaskDone();
+    }, ()=>{
+      if (selfOwned) {
+        appConfirm('是否要新增收款？',
+          ()=>{ openQuickPayment(customer,taskData,['維修費']); confirmTaskDone(); },
+          ()=>confirmTaskDone()
+        );
+      } else confirmTaskDone();
+    });
     return;
   }
   if (itemList.includes('裝機')) {
     if (!hasMachine) {
-      if (confirm('沒有填機型機號，是否要新增機器？')) {
-        setTimeout(()=>{ editMode=false; editId=''; document.getElementById('form-modal-title').textContent='新增機器'; document.getElementById('form-modal-body').innerHTML=machineForm(null); document.getElementById('form-modal').classList.add('open'); },400);
-      }
+      // 沒填機號：詢問是否新增機器
+      appConfirm('沒有填機型機號，是否要新增機器？',
+        ()=>{
+          window._addMachineForTask = { customer, taskData, goContract: false };
+          editMode=false; editId='';
+          window._prefillMachineType = null;
+          document.getElementById('form-modal-title').textContent='新增機器';
+          document.getElementById('form-modal-body').innerHTML=machineForm({'已到客戶': customer});
+          document.getElementById('form-modal').classList.add('open');
+        },
+        ()=>{
+          // 選否：不標記完成，提示輸入機型機號
+          window._pendingDoneTask = null;
+          showToast('⚠️ 請在工作事項中填入機型機號後再完成');
+        }
+      );
       return;
     }
-    if (selfOwned) {
-      if (confirm('是否要新增收款？')) { setTimeout(()=>{ openQuickPayment(customer,taskData,['裝機費']); markTaskDoneById(dn); },400); }
-      else markTaskDoneById(dn);
-    } else if (['待出租','全新機'].includes(status)) {
-      if (confirm('是否要新增合約？')) {
-        const mm = getMachineByTaskInfo(model,serial);
-        setTimeout(()=>{ editMode=false; editId=''; document.getElementById('form-modal-title').textContent='新增合約'; document.getElementById('form-modal-body').innerHTML=contractForm(null,mm,customer); document.getElementById('form-modal').classList.add('open'); markTaskDoneById(dn); },400);
-      } else markTaskDoneById(dn);
-    } else markTaskDoneById(dn);
+    // 有填機號：直接開租機/租送選擇
+    setTimeout(()=>openContractTypeChooser(customer, model, serial, dn), 200);
     return;
   }
   if (itemList.includes('維修')) {
-    if (selfOwned && confirm('是否要新增收款（維修費）？')) {
-      setTimeout(()=>{ openQuickPayment(customer,taskData,['維修費']); markTaskDoneById(dn); },400);
-    } else markTaskDoneById(dn);
+    if (selfOwned) {
+      appConfirm('是否要新增收款（維修費）？',
+        ()=>{ setTimeout(()=>{ openQuickPayment(customer,taskData,['維修費']); confirmTaskDone(); },200); },
+        ()=>confirmTaskDone()
+      );
+    } else confirmTaskDone();
     return;
   }
-  if (itemList.includes('保養') && confirm('是否要新增收款（保養費）？')) {
-    setTimeout(()=>{ openQuickPayment(customer,taskData,['保養費']); markTaskDoneById(dn); },400);
+  if (itemList.includes('保養')) {
+    appConfirm('是否要新增收款（保養費）？',
+      ()=>{ setTimeout(()=>{ openQuickPayment(customer,taskData,['保養費']); confirmTaskDone(); },200); },
+      ()=>confirmTaskDone()
+    );
     return;
   }
-  // 其他工作：詢問是否標記完成
-  if (confirm('是否標記此工作為完成？')) markTaskDoneById(dn);
+  // 其他工作
+  appConfirm('是否標記此工作為完成？', ()=>confirmTaskDone(), ()=>{});
 }
 function openReplaceModal(customer, oldModel, oldSerial, taskDateStr) {
   const body = document.getElementById('detail-modal-body');
@@ -1723,7 +1881,7 @@ function confirmReplace(customer, oldModel, oldSerial, taskDateStr) {
     ct['機型']=newModel; ct['機號']=newSerial; saveCache();
     enqueue({action:'update',sheet:'contracts',data:ct,id:ct['合約ID']});
   });
-  if (taskDateStr) markTaskDoneById(taskDateStr);
+  if (taskDateStr) confirmTaskDone();
   closeModal('detail-modal');
   showToast(`✓ 換機完成：${oldModel||oldSerial} → ${newModel}`);
   renderPage();
@@ -1889,6 +2047,10 @@ function unmarkRentPaid(cid) {
   const paid=getPaidRents(); delete paid[getRentPeriodKey(cid)]; savePaidRents(paid);
   renderPage(); showToast('已取消收款標記');
 }
+let rentViewMode = 'unpaid'; // 'unpaid' | 'paid'
+
+function setRentView(mode) { rentViewMode = mode; renderPage(); }
+
 function renderRentList() {
   const role = authState?.role;
   const myName = authState?.name||'';
@@ -1910,17 +2072,26 @@ function renderRentList() {
 
   if (searchQuery) list=list.filter(c=>JSON.stringify(c).includes(searchQuery));
   if (!list.length) return '<div class="empty">沒有收租資料</div>';
+
+  // 分已收款/未收款
+  const unpaidList = list.filter(c => !isRentPaidThisPeriod(c['合約ID']));
+  const paidList   = list.filter(c =>  isRentPaidThisPeriod(c['合約ID']));
+  const showing = rentViewMode === 'paid' ? paidList : unpaidList;
+
+  const tabs = `<div class="task-tabs">
+    <div class="task-tab${rentViewMode==='unpaid'?' active':''}" onclick="setRentView('unpaid')">未收款 ${unpaidList.length>0?`<span style="font-size:0.857em;opacity:.7">(${unpaidList.length})</span>`:''}</div>
+    <div class="task-tab${rentViewMode==='paid'?' active':''}" onclick="setRentView('paid')">已收款 ${paidList.length>0?`<span style="font-size:0.857em;opacity:.7">(${paidList.length})</span>`:''}</div>
+  </div>`;
+
+  if (!showing.length) return tabs + `<div class="empty">${rentViewMode==='paid'?'本期尚無已收款紀錄':'本期帳款已全部收款 ✓'}</div>`;
+
   const grouped={};
-  list.forEach(c=>{const n=c['客戶名稱']||'未知';if(!grouped[n])grouped[n]=[];grouped[n].push(c);});
-  let html='';
+  showing.forEach(c=>{const n=c['客戶名稱']||'未知';if(!grouped[n])grouped[n]=[];grouped[n].push(c);});
+  let html=tabs;
   Object.entries(grouped).forEach(([name,items])=>{
-    const vis=searchQuery?items:items.filter(c=>shouldShowRent(c));
-    const hid=items.length-vis.length;
-    if(!vis.length&&!searchQuery) return;
-    const total=vis.reduce((a,b)=>a+(Number(b['租金'])||0),0);
-    html+=`<div class="rent-cust-hdr"><span class="rent-cust-name">${name}</span>${total?`<span class="rent-amt">$${total.toLocaleString()}</span>`:''
-    }${hid?`<span style="font-size:0.714em;color:var(--green2);margin-left:6px">已收${hid}筆</span>`:''}</div>`;
-    vis.forEach(c=>{
+    const total=items.reduce((a,b)=>a+(Number(b['租金'])||0),0);
+    html+=`<div class="rent-cust-hdr"><span class="rent-cust-name">${name}</span>${total?`<span class="rent-amt">$${total.toLocaleString()}</span>`:''}</div>`;
+    items.forEach(c=>{
       const idx=cache.contracts.indexOf(c);
       const isPaid=isRentPaidThisPeriod(c['合約ID']);
       const ds=String(c['租借日期']||'').replace('T',' ').substring(0,10);
@@ -1957,7 +2128,7 @@ function renderRentList() {
       </div>`;
     });
   });
-  return html||'<div class="empty">本期帳款已全部收款 ✓</div>';
+  return html;
 }
 
 // --- Settings ---
@@ -2027,8 +2198,10 @@ async function testConn() {
   try {
     const d = await jsonp(url, {action:'getAll', sheet:'customers'});
     el.innerHTML = `<div class="s-dot ok"></div><span>連線成功！讀到 ${d.length} 筆客戶</span>`;
-    showToast('✅ 連線成功，開始同步...');
-    syncAll();
+    showToast('✅ 連線成功，同步中...');
+    cache.customers = d || [];
+    saveCache();
+    await syncAllExcept('customers');
   } catch(e) {
     el.innerHTML = `<div class="s-dot err"></div><span>失敗：${e.message}</span>`;
     showToast('❌ 失敗：'+e.message);
@@ -2458,7 +2631,7 @@ const CONTRACT_STATUS = ['出租中','租送機','已到期','已終止'];
 const PAY_ITEMS = ['租金','押金','維修費','保養費','裝機費','機器買斷','濾材'];
 const HANDLERS = []; // 預設值已移除，經手人從人員名單試算表抓取
 const MACHINE_STATUS_ALL = ['出租中','租送機','買 斷','客人機','待出租','◎進廠','全新機','借用機'];
-const MACHINE_STATUS_NEW = ['全新機','◎進廠','待出租'];
+const MACHINE_STATUS_NEW = ['全新機','◎進廠','待出租','客人機'];
 
 function genId() { return Math.random().toString(36).substr(2,8); }
 function sel(opts, val, extra='') {
@@ -2665,6 +2838,7 @@ function machineForm(d) {
     <div class="ff"><label>冷媒</label>${mkChips('chip-coolant','coolant',getCoolants(),'custom_coolants','新增冷媒...')}</div>
     <div class="ff"><label>散熱</label>${mkChips('chip-cooling','cooling',getCoolings(),'custom_cooling','新增散熱...')}</div>
     <div class="ff"><label>類型<span class="req">*</span></label><select class="fi fi-sel" id="f-status"><option value="">請選擇</option>${sel(editMode || window._prefillMachineType ? MACHINE_STATUS_ALL : MACHINE_STATUS_NEW, d?.['類型'])}</select></div>
+    ${d?.['已到客戶'] ? `<div class="ff"><label>已到客戶</label><input class="fi" id="f-arrived-customer" value="${d['已到客戶']}" readonly style="color:var(--text2)"></div>` : ''}
   </div>
   <div class="form-actions">
     <button class="btn-cancel" onclick="closeModal('form-modal')">取消</button>
@@ -3277,17 +3451,13 @@ function showCustomerAddrHint(hintId, customer) {
 function contractFormAssign(m, customerName, customer, contractType, rent, deposit, endStr) {
   const startStr = new Date().toISOString().split('T')[0];
   const statusOpts = ['出租中','租送機'].map(s=>`<option${s===contractType?' selected':''}>${s}</option>`).join('');
-  const addrHint = customer?.['地址'] ? '📍 '+customer['地址'] : (customerName ? '' : '');
-  // 渲染後用JS強制設定select value
-  if (customerName) setTimeout(() => {
-    const s = document.getElementById('f-customer');
-    if (s) { s.value = customerName; onContractCustomerChange(customerName); }
-  }, 0);
+  const addrHint = customer?.['地址'] ? '📍 '+customer['地址'] : '';
+  const custOptions = cache.customers.map(c=>`<option${c['客戶名稱']===customerName?' selected':''}>${c['客戶名稱']}</option>`).join('');
   return `<div class="form-body">
     <div class="ff"><label>合約ID</label><input class="fi" id="f-cid" value="${genId()}"></div>
     <div class="ff"><label>客戶名稱</label>
       <select class="fi fi-sel" id="f-customer" onchange="onContractCustomerChange(this.value)">
-        <option value="">請選擇</option>${cache.customers.map(c=>`<option>${c['客戶名稱']}</option>`).join('')}
+        <option value="">請選擇</option>${custOptions}
       </select>
       <div id="f-customer-hint" style="font-size:11px;color:var(--text2);margin-top:5px;padding:0 2px">${addrHint}</div>
     </div>
@@ -3424,7 +3594,19 @@ async function saveMachine() {
     '類型': document.getElementById('f-status').value
   };
   if (customerEl) data['目前客戶'] = customerEl.value.trim();
+  const arrivedEl = document.getElementById('f-arrived-customer');
+  if (arrivedEl) data['已到客戶'] = arrivedEl.value.trim();
   await doSave('machine', data);
+
+  // 如果是從裝機工作跳來的，新增完後跳新增收款
+  if (window._addMachineForTask) {
+    const { customer: taskCustomer, taskData } = window._addMachineForTask;
+    window._addMachineForTask = null;
+    setTimeout(()=>{
+      openQuickPayment(taskCustomer, taskData, ['裝機費']);
+      confirmTaskDone();
+    }, 400);
+  }
 }
 
 function getAllHandlers() {
@@ -3531,10 +3713,10 @@ function handleOverlayClick(e, modalId) {
 // ============================================================
 // TOAST
 // ============================================================
-function showToast(msg) {
+function showToast(msg, duration) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2500);
+  setTimeout(()=>t.classList.remove('show'), duration||2500);
 }
 
 // ============================================================
@@ -3545,17 +3727,18 @@ updatePendingBadge();
 initAppearance();
 renderPage();
 
+// 清除超過24小時的舊 pendingQueue（避免累積的失敗操作無限重試）
+const _24h = 24 * 60 * 60 * 1000;
+const _oldLen = pendingQueue.length;
+pendingQueue = pendingQueue.filter(op => Date.now() - (op.ts||0) < _24h);
+if (pendingQueue.length !== _oldLen) { saveQueue(); console.log('清除過舊的 pendingQueue', _oldLen - pendingQueue.length, '筆'); }
+
 if (cfg.url) {
   syncAll().then(() => initAuth());
 } else {
   initAuth();
 }
 startAutoSync();
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
-}
 </script>
 </body>
 </html>
