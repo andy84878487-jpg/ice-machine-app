@@ -708,6 +708,28 @@ function doLogin() {
   if (first) selectRole(first);
   window._loginName = name;
   window._staffData = staff;
+
+  // 依職員名單中的「角色」欄位，決定角色選擇頁可顯示哪些角色
+  const staffRoles = staff?.['角色'] ? String(staff['角色']).split(/[,、，]/).map(s=>s.trim()).filter(Boolean) : [];
+  // 角色權限階層：管理員可選所有；工程師可選工程師/帳款；帳款專員只能選帳款
+  const roleHierarchy = {
+    '管理員': ['admin','engineer','billing'],
+    '工程師': ['engineer','billing'],
+    '帳款專員': ['billing'],
+  };
+  let allowedRoles = ['admin','engineer','billing']; // 預設全開（未設定角色）
+  if (staffRoles.length) {
+    const sets = staffRoles.map(r=>roleHierarchy[r]||[]);
+    // 取聯集（有管理員就能選全部）
+    allowedRoles = [...new Set(sets.flat())];
+    if (!allowedRoles.length) allowedRoles = ['billing']; // 至少帳款
+  }
+  document.querySelectorAll('.role-item').forEach(el => {
+    el.style.display = allowedRoles.includes(el.dataset.role) ? 'flex' : 'none';
+  });
+  // 自動選第一個可見角色
+  const firstVisible = document.querySelector('.role-item[style*="flex"]') || document.querySelector('.role-item');
+  if (firstVisible) selectRole(firstVisible);
 }
 
 function selectRole(el) {
@@ -810,8 +832,19 @@ function showRoleScreen() {
   document.getElementById('role-username').textContent = authState.name;
   window._loginName = authState.name;
   document.getElementById('role-screen').classList.remove('hidden');
-  // 選中目前角色
+
+  // 依職員的角色欄位限制可選項目
+  const staff = window._staffData || cache.staff.find(s=>String(s['姓名']||'').trim()===authState.name);
+  const staffRoles = staff?.['角色'] ? String(staff['角色']).split(/[,、，]/).map(s=>s.trim()).filter(Boolean) : [];
+  const roleHierarchy = { '管理員':['admin','engineer','billing'], '工程師':['engineer','billing'], '帳款專員':['billing'] };
+  let allowedRoles = ['admin','engineer','billing'];
+  if (staffRoles.length) {
+    const sets = staffRoles.map(r=>roleHierarchy[r]||[]);
+    allowedRoles = [...new Set(sets.flat())];
+    if (!allowedRoles.length) allowedRoles = ['billing'];
+  }
   document.querySelectorAll('.role-item').forEach(el => {
+    el.style.display = allowedRoles.includes(el.dataset.role) ? 'flex' : 'none';
     el.classList.toggle('selected', el.dataset.role === authState.role);
   });
 }
