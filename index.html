@@ -785,30 +785,7 @@ async function doBiometricLogin(name) {
       if (!staff) { err.textContent='找不到職員資料，請用密碼登入'; return; }
       err.textContent = '';
       document.getElementById('login-name').value = name;
-      // 直接進入角色選擇（不需身分證號）
-      document.getElementById('login-screen').classList.add('hidden');
-      document.getElementById('role-username').textContent = name;
-      document.getElementById('role-screen').classList.remove('hidden');
-      document.getElementById('role-pin').value = '';
-      window._loginName = name;
-      window._staffData = staff;
-      const savedNames = JSON.parse(localStorage.getItem('login_names')||'[]');
-      if (!savedNames.includes(name)) { savedNames.push(name); localStorage.setItem('login_names', JSON.stringify(savedNames)); }
-      updateNameSuggestions();
-      // 套用角色篩選
-      const staffRoles = staff?.['角色'] ? String(staff['角色']).split(/[,、，]/).map(s=>s.trim()).filter(Boolean) : [];
-      const roleHierarchy = { '管理員':['admin','engineer','billing'], '工程師':['engineer','billing'], '帳款專員':['billing'] };
-      let allowedRoles = ['admin','engineer','billing'];
-      if (staffRoles.length) {
-        const sets = staffRoles.map(r=>roleHierarchy[r]||[]);
-        allowedRoles = [...new Set(sets.flat())];
-        if (!allowedRoles.length) allowedRoles = ['billing'];
-      }
-      document.querySelectorAll('.role-item').forEach(el => {
-        el.style.display = allowedRoles.includes(el.dataset.role) ? 'flex' : 'none';
-      });
-      const firstVisible = document.querySelector('.role-item:not([style*="none"])') || document.querySelector('.role-item');
-      if (firstVisible) selectRole(firstVisible);
+      _proceedAfterLogin(name, staff);
     }
   } catch(e) {
     if (e.name === 'NotAllowedError') err.textContent = '已取消驗證';
@@ -825,27 +802,48 @@ function removeBiometric(name) {
   showToast(`已移除「${name}」的快速登入`);
 }
 
-function doLogin() {
+async function doLogin() {
   const name = document.getElementById('login-name').value.trim();
   const id   = document.getElementById('login-id').value.trim();
   const err  = document.getElementById('login-err');
   if (!name || !id) { err.textContent = '請填寫姓名和身分證號'; return; }
 
-  // 若試算表尚無資料，不允許登入
-  if (cache.staff.length === 0) {
-    err.textContent = '無法取得人員資料，請先同步試算表';
-    return;
+  // 找 cache 中的職員（無敏感資料）
+  const staffBase = cache.staff.find(s => String(s['姓名']||'').trim() === name);
+  if (!staffBase) { err.textContent = '找不到此姓名，請確認後再試'; return; }
+
+  err.textContent = '驗證中...';
+  document.querySelector('.login-btn').disabled = true;
+
+  try {
+    // 向 Apps Script 即時驗證身分證號（不存在 localStorage）
+    let verified = false;
+    if (cfg.url) {
+      const res = await jsonp(cfg.url, { action:'verifyLogin', name, idno: id });
+      verified = res?.ok === true;
+    } else {
+      // 離線或未設定 URL：fallback 到 cache（若有身分證號的話）
+      const sId = String(staffBase['身分證號']||staffBase['身份證號']||staffBase['身分證']||'').trim();
+      verified = sId ? sId === id : false;
+    }
+
+    if (!verified) {
+      err.textContent = '姓名或身分證號不正確';
+      document.querySelector('.login-btn').disabled = false;
+      return;
+    }
+    err.textContent = '';
+    _proceedAfterLogin(name, staffBase);
+  } catch(e) {
+    // 網路失敗時 fallback 到 cache（身分證號已被移除，登入失敗並告知）
+    err.textContent = '連線失敗，請確認網路後再試';
+    document.querySelector('.login-btn').disabled = false;
   }
+  document.querySelector('.login-btn').disabled = false;
+}
 
-  const staff = cache.staff.find(s => {
-    const sName = String(s['姓名']||'').trim();
-    const sId   = String(s['身分證號']||s['身份證號']||s['身分證']||'').trim();
-    return sName === name && sId === id;
-  });
-
-  if (!staff) { err.textContent = '姓名或身分證號不正確'; return; }
-  err.textContent = '';
-  // 記錄已登入過的姓名到localStorage
+// 登入成功後共用流程（密碼登入 / 生物辨識 共用）
+function _proceedAfterLogin(name, staff) {
   const savedNames = JSON.parse(localStorage.getItem('login_names')||'[]');
   if (!savedNames.includes(name)) { savedNames.push(name); localStorage.setItem('login_names', JSON.stringify(savedNames)); }
   updateNameSuggestions();
@@ -1121,8 +1119,8 @@ function enqueue(op) {
 async function flushQueue() {
   if (isFlushing || !pendingQueue.length || !cfg.url) return;
   if (_flushRetryCount >= MAX_FLUSH_RETRY) {
-    // 超過最大重試次數，清除 queue 避免無限重試
     console.warn('pendingQueue 超過最大重試次數，清除 queue');
+    showToast('⚠️ 部分資料同步失敗已逾時，請手動重新整理頁面並確認試算表', 8000);
     pendingQueue = [];
     saveQueue();
     _flushRetryCount = 0;
@@ -1180,8 +1178,18 @@ async function syncAllExcept(skip) {
   ];
   try {
     for (const {key, sheet} of sheets) {
-      if (skip === key) continue; // 跳過已抓到的
-      cache[key] = await jsonp(cfg.url, {action:'getAll', sheet}) || [];
+      if (skip === key) continue;
+      let rows = await jsonp(cfg.url, {action:'getAll', sheet}) || [];
+      // 職員名單：移除敏感欄位，不存入 localStorage
+      if (key === 'staff') {
+        rows = rows.map(s => {
+          const clean = {...s};
+          delete clean['身分證號']; delete clean['身份證號'];
+          delete clean['身分證']; delete clean['PIN']; delete clean['Pin']; delete clean['pin'];
+          return clean;
+        });
+      }
+      cache[key] = rows;
     }
     try {
       const opts = await jsonp(cfg.url, {action:'getValidation', sheet:'施工紀錄', column:'工作內容'});
@@ -1256,11 +1264,11 @@ function renderContracts() {
   const today = new Date(new Date().toDateString());
   let list = [...cache.contracts];
 
-  // 工程師/帳款專員：只顯示自己是經手人的合約
+  // 工程師/帳款專員：只顯示自己是經手人的合約（無經手人欄位的顯示給所有人）
   if (role !== 'admin') {
     list = list.filter(c => {
-      const h = String(c['經手人']||'').split(/[,、，]/).map(s=>s.trim());
-      return !h.length || h.some(Boolean) ? h.includes(myName) || !h.filter(Boolean).length : true;
+      const handlers = String(c['經手人']||'').split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
+      return handlers.length === 0 || handlers.includes(myName);
     });
   }
 
@@ -1992,7 +2000,7 @@ async function saveTask() {
   isSaving = true;
   cache.tasks.push(data);
   saveCache();
-  enqueue({ action:'add', sheet:'施工紀錄', data, id:null });
+  enqueue({ action:'add', sheet:'施工紀錄', data, id: data['任務ID'] });
   closeModal('form-modal');
   renderPage();
   showToast('已新增施工紀錄');
@@ -3625,7 +3633,7 @@ async function savePricelistEntry() {
       enqueue({action:'update',sheet,data,id:editId});
     } else {
       cache.pricelist.push(data);
-      enqueue({action:'add',sheet,data,id:null});
+      enqueue({action:'add',sheet,data,id:(data['廠牌']||'')+'|'+(data['機型']||'')});
     }
   } else {
     const inputs = document.querySelectorAll('[data-pl-key]');
