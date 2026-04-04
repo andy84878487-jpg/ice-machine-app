@@ -247,10 +247,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto S
 /* Expired badge on machine list */
 .expired-tag{font-size:0.714em;font-weight:700;color:var(--danger2);background:var(--danger-bg);border-radius:4px;padding:1px 6px;margin-left:6px}
 
+/* Generic card */
+.card{background:var(--surface);border-bottom:1px solid var(--border);padding:13px 15px;transition:background .1s}
+.card:active{background:var(--surface2)}
+
+/* Multi-phone */
+.phone-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.phone-row .fi{flex:1;margin:0}
+.phone-del{background:none;border:none;color:var(--text3);font-size:1.2em;cursor:pointer;padding:4px 6px;flex-shrink:0}
+.phone-del:active{color:var(--danger2)}
+.phone-add-btn{display:flex;align-items:center;gap:6px;background:none;border:1px dashed var(--border2);border-radius:8px;color:var(--text2);font-size:0.857em;cursor:pointer;padding:8px 12px;width:100%;font-family:inherit}
+
 /* 已到期 chip color */
 .chip-expired{background:var(--danger-bg);color:var(--danger2)}
 /* 固定綠色，不隨主題變動 */
-.chip-pay{background:rgba(67,160,71,.15);color:#66bb6a}
+.chip-pay{background:rgba(67,160,71,.18);color:#4caf50;border:1px solid rgba(67,160,71,.3)}
+body.theme-light .chip-pay{background:rgba(46,125,50,.12);color:#2e7d32;border:1px solid rgba(46,125,50,.3)}
 
 /* Pay item chips (multi-select) */
 .pay-item-chip{padding:7px 13px;background:var(--bg);border:1px solid var(--border);border-radius:99px;color:var(--text2);font-size:0.857em;font-family:inherit;cursor:pointer;transition:all .15s}
@@ -283,7 +295,7 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
 .pay-total-row{display:flex;justify-content:space-between;padding:10px 0 4px;font-size:0.929em;color:var(--text2)}
 .pay-total-final{font-size:1.1em;font-weight:900;color:var(--text)}
 
-/* ── 工作事項完成狀態 ── */
+/* ── 施工紀錄完成狀態 ── */
 .task-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:4px}
 .task-tab{flex:1;padding:10px;text-align:center;font-size:0.857em;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;color:var(--text2);transition:all .2s}
 .task-tab.active{border-bottom-color:var(--accent2);color:var(--accent2)}
@@ -336,7 +348,6 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
 .role-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
 .ri-admin{background:rgba(229,57,53,.15)}
 .ri-install{background:rgba(33,150,243,.15)}
-.ri-repair{background:rgba(76,175,80,.15)}
 .ri-billing{background:rgba(249,168,37,.15)}
 .role-info{flex:1}
 .role-name-text{font-size:15px;font-weight:700;color:#fff}
@@ -401,7 +412,7 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
       <div class="role-icon ri-install">🔧</div>
       <div class="role-info">
         <div class="role-name-text">工程師</div>
-        <div class="role-desc">客戶資料・工作事項・收款紀錄・收租清單</div>
+        <div class="role-desc">客戶資料・施工紀錄・收款紀錄・收租清單</div>
       </div>
       <div class="role-check">✓</div>
     </div>
@@ -409,7 +420,7 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
       <div class="role-icon ri-billing">💰</div>
       <div class="role-info">
         <div class="role-name-text">帳款專員</div>
-        <div class="role-desc">工作事項・收款紀錄・收租清單</div>
+        <div class="role-desc">施工紀錄・收款紀錄・收租清單</div>
       </div>
       <div class="role-check">✓</div>
     </div>
@@ -439,7 +450,7 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
       </div>
       <div class="sidemenu-item" onclick="closeSideMenu();switchTab(2)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-        工作事項
+        施工紀錄
       </div>
       <div class="sidemenu-item" onclick="closeSideMenu();switchTab(3)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
@@ -457,6 +468,15 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
       <div class="sidemenu-item" onclick="closeSideMenu();switchTab(5)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         租賃紀錄
+      </div>
+      <div class="sidemenu-divider"></div>
+      <div class="sidemenu-item" onclick="closeSideMenu();switchTab(7)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        維修紀錄
+      </div>
+      <div class="sidemenu-item" onclick="closeSideMenu();switchTab(8)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        報價表
       </div>
       <div class="sidemenu-divider"></div>
       <div class="sidemenu-item" onclick="closeSideMenu();switchTab(6)">
@@ -494,23 +514,19 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
   <div class="content" id="main-content"></div>
 
   <nav class="nav">
-    <button class="nav-item active" id="nav-0" onclick="switchTab(0)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-      客戶資料
+    <button class="nav-item active" data-tab="9" onclick="switchTab(9)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      總覽
     </button>
-    <button class="nav-item" id="nav-1" onclick="switchTab(1)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-      機器清單
-    </button>
-    <button class="nav-item" id="nav-2" onclick="switchTab(2)">
+    <button class="nav-item" data-tab="2" onclick="switchTab(2)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-      工作事項
+      施工紀錄
     </button>
-    <button class="nav-item" id="nav-3" onclick="switchTab(3)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-      收款紀錄
+    <button class="nav-item" data-tab="7" onclick="switchTab(7)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+      維修紀錄
     </button>
-    <button class="nav-item" id="nav-4" onclick="switchTab(4)">
+    <button class="nav-item" data-tab="4" onclick="switchTab(4)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       收租清單
     </button>
@@ -581,6 +597,20 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
   </div>
 </div>
 
+<!-- Chip Editor Deck -->
+<div class="deck-overlay" id="chip-editor-deck" style="z-index:250" onclick="if(event.target===this)closeModal('chip-editor-deck')">
+  <div class="deck" style="max-height:75vh;display:flex;flex-direction:column">
+    <div class="deck-header">
+      <span class="deck-title" id="chip-editor-title">編輯選項</span>
+      <button class="deck-close" onclick="closeModal('chip-editor-deck')">×</button>
+    </div>
+    <div id="chip-editor-body" style="flex:1;overflow-y:auto"></div>
+    <div style="padding:12px 16px 20px;border-top:1px solid var(--border)">
+      <button class="btn-cancel" style="width:100%" onclick="closeModal('chip-editor-deck')">完成</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================================
 // AUTH & ROLE
@@ -588,14 +618,14 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
 const AUTH_KEY = 'iceapp_auth';
 
 // 角色可見的分頁 (tab index)
-// 0=客戶 1=機器 2=工作 3=收款 4=收租 5=租賃紀錄 6=設定
+// 0=客戶 1=機器 2=施工 3=收款 4=收租 5=租賃紀錄 6=設定 7=維修 8=報價 9=總覽
 const ROLE_TABS = {
-  admin:   [0,1,2,3,4,5],
-  engineer:[0,2,3,4],
-  billing: [2,3,4],
-  guest:   [],
+  admin:   [0,1,2,3,4,5,7,8,9],
+  engineer:[0,2,3,4,7,9],
+  billing: [2,3,4,9],
+  guest:   [9],
 };
-const ROLE_DEFAULT_TAB = { admin:0, engineer:2, billing:2, guest:0 };
+const ROLE_DEFAULT_TAB = { admin:9, engineer:9, billing:9, guest:9 };
 
 let authState = JSON.parse(localStorage.getItem(AUTH_KEY)||'null');
 // authState: { name, role, ts }
@@ -721,18 +751,19 @@ function enterApp() {
 }
 
 function applyRole(role, name, isNew) {
-  const allowedTabs = ROLE_TABS[role] || [0,1,2,3];
-  document.querySelectorAll('.nav-item').forEach((el, i) => {
-    el.style.display = allowedTabs.includes(i) ? 'flex' : 'none';
+  const allowedTabs = ROLE_TABS[role] || [2,4,7];
+  // Nav items: hide if their data-tab is not in allowedTabs
+  document.querySelectorAll('.nav-item').forEach(el => {
+    const t = parseInt(el.dataset.tab);
+    el.style.display = allowedTabs.includes(t) ? 'flex' : 'none';
   });
   updateSideMenuForRole(role, allowedTabs);
   const roleNames = {admin:'管理員',engineer:'工程師',billing:'帳款專員',guest:'訪客'};
   const info = document.getElementById('sm-user-info');
   if (info) info.textContent = `👤 ${name}｜${roleNames[role]||role}`;
-  // 訪客隱藏切換身分按鈕
   const switchBtn = document.getElementById('sm-switch-btn');
   if (switchBtn) switchBtn.style.display = role === 'guest' ? 'none' : 'block';
-  const defaultTab = ROLE_DEFAULT_TAB[role] ?? allowedTabs[0] ?? 0;
+  const defaultTab = ROLE_DEFAULT_TAB[role] ?? allowedTabs[0] ?? 2;
   switchTab(defaultTab);
   if (isNew) showToast(`歡迎，${name}！`);
 }
@@ -760,7 +791,7 @@ function doLogout() {
   document.getElementById('login-id').value = '';
   document.getElementById('login-err').textContent = '';
   document.getElementById('login-screen').classList.remove('hidden');
-  // 恢復所有分頁顯示
+  // 恢復所有導覽列按鈕顯示
   document.querySelectorAll('.nav-item').forEach(el => el.style.display = 'flex');
 }
 
@@ -777,7 +808,7 @@ const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbwCt1TYbm01DRPA-YFw
 let cfg = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
 // 相容舊版設定
 if (!cfg.url) cfg.url = cfg.mainUrl || DEFAULT_URL;
-let cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{"customers":[],"machines":[],"contracts":[],"payments":[],"pricelist":[],"staff":[],"tasks":[],"taskOptions":[],"adminPin":"","machineStatuses":[]}');
+let cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{"customers":[],"machines":[],"contracts":[],"payments":[],"pricelist":[],"staff":[],"tasks":[],"taskOptions":[],"adminPin":"","machineStatuses":[],"repairs":[],"materials":[],"repairPricelist":[]}');
 let pendingQueue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
 
 function saveCfg() { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }
@@ -800,9 +831,10 @@ let payMethod = '';
 let pickerMachineIdx = -1;
 let pickerCustomerName = '';
 let selectedPayItems = [];
+let tempPayItems = []; // 臨時收款項目（僅本次顯示，不寫入選項庫）
 
-window.addEventListener('online',  () => { isOnline = true;  updateOfflineBanner(); flushQueue(); });
-window.addEventListener('offline', () => { isOnline = false; updateOfflineBanner(); });
+window.addEventListener('online',  () => { isOnline = true;  updateOfflineBanner(); showToast('🌐 已恢復連線，同步中...'); syncAll().then(()=>flushQueue()); });
+window.addEventListener('offline', () => { isOnline = false; updateOfflineBanner(); showToast('📵 已離線，變更將在連線後自動同步'); });
 
 function updateOfflineBanner() {
   document.getElementById('offline-banner').classList.toggle('show', !isOnline);
@@ -848,9 +880,24 @@ let _flushRetryCount = 0;
 const MAX_FLUSH_RETRY = 5;
 
 function enqueue(op) {
+  // ── 去重邏輯 ──
+  // 同 sheet 同 id 的 update：後者覆蓋前者，避免重複
+  if (op.action === 'update' && op.id) {
+    const existing = pendingQueue.findIndex(q => q.action === 'update' && q.sheet === op.sheet && q.id === op.id);
+    if (existing >= 0) { pendingQueue[existing] = { ...op, ts: Date.now() }; saveQueue(); flushQueue(); return; }
+  }
+  // 同 sheet 同內容的 add：以 data 的唯一欄位（維修ID、收款ID、任務ID 等）去重
+  if (op.action === 'add') {
+    const uid = op.data?.['紀錄日期']||op.data?.['維修ID']||op.data?.['收款ID']||op.data?.['任務ID']||op.data?.['合約ID']||op.data?.['機號']||op.data?.['客戶名稱']||'';
+    if (uid) {
+      const dup = pendingQueue.some(q => q.action === 'add' && q.sheet === op.sheet &&
+        (q.data?.['紀錄日期']||q.data?.['維修ID']||q.data?.['收款ID']||q.data?.['任務ID']||q.data?.['合約ID']||q.data?.['機號']||q.data?.['客戶名稱']||'') === uid);
+      if (dup) return; // 已在佇列，跳過
+    }
+  }
   pendingQueue.push({ ...op, ts: Date.now() });
   saveQueue();
-  _flushRetryCount = 0; // 新操作重置重試計數
+  _flushRetryCount = 0;
   flushQueue();
 }
 
@@ -908,8 +955,11 @@ async function syncAllExcept(skip) {
     {key:'contracts', sheet:'contracts'},
     {key:'payments',  sheet:'payments'},
     {key:'staff',     sheet:'staff'},
-    {key:'tasks',     sheet:'tasks'},
-    {key:'pricelist', sheet:'pricelist'},
+    {key:'tasks', sheet:'施工紀錄'},
+    {key:'pricelist',       sheet:'pricelist'},
+    {key:'repairs',         sheet:'repairs'},
+    {key:'materials',       sheet:'materials'},
+    {key:'repairPricelist', sheet:'repairPricelist'},
   ];
   try {
     for (const {key, sheet} of sheets) {
@@ -917,7 +967,7 @@ async function syncAllExcept(skip) {
       cache[key] = await jsonp(cfg.url, {action:'getAll', sheet}) || [];
     }
     try {
-      const opts = await jsonp(cfg.url, {action:'getValidation', sheet:'tasks', column:'工作內容'});
+      const opts = await jsonp(cfg.url, {action:'getValidation', sheet:'施工紀錄', column:'工作內容'});
       if (Array.isArray(opts) && opts.length) cache.taskOptions = opts;
     } catch(e) {}
     saveCache();
@@ -949,7 +999,7 @@ function setTheme(theme) {
   localStorage.setItem('app_theme', theme);
   document.body.classList.toggle('theme-light', theme === 'light');
   // 重新渲染設定頁讓按鈕active狀態更新
-  if (currentTab === 4) renderPage();
+  if (currentTab === 6) renderPage();
 }
 
 function setFontScale(val) {
@@ -1032,10 +1082,11 @@ function switchTab(idx) {
   currentTab = idx;
   searchQuery = '';
   searchVisible = false;
-  document.querySelectorAll('.nav-item').forEach((el,i) => el.classList.toggle('active', i===idx));
-  const titles = ['客戶資料','機器清單','工作事項','收款紀錄','收租清單','租賃紀錄','系統設定'];
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', parseInt(el.dataset.tab)===idx));
+  const titles = ['客戶資料','機器清單','施工紀錄','收款紀錄','收租清單','租賃紀錄','系統設定','維修紀錄','報價表','總覽'];
   document.getElementById('header-title').textContent = titles[idx] || '';
-  document.getElementById('fab-btn').style.display = idx === 6 ? 'none' : 'flex';
+  const isAdmin = authState?.role === 'admin';
+  document.getElementById('fab-btn').style.display = (idx === 6 || idx === 9 || (idx === 8 && !isAdmin)) ? 'none' : 'flex';
   renderPage();
 }
 
@@ -1047,7 +1098,7 @@ function toggleSearch() { searchVisible = !searchVisible; renderPage(); }
 function renderPage() {
   const c = document.getElementById('main-content');
   let html = '';
-  if (searchVisible && currentTab < 6) {
+  if (searchVisible && currentTab !== 6 && currentTab !== 9) {
     html += `<div class="search-bar"><div class="search-wrap">
       <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>
       <input id="search-inp" class="search-input" placeholder="搜尋..." value="${searchQuery}" oninput="onSearch(this.value)" autofocus>
@@ -1060,6 +1111,9 @@ function renderPage() {
     case 3: html += renderPayments(); break;
     case 4: html += renderRentList(); break;
     case 5: html += renderContracts(); break;
+    case 7: html += renderRepairs(); break;
+    case 8: html += renderPriceList(); break;
+    case 9: html += renderOverview(); break;
     case 6: html += renderSettings(); break;
   }
   c.innerHTML = html;
@@ -1077,8 +1131,11 @@ function onSearch(v) {
     case 2: html = renderTasks(); break;
     case 3: html = renderPayments(); break;
     case 4: html = renderRentList(); break;
-    case 5: html = renderSettings(); break;
-    default: html = renderContracts(); break;
+    case 5: html = renderContracts(); break;
+    case 7: html = renderRepairs(); break;
+    case 8: html = renderPriceList(); break;
+    case 9: html = renderOverview(); break;
+    default: html = renderSettings(); break;
   }
   // 只替換 search-bar 以下的內容
   const sb = c.querySelector('.search-bar');
@@ -1147,7 +1204,7 @@ function renderCustomers() {
   const myName = authState?.name||'';
   let list = [...cache.customers];
 
-  // 工程師/帳款：只顯示自己派單工作事項中出現過的客戶
+  // 工程師/帳款：只顯示自己派單施工紀錄中出現過的客戶
   if (role !== 'admin') {
     const myTasks = cache.tasks.filter(t => {
       const assigned = getTaskAssign(t);
@@ -1184,7 +1241,7 @@ function renderTasks() {
     });
   }
 
-  if (!list.length) return `<div class="empty">沒有工作事項${!cfg.url?'<br><br><button onclick="switchTab(6)" style="background:var(--red);border:none;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer">前往設定連結</button>':''}</div>`;
+  if (!list.length) return `<div class="empty">沒有施工紀錄${!cfg.url?'<br><br><button onclick="switchTab(6)" style="background:var(--red);border:none;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer">前往設定連結</button>':''}</div>`;
 
   const undone = list.filter(t=>!isTaskDone(t));
   // 非管理員：已完成只保留一周內
@@ -1199,11 +1256,11 @@ function renderTasks() {
   showing.sort((a,b) => String(b['紀錄日期']||'').localeCompare(String(a['紀錄日期']||'')));
 
   const tabs = `<div class="task-tabs">
-    <div class="task-tab${taskViewMode==='undone'?' active':''}" onclick="setTaskView('undone')">未完成 ${undone.length>0?`<span style="font-size:0.857em;opacity:.7">(${undone.length})</span>`:''}</div>
+    <div class="task-tab${taskViewMode==='undone'?' active':''}" onclick="setTaskView('undone')">待施工 ${undone.length>0?`<span style="font-size:0.857em;opacity:.7">(${undone.length})</span>`:''}</div>
     <div class="task-tab${taskViewMode==='done'?' active':''}" onclick="setTaskView('done')">已完成 ${done.length>0?`<span style="font-size:0.857em;opacity:.7">(${done.length})</span>`:''}</div>
   </div>`;
 
-  if (!showing.length) return tabs + `<div class="empty">${taskViewMode==='done'?'沒有已完成的工作':'沒有待處理的工作 🎉'}</div>`;
+  if (!showing.length) return tabs + `<div class="empty">${taskViewMode==='done'?'沒有已完成的施工紀錄':'沒有待施工的紀錄 🎉'}</div>`;
 
   return tabs + showing.map(t => {
     const realIdx = cache.tasks.indexOf(t);
@@ -1240,13 +1297,19 @@ function setTaskView(mode) {
 }
 
 // ── 派單功能 ──
-// ── 派單功能 ──
-// 工作事項派單存在 localStorage（key: task_assign_紀錄日期）
+// 施工紀錄派單：優先讀任務的「指派人員」欄位，fallback 到 localStorage
 function getTaskAssign(task) {
+  // 優先讀試算表同步回來的「指派人員」欄位
+  const fromField = task['指派人員']||task['派單']||'';
+  if (fromField) return String(fromField).split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
+  // fallback：localStorage（舊版相容）
   const key = 'task_assign_' + String(task['紀錄日期']||'').replace(/\//g,'-');
   return JSON.parse(localStorage.getItem(key)||'[]');
 }
 function setTaskAssign(task, people) {
+  // 同時寫到任務欄位（讓試算表可存）和 localStorage（本機快取）
+  task['指派人員'] = people.join('、');
+  saveCache();
   const key = 'task_assign_' + String(task['紀錄日期']||'').replace(/\//g,'-');
   localStorage.setItem(key, JSON.stringify(people));
 }
@@ -1294,8 +1357,9 @@ async function saveDispatch(type, idx) {
   const selected = [...document.querySelectorAll('#dispatch-wrap .pay-item-chip.selected')].map(b=>b.textContent.trim());
 
   if (type === 'task') {
-    // 工作事項：存 localStorage，不寫試算表
     setTaskAssign(item, selected);
+    // 同步到試算表
+    if (cfg.url) enqueue({action:'update', sheet:'施工紀錄', data:item, id:item['任務ID']||item['紀錄日期']});
   } else {
     // 合約（收租清單）：存到「經手人」欄位並同步試算表
     item['經手人'] = selected.join('、');
@@ -1316,7 +1380,7 @@ function toggleTaskDone(idx) {
     t['完成狀態'] = '未完成';
     delete t['完成時間'];
     saveCache();
-    if (cfg.url) enqueue({action:'update', sheet:'tasks', data:t, id:t['任務ID']||t['紀錄日期']});
+    if (cfg.url) enqueue({action:'update', sheet:'施工紀錄', data:t, id:t['任務ID']||t['紀錄日期']});
     renderPage();
     showToast('已取消完成');
     return;
@@ -1341,7 +1405,7 @@ function confirmTaskDone() {
   t['完成時間'] = dateStr;
   saveCache();
   if (cfg.url) {
-    enqueue({action:'update', sheet:'tasks', data:t, id:t['任務ID']||t['紀錄日期']});
+    enqueue({action:'update', sheet:'施工紀錄', data:t, id:t['任務ID']||t['紀錄日期']});
   }
   renderPage();
   showToast('✓ 已標記完成');
@@ -1354,17 +1418,15 @@ function isTaskDone(t) {
   const v = t['完成狀態'];
   return v === true || v === '已完成' || v === '是' || v === 'true' || v === 1 || v === '1';
 }
-const TASK_DEFAULTS = [];
-const TASK_FALLBACK = ['維修','保養','裝機','換機','移機','拆機','領取','送貨','場勘'];
+const TASK_FALLBACK = ['裝機','換機','拆回','搬回修理','修好送回','借用機','移機'];
 
 function getAllTaskItems() {
-  // 固定選項永遠顯示，試算表驗證選項和歷史紀錄作為補充
-  const fromValidation = cache.taskOptions || [];
+  const hidden = JSON.parse(localStorage.getItem('hidden_task_items')||'["維修","保養","搬回"]');
+  const fromValidation = (cache.taskOptions||[]).filter(i=>!hidden.includes(i));
   const fromHistory = [...new Set(
     cache.tasks.flatMap(t => (t['工作內容']||'').split(/[,、，]/).map(s=>s.trim()).filter(Boolean))
-  )];
-  const custom = JSON.parse(localStorage.getItem('custom_task_items')||'[]');
-  // 合併所有來源，固定選項優先排在前面
+  )].filter(i=>!hidden.includes(i));
+  const custom = JSON.parse(localStorage.getItem('custom_task_items')||'[]').filter(i=>!hidden.includes(i));
   return [...new Set([...TASK_FALLBACK, ...fromValidation, ...fromHistory, ...custom])];
 }
 let selectedTaskItems = [];
@@ -1418,14 +1480,13 @@ function taskForm(d) {
       </div>
     </div>
     <div class="ff"><label>工作內容（可複選）</label>
-      <div id="task-items-wrap" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px">
-        ${allTaskItems.map(item=>`<button type="button" class="pay-item-chip${selectedTaskItems.includes(item)?' selected':''}" onclick="toggleTaskItem('${item}')" oncontextmenu="event.preventDefault();confirmDeleteTaskItem('${item}')" ontouchstart="startTaskLongPress('${item}')" ontouchend="cancelTaskLongPress()" ontouchmove="cancelTaskLongPress()">${item}</button>`).join('')}
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div id="task-items-wrap" style="display:flex;flex-wrap:wrap;gap:7px;flex:1">
+          ${allTaskItems.map(item=>`<button type="button" class="pay-item-chip${selectedTaskItems.includes(item)?' selected':''}" onclick="toggleTaskItem('${item}')" oncontextmenu="event.preventDefault();confirmDeleteTaskItem('${item}')" ontouchstart="startTaskLongPress('${item}')" ontouchend="cancelTaskLongPress()" ontouchmove="cancelTaskLongPress()">${item}</button>`).join('')}
+        </div>
+        <button type="button" onclick="openTaskItemEditor()"
+          style="flex-shrink:0;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:0.857em;cursor:pointer;white-space:nowrap">✏️ 編輯</button>
       </div>
-      <div style="display:flex;gap:8px">
-        <input class="fi" id="f-task-item-custom" placeholder="新增自訂工作..." style="flex:1">
-        <button type="button" onclick="addCustomTaskItem()" style="padding:10px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;font-size:0.929em;white-space:nowrap">＋ 新增</button>
-      </div>
-      <div style="font-size:0.714em;color:var(--text3);margin-top:5px">長按選項可刪除自訂工作</div>
     </div>
     <div class="ff"><label>備註</label><input class="fi" id="f-task-note" placeholder="選填" value="${d?.['備註']||''}"></div>
     <div class="ff"><label>希望施工時間</label><input class="fi" id="f-task-time" placeholder="如：下午2點、盡快..." value="${d?.['希望施工時間']||''}"></div>
@@ -1435,57 +1496,6 @@ function taskForm(d) {
     <button class="btn-save" onclick="if(!isSaving)saveTask()">儲存</button>
   </div>`;
 }
-
-// 機型推薦（依選定客戶的機器）
-function getTaskCustomerMachines() {
-  const cust = document.getElementById('f-task-customer-inp')?.value.trim();
-  if (!cust) return [];
-  const SHOW_TYPES = ['出租中','租送機','買 斷','買斷','客人機','借用機'];
-  const norm = s => String(s||'').trim().replace(/\s+/g,'');
-  // 從合約找機號，再從機器清單找
-  const contractNos = cache.contracts.filter(c=>String(c['客戶名稱']||'').trim()===cust).map(c=>String(c['機號']||'').trim());
-  return cache.machines.filter(m => {
-    const t = norm(m['類型']||'');
-    const isType = SHOW_TYPES.some(x=>norm(x)===t);
-    const isCust = String(m['目前客戶']||'').trim()===cust || contractNos.includes(String(m['機號']||'').trim());
-    return isType && isCust;
-  });
-}
-function showTaskModelSuggestions(val) {
-  const list = document.getElementById('task-model-suggestions');
-  if (!list) return;
-  const machines = getTaskCustomerMachines();
-  const q = val.trim();
-  const models = [...new Set(machines.map(m=>m['機型']).filter(Boolean))].filter(m=>!q||m.includes(q));
-  if (!models.length) { list.style.display='none'; return; }
-  list.innerHTML = models.map(m=>{const s=m.replace(/'/g,'&#39;');return `<div class="autocomplete-item" onmousedown="selectTaskModel('${s}')"><b>${m}</b></div>`;}).join('');
-  list.style.display='block';
-}
-function selectTaskModel(model) {
-  const inp = document.getElementById('f-task-model');
-  if (inp) inp.value = model;
-  hideTaskModelSuggestions();
-  showTaskSerialSuggestions('');
-}
-function hideTaskModelSuggestions() { const l=document.getElementById('task-model-suggestions'); if(l) l.style.display='none'; }
-
-function showTaskSerialSuggestions(val) {
-  const list = document.getElementById('task-serial-suggestions');
-  if (!list) return;
-  const model = document.getElementById('f-task-model')?.value.trim();
-  const machines = getTaskCustomerMachines().filter(m=>!model||m['機型']===model);
-  const q = val.trim();
-  const serials = machines.map(m=>m['機號']).filter(Boolean).filter(s=>!q||s.includes(q));
-  if (!serials.length) { list.style.display='none'; return; }
-  list.innerHTML = serials.map(s=>{const ss=s.replace(/'/g,'&#39;');return `<div class="autocomplete-item" onmousedown="selectTaskSerial('${ss}')"><b>${s}</b></div>`;}).join('');
-  list.style.display='block';
-}
-function selectTaskSerial(serial) {
-  const inp = document.getElementById('f-task-serial');
-  if (inp) inp.value = serial;
-  hideTaskSerialSuggestions();
-}
-function hideTaskSerialSuggestions() { const l=document.getElementById('task-serial-suggestions'); if(l) l.style.display='none'; }
 
 // 機型機號推薦
 function getTaskCustomerMachines() {
@@ -1578,6 +1588,55 @@ function toggleTaskItem(item) {
   });
 }
 
+function openTaskItemEditor() {
+  const title = document.getElementById('chip-editor-title');
+  const body  = document.getElementById('chip-editor-body');
+  if (title) title.textContent = '編輯工作內容選項';
+  const allItems = getAllTaskItems();
+  body.innerHTML = `
+    <div style="padding:12px 16px;display:flex;gap:8px;border-bottom:1px solid var(--border)">
+      <input class="fi" id="task-editor-inp" placeholder="新增工作項目..." style="flex:1;font-size:0.929em">
+      <button type="button" onclick="addTaskEditorItem()"
+        style="padding:10px 14px;background:var(--accent2);border:none;border-radius:8px;color:#fff;font-size:0.929em;cursor:pointer;white-space:nowrap;font-family:inherit">＋ 新增</button>
+    </div>
+    <div style="padding:8px 0">
+      ${allItems.map(item=>`
+        <div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);gap:10px">
+          <span style="flex:1;font-size:0.929em">${item}</span>
+          <button type="button" onclick="deleteTaskEditorItem('${item.replace(/'/g,"\\'")}')"
+            style="background:var(--danger-bg);border:1px solid rgba(229,57,53,.3);color:var(--danger2);border-radius:6px;padding:4px 10px;font-size:0.857em;cursor:pointer;white-space:nowrap;font-family:inherit">✕ 刪除</button>
+        </div>`).join('')}
+      ${allItems.length===0?'<div style="padding:20px;text-align:center;color:var(--text3);font-size:0.857em">尚無工作項目，請新增</div>':''}
+    </div>`;
+  document.getElementById('chip-editor-deck').classList.add('open');
+}
+
+function addTaskEditorItem() {
+  const inp = document.getElementById('task-editor-inp');
+  const val = inp?.value.trim(); if (!val) return;
+  // 若在黑名單就先移除（讓使用者可以重新加回）
+  const hidden = JSON.parse(localStorage.getItem('hidden_task_items')||'[]');
+  if (hidden.includes(val)) {
+    localStorage.setItem('hidden_task_items', JSON.stringify(hidden.filter(x=>x!==val)));
+  }
+  const custom = JSON.parse(localStorage.getItem('custom_task_items')||'[]');
+  if (!custom.includes(val) && !TASK_FALLBACK.includes(val)) {
+    custom.push(val); localStorage.setItem('custom_task_items', JSON.stringify(custom));
+  }
+  if (inp) inp.value = '';
+  // 更新表單 chip
+  const allItems = getAllTaskItems();
+  const wrap = document.getElementById('task-items-wrap');
+  if (wrap) wrap.innerHTML = allItems.map(i=>`<button type="button" class="pay-item-chip${selectedTaskItems.includes(i)?' selected':''}" onclick="toggleTaskItem('${i}')" oncontextmenu="event.preventDefault();confirmDeleteTaskItem('${i}')" ontouchstart="startTaskLongPress('${i}')" ontouchend="cancelTaskLongPress()" ontouchmove="cancelTaskLongPress()">${i}</button>`).join('');
+  openTaskItemEditor();
+  showToast(`已新增「${val}」`);
+}
+
+function deleteTaskEditorItem(item) {
+  confirmDeleteTaskItem(item);
+  setTimeout(()=>openTaskItemEditor(), 100);
+}
+
 function addCustomTaskItem() {
   const inp = document.getElementById('f-task-item-custom');
   const val = inp?.value.trim();
@@ -1600,8 +1659,12 @@ function cancelTaskLongPress() { if(taskLongPressTimer){clearTimeout(taskLongPre
 
 function confirmDeleteTaskItem(item) {
   if (!confirm(`刪除「${item}」嗎？`)) return;
+  // 從自訂清單移除
   const custom = JSON.parse(localStorage.getItem('custom_task_items')||'[]');
   localStorage.setItem('custom_task_items', JSON.stringify(custom.filter(x=>x!==item)));
+  // 加入黑名單（屏蔽來自歷史/試算表驗證的同名項目）
+  const hidden = JSON.parse(localStorage.getItem('hidden_task_items')||'[]');
+  if (!hidden.includes(item)) { hidden.push(item); localStorage.setItem('hidden_task_items', JSON.stringify(hidden)); }
   selectedTaskItems = selectedTaskItems.filter(x=>x!==item);
   const allItems = getAllTaskItems();
   const wrap = document.getElementById('task-items-wrap');
@@ -1619,6 +1682,31 @@ async function saveTask() {
   const dateStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
   const taskModel  = document.getElementById('f-task-model')?.value.trim()||'';
   const taskSerial = document.getElementById('f-task-serial')?.value.trim()||'';
+
+  if (editMode) {
+    // 編輯模式：保留原有任務ID和紀錄日期
+    const orig = cache.tasks.find(t=>String(t['任務ID']||t['紀錄日期'])===String(editId));
+    const data = {
+      ...(orig||{}),
+      '客戶名稱': customer, '電話': c?.['電話']||orig?.['電話']||'', '地址': c?.['地址']||orig?.['地址']||'',
+      '工作內容': items, '備註': document.getElementById('f-task-note')?.value.trim()||'',
+      '希望施工時間': document.getElementById('f-task-time')?.value.trim()||'',
+      '機型': taskModel, '機號': taskSerial,
+    };
+    if (!cfg.url) { showToast('請先設定試算表連結'); return; }
+    isSaving = true;
+    const idx = cache.tasks.findIndex(t=>String(t['任務ID']||t['紀錄日期'])===String(editId));
+    if (idx>=0) Object.assign(cache.tasks[idx], data);
+    saveCache();
+    enqueue({action:'update', sheet:'施工紀錄', data, id:data['任務ID']||data['紀錄日期']});
+    closeModal('form-modal');
+    renderPage();
+    showToast('已更新施工紀錄');
+    setTimeout(()=>{ isSaving=false; }, 500);
+    return;
+  }
+
+  // 新增模式
   const taskId = 'T' + Date.now().toString(36).toUpperCase();
   const data = {
     '任務ID': taskId,
@@ -1631,10 +1719,10 @@ async function saveTask() {
   isSaving = true;
   cache.tasks.push(data);
   saveCache();
-  enqueue({ action:'add', sheet:'tasks', data, id:null });
+  enqueue({ action:'add', sheet:'施工紀錄', data, id:null });
   closeModal('form-modal');
   renderPage();
-  showToast('已新增工作事項');
+  showToast('已新增施工紀錄');
   setTimeout(()=>{ isSaving=false; }, 500);
 }
 
@@ -1739,7 +1827,7 @@ function markTaskDoneById(dateStr) {
   if (!t) return;
   t['完成狀態'] = '已完成'; t['完成時間'] = dateStr;
   saveCache();
-  enqueue({action:'update', sheet:'tasks', data:t, id:t['任務ID']||t['紀錄日期']});
+  enqueue({action:'update', sheet:'施工紀錄', data:t, id:t['任務ID']||t['紀錄日期']});
 }
 function openQuickPayment(customer, taskData, preItems) {
   selectedPayItems = preItems||[]; selectedHandlers=[]; payLineItems=[]; payMethod=''; editMode=false; editId='';
@@ -1770,35 +1858,226 @@ function appConfirm(msg, onYes, onNo, title) {
 }
 
 function afterTaskSave(customer, items, model, serial, taskData) {
-  const itemList = items.split(/[,、，]/).map(s=>s.trim());
-  const status = getMachineStatus(model, serial);
-  const selfOwned = isSelfOwned(status) || isExpiredRentSend(model, serial);
+  const itemList = items.split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
   const hasMachine = !!(model||serial);
+  const hasBorrowItem = itemList.includes('借用機');
   const dn = taskData['紀錄日期'];
+  const norm = s=>String(s||'').trim().replace(/\s+/g,'');
 
-  // 換機：特殊處理，直接開換機浮窗
-  if (itemList.includes('換機')) {
-    openReplaceModal(customer, model, serial, dn);
+  // ── 裝機 ──
+  if (itemList.includes('裝機')) {
+    if (!hasMachine) {
+      appConfirm('沒有填機型機號，是否要新增機器？',
+        ()=>{
+          window._addMachineForTask = { customer, taskData, goContract: false, afterInstall: true };
+          editMode=false; editId=''; window._prefillMachineType=null;
+          document.getElementById('form-modal-title').textContent='新增機器';
+          document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer});
+          document.getElementById('form-modal').classList.add('open');
+        },
+        ()=>{ window._pendingDoneTask=null; showToast('⚠️ 請在施工紀錄中填入機型機號後再完成'); }
+      );
+    } else {
+      setTimeout(()=>openContractTypeChooser(customer, model, serial, dn), 200);
+    }
     return;
   }
 
-  // 拆機：特殊處理，直接開狀態選擇
-  if (itemList.includes('拆機')) {
+  // ── 換機 ──
+  if (itemList.includes('換機')) {
+    if (!hasMachine) {
+      window._pendingDoneTask=null;
+      showToast('⚠️ 請填入現場設備的機型機號後再完成');
+    } else {
+      openReplaceModal(customer, model, serial, dn);
+    }
+    return;
+  }
+
+  // ── 拆回 ──
+  if (itemList.includes('拆回')) {
+    if (!hasMachine) {
+      // 詢問退租還是估回
+      const deck = document.getElementById('confirm-deck');
+      document.getElementById('confirm-deck-title').textContent = '拆回處理';
+      document.getElementById('confirm-deck-msg').textContent = '請選擇拆回方式：';
+      const btns = deck.querySelector('div[style*="display:flex"]');
+      const newBtns = btns.cloneNode(false);
+      newBtns.innerHTML = `
+        <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr_btn1">退租</button>
+        <button style="flex:1;padding:12px;background:var(--accent-bg);border:1px solid var(--accent-glow);border-radius:10px;color:var(--accent2);font-size:0.929em;font-weight:700;font-family:inherit;cursor:pointer" id="_dr_btn2">估回</button>
+        <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr_btn3">取消</button>`;
+      btns.parentNode.replaceChild(newBtns, btns);
+      newBtns.querySelector('#_dr_btn1').onclick = ()=>{
+        deck.classList.remove('open');
+        window._pendingDoneTask=null;
+        showToast('⚠️ 請填入現場設備的機型機號後再完成');
+      };
+      newBtns.querySelector('#_dr_btn2').onclick = ()=>{
+        deck.classList.remove('open');
+        // 估回：新增機器（狀態預填◎進廠）→ 新增收款（預選估回）
+        window._addMachineForTask = { customer, taskData, goContract: false, isEstimateReturn: true };
+        editMode=false; editId='';
+        document.getElementById('form-modal-title').textContent='新增機器（估回）';
+        document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer, '類型':'◎進廠'});
+        document.getElementById('form-modal').classList.add('open');
+      };
+      newBtns.querySelector('#_dr_btn3').onclick = ()=>{ deck.classList.remove('open'); window._pendingDoneTask=null; };
+      deck.classList.add('open');
+    } else {
+      // 有機號：詢問退租還是估回
+      const deck = document.getElementById('confirm-deck');
+      document.getElementById('confirm-deck-title').textContent = '拆回處理';
+      document.getElementById('confirm-deck-msg').textContent = `機器：${model||''} ${serial||''}\n請選擇拆回方式：`;
+      const btns = deck.querySelector('div[style*="display:flex"]');
+      const newBtns = btns.cloneNode(false);
+      newBtns.innerHTML = `
+        <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr_btn1">退租</button>
+        <button style="flex:1;padding:12px;background:var(--accent-bg);border:1px solid var(--accent-glow);border-radius:10px;color:var(--accent2);font-size:0.929em;font-weight:700;font-family:inherit;cursor:pointer" id="_dr_btn2">估回</button>
+        <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr_btn3">取消</button>`;
+      btns.parentNode.replaceChild(newBtns, btns);
+      newBtns.querySelector('#_dr_btn1').onclick = ()=>{
+        deck.classList.remove('open');
+        // 退租：詢問待出租或◎進廠 → 更新租賃紀錄（到期日=今日，狀態=已終止）
+        const deck2 = document.getElementById('confirm-deck');
+        document.getElementById('confirm-deck-title').textContent = '退租後機器狀態';
+        document.getElementById('confirm-deck-msg').textContent = '請選擇退租後機器的處置方式：';
+        const btns2 = deck2.querySelector('div[style*="display:flex"]');
+        const newBtns2 = btns2.cloneNode(false);
+        newBtns2.innerHTML = `
+          <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr2_btn1">待出租</button>
+          <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr2_btn2">◎進廠</button>
+          <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr2_btn3">取消</button>`;
+        btns2.parentNode.replaceChild(newBtns2, btns2);
+        const doReturnStatus = (newStatus)=>{
+          deck2.classList.remove('open');
+          updateMachineStatus(model, serial, newStatus);
+          // 更新最新合約：到期日=今日，狀態=已終止
+          const todayStr = new Date().toISOString().split('T')[0].replace(/-/g,'/');
+          const ct = cache.contracts.filter(c=>c['機號']===serial&&String(c['客戶名稱']||'').includes(customer))
+            .sort((a,b)=>String(b['租借日期']||'').localeCompare(String(a['租借日期']||'')))[0];
+          if (ct) { ct['到期日期']=todayStr; ct['類型']='已終止'; saveCache(); enqueue({action:'update',sheet:'contracts',data:ct,id:ct['合約ID']}); }
+          confirmTaskDone();
+        };
+        newBtns2.querySelector('#_dr2_btn1').onclick = ()=>doReturnStatus('待出租');
+        newBtns2.querySelector('#_dr2_btn2').onclick = ()=>doReturnStatus('◎進廠');
+        newBtns2.querySelector('#_dr2_btn3').onclick = ()=>{ deck2.classList.remove('open'); window._pendingDoneTask=null; };
+        deck2.classList.add('open');
+      };
+      newBtns.querySelector('#_dr_btn2').onclick = ()=>{
+        deck.classList.remove('open');
+        // 估回：機器狀態改◎進廠 → 新增收款（預選估回）
+        updateMachineStatus(model, serial, '◎進廠');
+        openQuickPayment(customer, taskData, ['估回']);
+        confirmTaskDone();
+      };
+      newBtns.querySelector('#_dr_btn3').onclick = ()=>{ deck.classList.remove('open'); window._pendingDoneTask=null; };
+      deck.classList.add('open');
+    }
+    return;
+  }
+
+  // ── 搬回修理 ──
+  if (itemList.includes('搬回修理')) {
+    if (!hasMachine) {
+      // 詢問客人機還是公司機（公司機需要有機型機號）
+      appConfirm(
+        '搬回修理的機器是客人自帶的嗎？\n（若為公司機器請先填入機型機號再完成）',
+        ()=>{
+          // 客人機
+          const flags = hasBorrowItem
+            ? { customer, taskData, isCustomerMachine: true, hasBorrow: true }
+            : { customer, taskData, isCustomerMachine: true };
+          window._addMachineForTask = flags;
+          editMode=false; editId='';
+          document.getElementById('form-modal-title').textContent='新增機器（客人機）';
+          document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer, '類型':'客人機'});
+          document.getElementById('form-modal').classList.add('open');
+        },
+        ()=>{ window._pendingDoneTask=null; showToast('⚠️ 請填入現場設備的機型機號後再完成'); },
+        '機器歸屬確認'
+      );
+    } else {
+      // 有機號：直接新增維修
+      if (hasBorrowItem) {
+        openBorrowMachinePicker(()=>openQuickRepairFromTask(customer, model, serial, taskData));
+      } else {
+        openQuickRepairFromTask(customer, model, serial, taskData);
+      }
+    }
+    return;
+  }
+
+  // ── 修好送回 ──
+  if (itemList.includes('修好送回')) {
+    if (!hasMachine) {
+      window._pendingDoneTask=null;
+      showToast('⚠️ 請填入現場設備的機型機號後再完成');
+    } else {
+      if (hasBorrowItem) {
+        // 選借用機歸還
+        openBorrowMachineReturn(model, serial, customer, taskData);
+      } else {
+        openQuickPayment(customer, taskData, ['維修費']);
+        confirmTaskDone();
+      }
+    }
+    return;
+  }
+
+  // ── 移機 ──
+  if (itemList.includes('移機')) {
+    confirmTaskDone();
+    const custIdx = cache.customers.findIndex(x=>x['客戶名稱']===customer);
+    appConfirm(
+      `移機完成！是否要更新客戶「${customer}」的地址？`,
+      ()=>{
+        if (custIdx >= 0) {
+          setTimeout(()=>{
+            openEditItem('customer', custIdx);
+            // 編輯完成後詢問新增收款（利用 form-modal 儲存後的 hook）
+            window._afterCustomerEdit = ()=>{
+              appConfirm('是否要新增移機相關收款？',
+                ()=>openQuickPayment(customer, taskData, []),
+                ()=>{}
+              );
+            };
+          }, 300);
+        }
+      },
+      ()=>{
+        appConfirm('是否要新增移機相關收款？',
+          ()=>openQuickPayment(customer, taskData, []),
+          ()=>{}
+        );
+      },
+      '移機完成'
+    );
+    return;
+  }
+
+  // ── 搬回（舊版，保留相容）──
+  if (itemList.includes('搬回')) {
     if (!hasMachine) {
       appConfirm('沒有填機型機號，是否要新增機器？',
-        ()=>{ editMode=false; editId=''; document.getElementById('form-modal-title').textContent='新增機器'; document.getElementById('form-modal-body').innerHTML=machineForm(null); document.getElementById('form-modal').classList.add('open'); }
+        ()=>{
+          window._addMachineForTask = { customer, taskData, goContract: false, isDismantled: true };
+          editMode=false; editId=''; window._prefillMachineType=null;
+          document.getElementById('form-modal-title').textContent='新增機器';
+          document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer});
+          document.getElementById('form-modal').classList.add('open');
+        }
       );
     } else {
       const deck = document.getElementById('confirm-deck');
-      document.getElementById('confirm-deck-title').textContent = '拆機後機器狀態';
-      document.getElementById('confirm-deck-msg').textContent = '請選擇拆機後此機器的狀態：';
+      document.getElementById('confirm-deck-title').textContent = '搬回後機器狀態';
+      document.getElementById('confirm-deck-msg').textContent = '請選擇搬回後此機器的狀態：';
       const btns = deck.querySelector('div[style*="display:flex"]');
       const newBtns = btns.cloneNode(false);
       newBtns.innerHTML = `
         <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn1">待出租</button>
         <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn2">◎進廠</button>
-        <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn3">取消</button>
-      `;
+        <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn3">取消</button>`;
       btns.parentNode.replaceChild(newBtns, btns);
       newBtns.querySelector('#_dm_btn1').onclick = ()=>{ deck.classList.remove('open'); updateMachineStatus(model,serial,'待出租'); confirmTaskDone(); };
       newBtns.querySelector('#_dm_btn2').onclick = ()=>{ deck.classList.remove('open'); updateMachineStatus(model,serial,'◎進廠'); confirmTaskDone(); };
@@ -1808,73 +2087,123 @@ function afterTaskSave(customer, items, model, serial, taskData) {
     return;
   }
 
-  // 裝機：特殊處理
-  if (itemList.includes('裝機')) {
-    if (!hasMachine) {
-      appConfirm('沒有填機型機號，是否要新增機器？',
-        ()=>{
-          window._addMachineForTask = { customer, taskData, goContract: false };
-          editMode=false; editId=''; window._prefillMachineType = null;
-          document.getElementById('form-modal-title').textContent='新增機器';
-          document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer});
-          document.getElementById('form-modal').classList.add('open');
-        },
-        ()=>{ window._pendingDoneTask=null; showToast('⚠️ 請在工作事項中填入機型機號後再完成'); }
-      );
-      return;
-    }
-    setTimeout(()=>openContractTypeChooser(customer, model, serial, dn), 200);
-    return;
-  }
-
-  // 其他工作內容（移機、維修、保養等）：佇列依序詢問
-  // 收集所有要詢問的動作
-  const actions = [];
-
-  if (itemList.includes('移機')) {
-    const custIdx = cache.customers.findIndex(x=>x['客戶名稱']===customer);
-    actions.push(next => appConfirm('是否要編輯客戶資料（更新地址）？',
-      ()=>{ if (custIdx>=0) setTimeout(()=>openEditItem('customer',custIdx),200); next(); },
-      ()=>next()
-    ));
-  }
-  if (itemList.includes('維修') && selfOwned) {
-    actions.push(next => appConfirm('是否要新增收款（維修費）？',
-      ()=>{ setTimeout(()=>openQuickPayment(customer,taskData,['維修費']),200); next(); },
-      ()=>next()
-    ));
-  }
-  if (itemList.includes('保養')) {
-    actions.push(next => appConfirm('是否要新增收款（保養費）？',
-      ()=>{ setTimeout(()=>openQuickPayment(customer,taskData,['保養費']),200); next(); },
-      ()=>next()
-    ));
-  }
-  // 其他非特殊工作
-  const specialItems = ['換機','拆機','裝機','移機','維修','保養'];
+  // ── 其他項目 ──
+  const specialItems = ['換機','拆回','裝機','搬回修理','修好送回','搬回','借用機'];
   const otherItems = itemList.filter(i=>!specialItems.includes(i));
-  if (otherItems.length > 0 && actions.length === 0) {
-    actions.push(next => appConfirm(`是否標記「${otherItems.join('、')}」為完成？`, ()=>next(), ()=>{ window._pendingDoneTask=null; }));
-  }
-
-  if (!actions.length) {
+  if (otherItems.length > 0) {
+    appConfirm(`是否標記「${otherItems.join('、')}」為完成？`, ()=>confirmTaskDone(), ()=>{ window._pendingDoneTask=null; });
+  } else {
     confirmTaskDone();
-    return;
   }
+}
 
-  // 依序執行所有詢問，最後標記完成
-  function runNext(i) {
-    if (i >= actions.length) { confirmTaskDone(); return; }
-    actions[i](()=>runNext(i+1));
-  }
-  runNext(0);
+// ── 借用機選擇器（搬回修理用）──
+function openBorrowMachinePicker(afterCb) {
+  const available = cache.machines.filter(m=>String(m['類型']||'').trim()==='待出租');
+  const body = document.getElementById('machine-deck-body');
+  const header = document.querySelector('#machine-deck .deck-title');
+  if (header) header.textContent = '選擇借用給客戶的機器';
+  body.innerHTML = available.length ? available.map(m=>{
+    const no = (m['機號']||'').replace(/'/g,"\\'");
+    const mt = (m['機型']||'').replace(/'/g,"\\'");
+    return `<div class="list-item" onclick="onBorrowMachineSelect('${no}','${mt}');closeModal('machine-deck');window._borrowCallback&&window._borrowCallback()">
+      <div class="li-body"><div class="li-title">${m['廠牌']||''} ${m['機型']||''}</div><div class="li-sub">${m['機號']||''}</div></div>
+    </div>`;
+  }).join('') : '<div class="empty">沒有待出租的機器可借用</div>';
+  window._borrowCallback = afterCb;
+  document.getElementById('machine-deck').classList.add('open');
+}
+
+function onBorrowMachineSelect(serial, model) {
+  window._borrowMachineSerial = serial;
+  window._borrowMachineModel  = model;
+  updateMachineStatus(model, serial, '借用機');
+}
+
+function openQuickRepairFromTask(customer, model, serial, taskData) {
+  const m = getMachineByTaskInfo(model, serial);
+  const kind = inferRepairKind(m?.['類型']||'');
+  closeModal('detail-modal');
+  selectedRepairItems = [];
+  _repairStatus = '待維修'; _repairKind = kind;
+  editMode=false; editId='';
+  document.getElementById('form-modal-title').textContent='新增維修紀錄';
+  document.getElementById('form-modal-body').innerHTML = repairForm({
+    '客戶名稱': customer, '機型': model, '機號': serial,
+    '狀態': '待維修', '種類': kind,
+    '紀錄日期': taskData?.['紀錄日期']||'',
+  });
+  document.getElementById('form-modal').classList.add('open');
+  confirmTaskDone();
+}
+
+// 修好送回 — 借用機歸還選擇器
+function openBorrowMachineReturn(repairModel, repairSerial, customer, taskData) {
+  const available = cache.machines.filter(m=>String(m['類型']||'').trim()==='借用機');
+  const body = document.getElementById('machine-deck-body');
+  const header = document.querySelector('#machine-deck .deck-title');
+  if (header) header.textContent = '選擇歸還的借用機';
+  body.innerHTML = available.length ? available.map(m=>`
+    <div class="list-item" onclick="onBorrowReturnSelect('${(m['機號']||'').replace(/'/g,"\\'")}','${(m['機型']||'').replace(/'/g,"\\'")}','${repairModel.replace(/'/g,"\\'")}','${repairSerial.replace(/'/g,"\\'")}','${customer.replace(/'/g,"\\'")}')">
+      <div class="li-body"><div class="li-title">${m['廠牌']||''} ${m['機型']||''}</div><div class="li-sub">${m['機號']||''}</div></div>
+    </div>`).join('')
+    : '<div class="empty" onclick="closeModal(\'machine-deck\');skipBorrowReturn()">沒有借用中的機器，直接完成</div>';
+  window._borrowReturnTaskData = { repairModel, repairSerial, customer, taskData };
+  document.getElementById('machine-deck').classList.add('open');
+}
+
+function skipBorrowReturn() {
+  const d = window._borrowReturnTaskData||{};
+  openQuickPayment(d.customer, d.taskData, ['維修費']);
+  confirmTaskDone();
+}
+
+function onBorrowReturnSelect(borrowSerial, borrowModel, repairModel, repairSerial, customer) {
+  closeModal('machine-deck');
+  const deck = document.getElementById('confirm-deck');
+  document.getElementById('confirm-deck-title').textContent = '歸還後機器狀態';
+  document.getElementById('confirm-deck-msg').textContent = `借用機 ${borrowModel} ${borrowSerial} 歸還後改為：`;
+  const btns = deck.querySelector('div[style*="display:flex"]');
+  const newBtns = btns.cloneNode(false);
+  newBtns.innerHTML = `
+    <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_br_btn1">待出租</button>
+    <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_br_btn2">◎進廠</button>
+    <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_br_btn3">取消</button>`;
+  btns.parentNode.replaceChild(newBtns, btns);
+  const d = window._borrowReturnTaskData||{};
+  const finish = (st)=>{
+    deck.classList.remove('open');
+    updateMachineStatus(borrowModel, borrowSerial, st);
+    openQuickPayment(customer, d.taskData, ['維修費']);
+    confirmTaskDone();
+  };
+  newBtns.querySelector('#_br_btn1').onclick = ()=>finish('待出租');
+  newBtns.querySelector('#_br_btn2').onclick = ()=>finish('◎進廠');
+  newBtns.querySelector('#_br_btn3').onclick = ()=>{ deck.classList.remove('open'); window._pendingDoneTask=null; };
+  deck.classList.add('open');
 }
 function openReplaceModal(customer, oldModel, oldSerial, taskDateStr) {
   const body = document.getElementById('detail-modal-body');
   document.getElementById('detail-edit-btn').style.display='none';
   document.getElementById('detail-modal-title').textContent='換機';
+  const available = cache.machines.filter(m=>{
+    const t = String(m['類型']||'').trim().replace(/\s+/g,'');
+    return t==='待出租'||t==='全新機';
+  });
+  const suggestHtml = available.length ? `
+    <div class="ff"><label>可用機器（點擊自動填入）</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${available.map(m=>`<button type="button" onclick="document.getElementById('rep-model').value='${(m['機型']||'').replace(/'/g,"\\'")}';document.getElementById('rep-serial').value='${(m['機號']||'').replace(/'/g,"\\'")}'"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:0.857em;cursor:pointer;font-family:inherit;color:var(--text)">
+          <span style="font-weight:700">${m['機型']||''}</span>
+          <span style="color:var(--text2);margin-left:4px">${m['機號']||''}</span>
+          <span style="color:var(--red2);margin-left:4px;font-size:0.786em">${m['類型']||''}</span>
+        </button>`).join('')}
+      </div>
+    </div>` : '';
   body.innerHTML=`<div class="form-body">
     <div class="ff"><label>原機器</label><div style="color:var(--text2);padding:8px 0">${oldModel||'—'} ${oldSerial||'—'}</div></div>
+    ${suggestHtml}
     <div class="ff"><label>更換的機型<span class="req">*</span></label><input class="fi" id="rep-model" placeholder="新機型"></div>
     <div class="ff"><label>更換的機號<span class="req">*</span></label><input class="fi" id="rep-serial" placeholder="新機號"></div>
   </div>
@@ -1898,18 +2227,6 @@ function confirmReplace(customer, oldModel, oldSerial, taskDateStr) {
   closeModal('detail-modal');
   showToast(`✓ 換機完成：${oldModel||oldSerial} → ${newModel}`);
   renderPage();
-}
-
-async function flushTaskQueue() {
-  const taskOps = pendingQueue.filter(op=>op.url==='staff');
-  if (!taskOps.length || !cfg.url) return;
-  for (const op of taskOps) {
-    try {
-      await apiWrite(cfg.url, op.action, op.sheet, op.data, op.id);
-      pendingQueue = pendingQueue.filter(x=>x!==op);
-    } catch(e) {}
-  }
-  saveQueue();
 }
 
 // 機器清單改到detail-modal顯示
@@ -2008,29 +2325,72 @@ function renderMachines() {
 }
 
 // --- Payments ---
+let paymentMonthFilter = ''; // '' = 全部, 'YYYY-MM' = 特定月
+
+function setPaymentMonth(m) { paymentMonthFilter = m; renderPage(); }
+
 function renderPayments() {
   let list = [...cache.payments];
-  // 非管理員只看含自己名字的收款紀錄
   const role = authState?.role;
   const myName = authState?.name||'';
   if (role !== 'admin' && myName) {
-    list = list.filter(p => {
-      const handlers = String(p['經手人']||'').split(/[,、，]/).map(s=>s.trim());
-      return handlers.includes(myName);
-    });
+    list = list.filter(p => String(p['經手人']||'').split(/[,、，]/).map(s=>s.trim()).includes(myName));
   }
   if (searchQuery) list = list.filter(p => JSON.stringify(p).includes(searchQuery));
-  if (!list.length) return '<div class="empty">沒有收款紀錄</div>';
-  return `<div style="overflow-x:auto"><table class="pay-table">
-    <thead><tr><th>客戶</th><th>項目</th><th>詳細內容</th><th>金額</th><th>方式</th><th>經手人</th></tr></thead>
-    <tbody>${list.map((p,i)=>`<tr onclick="showDetail('payment',${i})">
-      <td>${p['客戶名稱']||''}</td>
-      <td><span class="chip chip-pay">${p['收款項目']||''}</span></td>
-      <td style="color:var(--text2);font-size:11px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p['詳細內容']||''}</td>
-      <td style="white-space:nowrap">${p['金額']?'NT$'+Number(p['金額']).toLocaleString():''}</td>
-      <td>${p['結帳方式']||''}</td>
-      <td>${p['經手人']||''}</td>
-    </tr>`).join('')}</tbody>
+
+  // 月份選單（從資料取不重複的年月）
+  const allMonths = [...new Set(list.map(p=>{
+    const d = String(p['結帳日期']||'').replace(/\//g,'-').substring(0,7);
+    return d.match(/^\d{4}-\d{2}$/) ? d : '';
+  }).filter(Boolean))].sort().reverse();
+
+  // 月份篩選
+  const filtered = paymentMonthFilter
+    ? list.filter(p=>String(p['結帳日期']||'').replace(/\//g,'-').startsWith(paymentMonthFilter))
+    : list;
+
+  const total = filtered.reduce((s,p)=>s+(Number(p['金額'])||0),0);
+  const income  = filtered.filter(p=>(Number(p['金額'])||0)>0).reduce((s,p)=>s+(Number(p['金額'])||0),0);
+  const expense = filtered.filter(p=>(Number(p['金額'])||0)<0).reduce((s,p)=>s+(Number(p['金額'])||0),0);
+
+  const monthBar = `<div style="display:flex;gap:6px;padding:10px 14px;overflow-x:auto;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:5;-webkit-overflow-scrolling:touch">
+    <button onclick="setPaymentMonth('')" class="pay-item-chip${!paymentMonthFilter?' selected':''}" style="white-space:nowrap;font-size:0.786em">全部</button>
+    ${allMonths.map(m=>`<button onclick="setPaymentMonth('${m}')" class="pay-item-chip${paymentMonthFilter===m?' selected':''}" style="white-space:nowrap;font-size:0.786em">${m}</button>`).join('')}
+  </div>
+  <div style="padding:10px 14px;display:flex;gap:12px;border-bottom:1px solid var(--border);background:var(--surface)">
+    <div style="flex:1;text-align:center">
+      <div style="font-size:0.714em;color:var(--text2)">收入</div>
+      <div style="font-size:1em;font-weight:700;color:var(--green2)">NT$${income.toLocaleString()}</div>
+    </div>
+    ${expense<0?`<div style="flex:1;text-align:center">
+      <div style="font-size:0.714em;color:var(--text2)">支出</div>
+      <div style="font-size:1em;font-weight:700;color:var(--danger2)">NT$${expense.toLocaleString()}</div>
+    </div>`:''}
+    <div style="flex:1;text-align:center">
+      <div style="font-size:0.714em;color:var(--text2)">淨額</div>
+      <div style="font-size:1em;font-weight:700;color:var(--text)">${total>=0?'NT$'+total.toLocaleString():'－NT$'+Math.abs(total).toLocaleString()}</div>
+    </div>
+    <div style="flex:1;text-align:center">
+      <div style="font-size:0.714em;color:var(--text2)">筆數</div>
+      <div style="font-size:1em;font-weight:700;color:var(--text)">${filtered.length}</div>
+    </div>
+  </div>`;
+
+  if (!filtered.length) return monthBar+'<div class="empty">沒有收款紀錄</div>';
+  return monthBar+`<div style="overflow-x:auto"><table class="pay-table">
+    <thead><tr><th>日期</th><th>客戶</th><th>項目</th><th>金額</th><th>方式</th><th>經手人</th></tr></thead>
+    <tbody>${filtered.map((p,_i)=>{
+      const realIdx = cache.payments.indexOf(p);
+      const amt = Number(p['金額'])||0;
+      return `<tr onclick="showDetail('payment',${realIdx})">
+        <td style="font-size:11px;white-space:nowrap">${String(p['結帳日期']||'').replace('T',' ').substring(0,10).replace(/-/g,'/')}</td>
+        <td>${p['客戶名稱']||''}</td>
+        <td><span class="chip chip-pay">${p['收款項目']||''}</span></td>
+        <td style="white-space:nowrap;color:${amt<0?'var(--danger2)':'var(--green2)'};font-weight:600">${amt<0?'－':''}NT$${Math.abs(amt).toLocaleString()}</td>
+        <td>${p['結帳方式']||''}</td>
+        <td>${p['經手人']||''}</td>
+      </tr>`;
+    }).join('')}</tbody>
   </table></div>`;
 }
 
@@ -2098,9 +2458,27 @@ function renderRentList() {
 
   if (!showing.length) return tabs + `<div class="empty">${rentViewMode==='paid'?'本期尚無已收款紀錄':'本期帳款已全部收款 ✓'}</div>`;
 
+  // 本期應收/已收 總額
+  const unpaidTotal = unpaidList.reduce((s,c)=>s+(Number(c['租金'])||0),0);
+  const paidTotal   = paidList.reduce((s,c)=>s+(Number(c['租金'])||0),0);
+  const summaryBar = `<div style="display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--border)">
+    <div style="flex:1;padding:10px 14px;border-right:1px solid var(--border)">
+      <div style="font-size:0.714em;color:var(--text2)">待收</div>
+      <div style="font-size:1.071em;font-weight:700;color:var(--danger2)">NT$${unpaidTotal.toLocaleString()}</div>
+    </div>
+    <div style="flex:1;padding:10px 14px;border-right:1px solid var(--border)">
+      <div style="font-size:0.714em;color:var(--text2)">已收</div>
+      <div style="font-size:1.071em;font-weight:700;color:var(--green2)">NT$${paidTotal.toLocaleString()}</div>
+    </div>
+    <div style="flex:1;padding:10px 14px">
+      <div style="font-size:0.714em;color:var(--text2)">本期合計</div>
+      <div style="font-size:1.071em;font-weight:700;color:var(--text)">NT$${(unpaidTotal+paidTotal).toLocaleString()}</div>
+    </div>
+  </div>`;
+
   const grouped={};
   showing.forEach(c=>{const n=c['客戶名稱']||'未知';if(!grouped[n])grouped[n]=[];grouped[n].push(c);});
-  let html=tabs;
+  let html=tabs+summaryBar;
   Object.entries(grouped).forEach(([name,items])=>{
     const total=items.reduce((a,b)=>a+(Number(b['租金'])||0),0);
     html+=`<div class="rent-cust-hdr"><span class="rent-cust-name">${name}</span>${total?`<span class="rent-amt">$${total.toLocaleString()}</span>`:''}</div>`;
@@ -2145,6 +2523,1196 @@ function renderRentList() {
 }
 
 // --- Settings ---
+// ============================================================
+// 維修紀錄
+// ============================================================
+const REPAIR_STATUS_COLOR = { '已完成': 'var(--green2)', '待維修': 'var(--danger2)' };
+const REPAIR_STATUS_BG    = { '已完成': 'var(--green-bg)', '待維修': 'var(--danger-bg)' };
+const REPAIR_KIND_COLOR   = { '租送': '#ffde87', '買斷': 'var(--danger2)', '客人機': 'var(--blue2)', '公司': 'var(--text)' };
+const REPAIR_KIND_BG      = { '租送': 'rgba(249,168,37,.15)', '買斷': 'var(--danger-bg)', '客人機': 'var(--blue-bg)', '公司': 'rgba(255,255,255,.07)' };
+
+function repairStatusChip(s) {
+  const c = REPAIR_STATUS_COLOR[s]||'var(--text2)'; const bg = REPAIR_STATUS_BG[s]||'rgba(255,255,255,.07)';
+  return `<span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:0.786em;font-weight:700;background:${bg};color:${c}">${s||'—'}</span>`;
+}
+function repairKindChip(k) {
+  const c = REPAIR_KIND_COLOR[k]||'var(--text2)'; const bg = REPAIR_KIND_BG[k]||'rgba(255,255,255,.07)';
+  return `<span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:0.786em;font-weight:700;background:${bg};color:${c}">${k||'—'}</span>`;
+}
+
+let repairViewTab = 0;
+function renderRepairs() {
+  let list = [...(cache.repairs||[])];
+  if (searchQuery) list = list.filter(r=>JSON.stringify(r).includes(searchQuery));
+
+  // 子分頁：待維修 / 已完成
+  const pending = list.filter(r=>(r['狀態']||'')!=='已完成');
+  const done    = list.filter(r=>(r['狀態']||'')==='已完成');
+  const showing = repairViewTab === 1 ? done : pending;
+
+  const tabs = `<div class="task-tabs">
+    <div class="task-tab${repairViewTab===0?' active':''}" onclick="setRepairView(0)">待維修 ${pending.length>0?`<span style="font-size:0.857em;opacity:.7">(${pending.length})</span>`:''}</div>
+    <div class="task-tab${repairViewTab===1?' active':''}" onclick="setRepairView(1)">已完成 ${done.length>0?`<span style="font-size:0.857em;opacity:.7">(${done.length})</span>`:''}</div>
+  </div>`;
+
+  if (!showing.length) return tabs + `<div class="empty">${repairViewTab===1?'沒有已完成的維修紀錄':'目前沒有待維修項目 🎉'}</div>`;
+
+  return tabs + `<div style="padding:0 0 80px">
+    ${showing.map((r,_i)=>{
+      const realIdx = (cache.repairs||[]).indexOf(r);
+      const items = r['維修項目']||r['工作內容']||'';
+      return `<div class="card" onclick="showRepairDetail(${realIdx})" style="cursor:pointer">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
+          ${repairStatusChip(r['狀態']||'待維修')}
+          ${repairKindChip(r['種類']||'')}
+          <span style="font-size:0.786em;color:var(--text2);margin-left:auto">${String(r['紀錄日期']||'').substring(0,10).replace(/-/g,'/')}</span>
+        </div>
+        <div style="font-size:1em;font-weight:700">${r['機型']||''} <span style="font-size:0.857em;font-weight:400;color:var(--text2)">${r['機號']||''}</span></div>
+        ${r['客戶名稱']?`<div style="font-size:0.857em;color:var(--text2);margin-top:2px">👤 ${r['客戶名稱']}</div>`:''}
+        ${items?`<div style="font-size:0.857em;color:var(--accent2);margin-top:4px">🔧 ${items}</div>`:''}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function setRepairView(v) { repairViewTab = v; renderPage(); }
+
+function showRepairDetail(idx) {
+  const item = (cache.repairs||[])[idx];
+  if (!item) return;
+  const body = document.getElementById('detail-modal-body');
+  document.getElementById('detail-modal-title').textContent = '維修紀錄';
+  document.getElementById('detail-edit-btn').style.display = '';
+  detailType = 'repair'; detailIdx = idx;
+  const rows = [
+    ['狀態',      repairStatusChip(item['狀態']||'待維修')],
+    ['種類',      repairKindChip(item['種類']||'')],
+    ['紀錄日期',  String(item['紀錄日期']||'').substring(0,10)],
+    ['完成日期',  String(item['完成日期']||'').substring(0,10)],
+    ['客戶名稱',  item['客戶名稱']||'—'],
+    ['機型',      item['機型']||'—'],
+    ['機號',      item['機號']||'—'],
+    ['維修項目',  item['維修項目']||item['工作內容']||'—'],
+    ['備註',      item['備註']||''],
+  ].filter(([,v])=>v&&v!=='—');
+  body.innerHTML = `<div class="det-section">
+    ${rows.map(([k,v])=>`<div class="det-row">
+      <span class="det-key">${k}</span>
+      <span class="det-val">${v}</span>
+    </div>`).join('')}
+  </div>
+  <div style="padding:14px 15px;display:flex;gap:8px">
+    <button class="btn-cancel" style="flex:1;color:var(--danger2)" onclick="confirmDelete('repair',${idx})">🗑 刪除</button>
+    <button class="btn-save" style="flex:1" onclick="toggleRepairDone(${idx})">${item['狀態']==='已完成'?'↩ 標為待維修':'✓ 標為已完成'}</button>
+  </div>`;
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function toggleRepairDone(idx) {
+  const item = (cache.repairs||[])[idx];
+  if (!item) return;
+  const isDone = item['狀態'] === '已完成';
+
+  // 取消完成：直接還原
+  if (isDone) {
+    item['狀態'] = '待維修';
+    item['完成日期'] = '';
+    saveCache();
+    enqueue({action:'update', sheet:'repairs', data:item, id:item['維修ID']||item[Object.keys(item)[0]]});
+    closeModal('detail-modal');
+    renderPage();
+    showToast('↩ 已改回待維修');
+    return;
+  }
+
+  // 標記完成
+  item['狀態'] = '已完成';
+  item['完成日期'] = new Date().toISOString().substring(0,10).replace(/-/g,'/');
+  saveCache();
+  enqueue({action:'update', sheet:'repairs', data:item, id:item['維修ID']||item[Object.keys(item)[0]]});
+  closeModal('detail-modal');
+  renderPage();
+  showToast('✓ 已標記完成');
+
+  // 詢問是否新增收款
+  appConfirm('是否要新增維修相關收款？',
+    ()=>{
+      // 依維修項目自動對應收款項目
+      const repairItemStr = String(item['維修項目']||'');
+      const repairItems = repairItemStr.split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
+      const preItems = [];
+      const miscItems = []; // 其他項目 → 臨時加入收款 chip，不存入選項庫
+
+      repairItems.forEach(ri=>{
+        if (['檢修費','檢修'].includes(ri)) {
+          if (!preItems.includes('維修費')) preItems.push('維修費');
+        } else if (['大保養','保養'].includes(ri)) {
+          if (!preItems.includes('保養費')) preItems.push('保養費');
+        } else {
+          miscItems.push(ri);
+        }
+      });
+      // 其他項目也加入收款選取，但以 tempPayItems 存放（不寫入選項庫）
+      miscItems.forEach(mi=>{ if(!preItems.includes(mi)) preItems.push(mi); });
+      if (!preItems.length) preItems.push('維修費');
+
+      tempPayItems = miscItems; // 本次臨時項目
+
+      const custName = item['客戶名稱']||'';
+      const taskDataForPay = {
+        '客戶名稱': custName,
+        '機型': item['機型']||'',
+        '機號': item['機號']||'',
+        '紀錄日期': item['完成日期']||'',
+      };
+      // 從「維修 報價」抓對應價格
+      // 對照表：preItems 中每個項目 → 找 repairPricelist 的「名稱」欄位比對
+      const priceMap = {};
+      const rl = cache.repairPricelist||[];
+      preItems.forEach(payItem=>{
+        // 找直接同名的
+        let row = rl.find(r=>String(r['名稱']||'').trim()===payItem);
+        // 找不到時，試著找維修項目中對應的原始名稱（例如「維修費」對應「檢修費」）
+        if (!row && payItem==='維修費') row = rl.find(r=>['檢修費','檢修','維修費'].includes(String(r['名稱']||'').trim()));
+        if (!row && payItem==='保養費') row = rl.find(r=>['大保養','保養費','保養'].includes(String(r['名稱']||'').trim()));
+        const price = Number(row?.['價格']||row?.['單價']||0);
+        if (price) priceMap[payItem] = price;
+      });
+
+      // 開啟收款表單
+      selectedPayItems = [...preItems]; selectedHandlers=[]; payLineItems=[]; payMethod=''; editMode=false; editId='';
+      payInvoice='';
+      initPayLines(null, priceMap);
+      document.getElementById('form-modal-title').textContent='新增收款';
+      document.getElementById('form-modal-body').innerHTML = paymentForm({
+        '客戶名稱': custName,
+        '詳細內容': [item['機型'],item['機號']].filter(Boolean).join(' '),
+      });
+      document.getElementById('form-modal').classList.add('open');
+    },
+    ()=>{}
+  );
+}
+
+// ---- Repair Form ----
+const REPAIR_STATUSES = ['待維修','已完成'];
+const REPAIR_KINDS    = ['租送','買斷','客人機','公司'];
+
+// 從機器類型自動推斷種類
+function inferRepairKind(machineType) {
+  const t = String(machineType||'').trim().replace(/\s+/g,'');
+  if (t==='租送機') return '租送';
+  if (t==='買斷'||t==='買 斷') return '買斷';
+  if (t==='客人機') return '客人機';
+  // 出租中、借用機、待出租、全新機、◎進廠 → 公司
+  return '公司';
+}
+
+function getRepairPriceItems() {
+  const src = cache.repairPricelist||[];
+  if (!src.length) return [];
+  const nameKey = Object.keys(src[0]).find(k=>k==='名稱'||k==='維修項目'||k==='項目')||Object.keys(src[0])[0]||'';
+  return [...new Set(src.map(r=>r[nameKey]).filter(Boolean))];
+}
+
+let selectedRepairItems = [];
+
+function toggleRepairItem(item) {
+  const idx = selectedRepairItems.indexOf(item);
+  if (idx>=0) selectedRepairItems.splice(idx,1); else selectedRepairItems.push(item);
+  document.querySelectorAll('#repair-items-wrap .pay-item-chip').forEach(b=>
+    b.classList.toggle('selected', selectedRepairItems.includes(b.dataset.item||b.textContent)));
+}
+
+function addCustomRepairItem() {
+  const inp = document.getElementById('f-repair-item-custom');
+  const val = inp?.value.trim(); if (!val) return;
+  const custom = JSON.parse(localStorage.getItem('custom_repair_items')||'[]');
+  if (!custom.includes(val) && !getRepairPriceItems().includes(val)) {
+    custom.push(val); localStorage.setItem('custom_repair_items', JSON.stringify(custom));
+  }
+  if (!selectedRepairItems.includes(val)) selectedRepairItems.push(val);
+  rerenderRepairItemChips();
+  if (inp) inp.value = '';
+}
+
+function rerenderRepairItemChips() {
+  const wrap = document.getElementById('repair-items-wrap'); if (!wrap) return;
+  const all = getAllRepairItems();
+  wrap.innerHTML = all.map(item=>`<button type="button" class="pay-item-chip${selectedRepairItems.includes(item)?' selected':''}" data-item="${item}" onclick="toggleRepairItem('${item.replace(/'/g,"\\'")}')" oncontextmenu="event.preventDefault();confirmDeleteRepairItem('${item.replace(/'/g,"\\'")}') " ontouchstart="startRepairItemLP('${item.replace(/'/g,"\\'")}') " ontouchend="cancelRepairItemLP()" ontouchmove="cancelRepairItemLP()">${item}</button>`).join('')
+    + (all.length===0?'<span style="font-size:0.857em;color:var(--text3)">尚無項目，請在報價表維修分頁新增，或使用下方輸入框</span>':'');
+}
+
+function getAllRepairItems() {
+  const price = getRepairPriceItems();
+  const custom = JSON.parse(localStorage.getItem('custom_repair_items')||'[]');
+  return [...new Set([...price, ...custom.filter(i=>!price.includes(i))])];
+}
+
+// ── 維修項目 多列輸入（電話同款格式）──
+function initRepairItemRows() {
+  const wrap = document.getElementById('repair-items-list');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const items = selectedRepairItems.length ? selectedRepairItems : [''];
+  items.forEach((v, i) => appendRepairItemRow(v, i));
+}
+
+function appendRepairItemRow(val, idx) {
+  const wrap = document.getElementById('repair-items-list'); if (!wrap) return;
+  const rowId = 'repair-item-row-' + idx;
+  const div = document.createElement('div');
+  div.className = 'phone-row'; div.id = rowId;
+  div.style.position = 'relative';
+  div.innerHTML = `
+    <div style="flex:1;position:relative">
+      <input class="fi" type="text" data-repair-item-idx="${idx}" placeholder="輸入維修項目..."
+        value="${val.replace(/"/g,'&quot;')}"
+        oninput="showRepairItemSuggestions(this, ${idx})"
+        onfocus="showRepairItemSuggestions(this, ${idx})"
+        onblur="setTimeout(()=>hideRepairItemSuggestions(${idx}), 200)"
+        autocomplete="off" style="margin:0;width:100%">
+      <div id="repair-item-sug-${idx}" class="autocomplete-list" style="display:none;position:absolute;z-index:50;width:100%"></div>
+    </div>
+    ${idx > 0 ? `<button type="button" class="phone-del" onclick="removeRepairItemRow(${idx})">✕</button>` : '<span style="width:28px;flex-shrink:0"></span>'}`;
+  wrap.appendChild(div);
+}
+
+function addRepairItemRow() {
+  const wrap = document.getElementById('repair-items-list'); if (!wrap) return;
+  const idx = wrap.querySelectorAll('.phone-row').length;
+  appendRepairItemRow('', idx);
+}
+
+function removeRepairItemRow(idx) {
+  const row = document.getElementById('repair-item-row-' + idx);
+  if (row) row.remove();
+}
+
+function getRepairItemValues() {
+  return [...document.querySelectorAll('[data-repair-item-idx]')]
+    .map(inp => inp.value.trim()).filter(Boolean);
+}
+
+function showRepairItemSuggestions(inp, idx) {
+  const listEl = document.getElementById('repair-item-sug-' + idx); if (!listEl) return;
+  const q = inp.value.trim();
+  const all = getAllRepairItems();
+  const matches = q ? all.filter(i => i.includes(q) && i !== q) : all;
+  if (!matches.length) { listEl.style.display = 'none'; return; }
+  listEl.innerHTML = matches.map(m => {
+    const hi = q ? m.replace(q, `<mark>${q}</mark>`) : m;
+    return `<div class="autocomplete-item" onmousedown="selectRepairItemSuggestion(${idx},'${m.replace(/'/g,"\\'")}')">${hi}</div>`;
+  }).join('');
+  listEl.style.display = 'block';
+}
+
+function hideRepairItemSuggestions(idx) {
+  const el = document.getElementById('repair-item-sug-' + idx);
+  if (el) el.style.display = 'none';
+}
+
+function selectRepairItemSuggestion(idx, val) {
+  const inp = document.querySelector(`[data-repair-item-idx="${idx}"]`);
+  if (inp) inp.value = val;
+  hideRepairItemSuggestions(idx);
+}
+
+let repairItemLPTimer = null;
+function startRepairItemLP(item){ repairItemLPTimer=setTimeout(()=>confirmDeleteRepairItem(item),600); }
+function cancelRepairItemLP(){ if(repairItemLPTimer){clearTimeout(repairItemLPTimer);repairItemLPTimer=null;} }
+function confirmDeleteRepairItem(item) {
+  if (!confirm(`刪除「${item}」嗎？`)) return;
+  const custom = JSON.parse(localStorage.getItem('custom_repair_items')||'[]');
+  localStorage.setItem('custom_repair_items', JSON.stringify(custom.filter(x=>x!==item)));
+  selectedRepairItems = selectedRepairItems.filter(x=>x!==item);
+  rerenderRepairItemChips();
+  showToast(`已刪除「${item}」`);
+}
+
+function repairForm(d) {
+  const curStatus = d?.['狀態']||'待維修';
+  selectedRepairItems = d?.['維修項目'] ? d['維修項目'].split(/[,、，]/).map(s=>s.trim()).filter(Boolean) : [];
+  _repairStatus = curStatus;
+  _repairKind   = d?.['種類']||'';
+  const today = new Date().toISOString().split('T')[0];
+  const allRepairItems = getAllRepairItems();
+  // 初始化選項列（setTimeout 等 DOM 完成）
+  setTimeout(()=>initRepairItemRows(), 0);
+
+  return `<div class="form-body">
+    <div class="ff"><label>狀態<span class="req">*</span></label>
+      <div style="display:flex;gap:8px">
+        ${REPAIR_STATUSES.map(s=>`<button type="button" id="rs-${s}"
+          class="pay-m-btn${curStatus===s?' sel':''}"
+          style="${curStatus===s?'background:'+(s==='已完成'?'var(--green)':'var(--danger)')+';border-color:'+(s==='已完成'?'var(--green)':'var(--danger)')+';color:#fff':''}"
+          onclick="selectRepairStatus('${s}')">${s}</button>`).join('')}
+      </div>
+    </div>
+    <div class="ff"><label>紀錄時間</label><input class="fi" type="date" id="f-repair-date" value="${d?.['紀錄日期']?String(d['紀錄日期']).substring(0,10).replace(/\//g,'-'):today}"></div>
+    <div class="ff"><label>客戶名稱</label>
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <div class="autocomplete-wrap" style="flex:1">
+          <input class="fi" id="f-repair-customer" placeholder="輸入客戶名稱..."
+            value="${d?.['客戶名稱']||''}"
+            oninput="showRepairCustomerSuggestions(this.value)"
+            onfocus="showRepairCustomerSuggestions(this.value)"
+            onblur="setTimeout(()=>{const l=document.getElementById('repair-customer-suggestions');if(l)l.style.display='none'},200)"
+            autocomplete="off">
+          <div class="autocomplete-list" id="repair-customer-suggestions" style="display:none"></div>
+        </div>
+        <button type="button" onclick="openAddCustomerFromRepair()" style="padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;font-size:0.857em;white-space:nowrap;flex-shrink:0">＋新增</button>
+      </div>
+    </div>
+    <div class="ff"><label>機型</label>
+      <input class="fi" id="f-repair-model" value="${editMode?(d?.['機型']||''):''}" placeholder="選客戶後可選擇機器">
+      <div id="repair-machine-suggestions" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
+    </div>
+    <div class="ff"><label>機號</label><input class="fi" id="f-repair-serial" value="${editMode?(d?.['機號']||''):''}"></div>
+    <div class="ff"><label>種類</label>
+      <div id="repair-kind-wrap" style="display:flex;gap:8px;flex-wrap:wrap">
+        ${REPAIR_KINDS.map(k=>{
+          const isActive = (_repairKind||'')=== k;
+          const c=REPAIR_KIND_COLOR[k]; const bg=REPAIR_KIND_BG[k];
+          return `<button type="button" id="rk-${k}"
+            class="pay-m-btn${isActive?' sel':''}"
+            style="${isActive?'background:'+bg+';border-color:'+c+';color:'+c:''}"
+            onclick="selectRepairKind('${k}')">${k}</button>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="ff"><label>維修項目</label>
+      <div id="repair-items-list"></div>
+      <button type="button" class="phone-add-btn" onclick="addRepairItemRow()" style="margin-top:4px">＋ 新增項目</button>
+    </div>
+    <div class="ff"><label>備註</label><input class="fi" id="f-repair-note" value="${d?.['備註']||''}"></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn-cancel" onclick="closeModal('form-modal')">取消</button>
+    <button class="btn-save" onclick="if(!isSaving)saveRepair()">儲存</button>
+  </div>`;
+}
+
+let _repairStatus = '待維修', _repairKind = '';
+function selectRepairStatus(s) {
+  _repairStatus = s;
+  REPAIR_STATUSES.forEach(st=>{
+    const b=document.getElementById('rs-'+st);
+    if(!b)return;
+    const active=st===s;
+    b.classList.toggle('sel',active);
+    b.style.background=active?(st==='已完成'?'var(--green)':'var(--danger)'):'';
+    b.style.borderColor=active?(st==='已完成'?'var(--green)':'var(--danger)'):'';
+    b.style.color=active?'#fff':'';
+  });
+}
+function selectRepairKind(k) {
+  _repairKind = k;
+  REPAIR_KINDS.forEach(kk=>{
+    const b=document.getElementById('rk-'+kk);
+    if(!b)return;
+    const active=kk===k;
+    const c=REPAIR_KIND_COLOR[kk]; const bg=REPAIR_KIND_BG[kk];
+    b.classList.toggle('sel',active);
+    b.style.background=active?bg:''; b.style.borderColor=active?c:''; b.style.color=active?c:'';
+  });
+}
+function showRepairCustomerSuggestions(val) {
+  const list=document.getElementById('repair-customer-suggestions'); if(!list)return;
+  const q=val.trim();
+  const matches=q?cache.customers.filter(c=>c['客戶名稱']&&c['客戶名稱'].includes(q)):cache.customers.slice(0,8);
+  if(!matches.length){list.style.display='none';return;}
+  list.innerHTML=matches.map(c=>`<div class="autocomplete-item" onmousedown="selectRepairCustomer('${c['客戶名稱'].replace(/'/g,"\\'")}') ">${c['客戶名稱']}<span style="color:var(--text3);font-size:0.857em;margin-left:8px">${c['地址']||''}</span></div>`).join('');
+  list.style.display='block';
+}
+
+function selectRepairCustomer(name) {
+  name = name.trim();
+  const inp = document.getElementById('f-repair-customer');
+  if (inp) inp.value = name;
+  const list = document.getElementById('repair-customer-suggestions');
+  if (list) list.style.display = 'none';
+  // 找該客戶的機器
+  const ACTIVE_TYPES = ['出租中','租送機','買斷','買 斷','客人機','借用機'];
+  const norm = s => String(s||'').trim().replace(/\s+/g,'');
+  const custMachines = cache.machines.filter(m => {
+    const typMatch = ACTIVE_TYPES.some(t=>norm(t)===norm(m['類型']||''));
+    const custMatch = norm(m['目前客戶']||'')===norm(name) ||
+      cache.contracts.some(c=>norm(c['客戶名稱'])===norm(name)&&norm(c['機號'])===norm(m['機號']));
+    return typMatch && custMatch;
+  });
+  const suggestWrap = document.getElementById('repair-machine-suggestions');
+  if (suggestWrap) {
+    suggestWrap.innerHTML = custMachines.map(m=>{
+      const col = REPAIR_KIND_COLOR[inferRepairKind(m['類型'])]||'var(--text2)';
+      return `<button type="button" onclick="selectRepairMachine('${(m['機型']||'').replace(/'/g,"\\'")}','${(m['機號']||'').replace(/'/g,"\\'")}','${(m['類型']||'').replace(/'/g,"\\'")}') "
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:0.857em;cursor:pointer;font-family:inherit;color:var(--text)">
+        <span style="font-weight:700">${m['機型']||''}</span>
+        <span style="color:var(--text2);margin-left:4px">${m['機號']||''}</span>
+        <span style="color:${col};margin-left:6px;font-size:0.786em">${m['類型']||''}</span>
+      </button>`;
+    }).join('');
+  }
+  if (custMachines.length === 1) {
+    selectRepairMachine(custMachines[0]['機型']||'', custMachines[0]['機號']||'', custMachines[0]['類型']||'');
+  }
+}
+
+function selectRepairMachine(model, serial, machineType) {
+  const modelEl  = document.getElementById('f-repair-model');
+  const serialEl = document.getElementById('f-repair-serial');
+  if (modelEl)  modelEl.value  = model.trim();
+  if (serialEl) serialEl.value = serial.trim();
+  selectRepairKind(inferRepairKind(machineType.trim()));
+}
+
+async function saveRepair() {
+  const statusBtn = document.querySelector('#form-modal-body .pay-m-btn.sel[id^="rs-"]');
+  const kindBtn   = document.querySelector('#form-modal-body .pay-m-btn.sel[id^="rk-"]');
+  const status    = statusBtn ? statusBtn.textContent.trim() : (_repairStatus||'待維修');
+  const kind      = kindBtn   ? kindBtn.textContent.trim()   : (_repairKind||'');
+  const dateVal   = document.getElementById('f-repair-date')?.value.replace(/-/g,'/')||'';
+  const customer  = document.getElementById('f-repair-customer')?.value.trim()||'';
+  const model     = document.getElementById('f-repair-model')?.value.trim()||'';
+  const serial    = document.getElementById('f-repair-serial')?.value.trim()||'';
+  const customItem= document.getElementById('f-repair-item-custom')?.value.trim()||'';
+  if (customItem && !selectedRepairItems.includes(customItem)) selectedRepairItems.push(customItem);
+  const itemValues = getRepairItemValues();
+  const items = itemValues.join('、');
+  const note      = document.getElementById('f-repair-note')?.value.trim()||'';
+  // 客戶名稱或機型至少填一項
+  if (!customer && !model && !serial) { showToast('請填寫客戶名稱或機型機號'); return; }
+  if (!cache.repairs) cache.repairs = [];
+  const data = {
+    '狀態': status, '種類': kind, '紀錄日期': dateVal,
+    '客戶名稱': customer, '機型': model, '機號': serial,
+    '維修項目': items, '備註': note,
+    '完成日期': status === '已完成'
+      ? (editMode && (cache.repairs.find(r=>String(r['維修ID']||'')===String(editId))?.['完成日期']) || new Date().toISOString().substring(0,10).replace(/-/g,'/'))
+      : '',
+  };
+  if (!editMode) data['維修ID'] = 'R'+Date.now().toString(36).toUpperCase();
+  if (editMode) {
+    const idx = cache.repairs.findIndex(r=>String(r['維修ID']||'')===String(editId));
+    if (idx>=0) Object.assign(cache.repairs[idx], data); else cache.repairs.push(data);
+    enqueue({action:'update', sheet:'repairs', data, id:editId});
+  } else {
+    cache.repairs.push(data);
+    enqueue({action:'add', sheet:'repairs', data, id:null});
+  }
+  saveCache();
+  closeModal('form-modal');
+  renderPage();
+  showToast(editMode?'已更新維修紀錄':'已新增維修紀錄');
+  selectedRepairItems=[];
+  editMode=false; editId='';
+  setTimeout(()=>{ isSaving=false; },300);
+}
+
+// ---- Pricelist Entry Form ----
+function pricelistEntryForm(d) {
+  const tab = priceTab; // 依目前報價表子分頁決定欄位
+  let fields = '';
+  if (tab === 0) {
+    // 初始化 plSelections
+    plSelections = {
+      iceType:  d?.['冰型']||'',
+      capacity: d?.['磅數']||d?.['產能']||'',
+      voltage:  d?.['電壓']||'',
+      cooling:  d?.['散熱']||'',
+      coolant:  d?.['冷媒']||'',
+    };
+    // 電壓複選：初始化為陣列
+    window._plVoltages = d?.['電壓'] ? String(d['電壓']).split(/[/、，, ]/).map(s=>s.trim()).filter(Boolean) : [];
+
+    const brands = getBrands();
+    const curBrand = d?.['廠牌']||'';
+    const isDiscontinued = d?.['停售']==='是';
+
+    const mkPlChips = (groupId, field, key, labelText) => {
+      const opts = getPlOpts(key);
+      const sel  = plSelections[field]||'';
+      const chips = opts.map(o=>`<button type="button" class="pl-chip pay-item-chip${sel===o?' selected':''}" data-val="${o}" onclick="selectPlChip('${field}','${o}','${groupId}')">${o}</button>`).join('') || '<span style="font-size:0.857em;color:var(--text3)">尚無選項</span>';
+      return `<div class="ff"><label>${labelText}</label>
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <div id="${groupId}" style="display:flex;flex-wrap:wrap;gap:7px;flex:1">${chips}</div>
+          <button type="button" onclick="openPlChipEditor('${groupId}','${field}','${key}','新增${labelText}...')"
+            style="flex-shrink:0;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:0.857em;cursor:pointer;white-space:nowrap">✏️ 編輯</button>
+        </div></div>`;
+    };
+
+    // 電壓多選專用
+    const mkPlMultiChips = (groupId, key, labelText) => {
+      const opts = getPlOpts(key);
+      const selArr = window._plVoltages;
+      const chips = opts.map(o=>`<button type="button" class="pl-chip pay-item-chip${selArr.includes(o)?' selected':''}" data-val="${o}" onclick="togglePlVoltage('${o}','${groupId}')">${o}</button>`).join('') || '<span style="font-size:0.857em;color:var(--text3)">尚無選項</span>';
+      return `<div class="ff"><label>${labelText}（可複選）</label>
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <div id="${groupId}" style="display:flex;flex-wrap:wrap;gap:7px;flex:1">${chips}</div>
+          <button type="button" onclick="openPlChipEditor('${groupId}','_voltage','${key}','新增電壓...')"
+            style="flex-shrink:0;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:0.857em;cursor:pointer;white-space:nowrap">✏️ 編輯</button>
+        </div></div>`;
+    };
+
+    fields = `
+      <div class="ff"><label>廠牌<span class="req">*</span></label>
+        <select class="fi fi-sel" id="f-pl-brand" onchange="document.getElementById('f-pl-brand-custom').style.display=this.value==='__new__'?'':'none'">
+          <option value="">請選擇</option>
+          ${brands.map(b=>`<option${b===curBrand?' selected':''}>${b}</option>`).join('')}
+          <option value="__new__">＋ 新增廠牌</option>
+        </select>
+        <input class="fi" id="f-pl-brand-custom" placeholder="新廠牌名稱" style="margin-top:8px;display:none">
+      </div>
+      <div class="ff"><label>機型<span class="req">*</span></label><input class="fi" id="f-pl-model" value="${d?.['機型']||''}"></div>
+      <div class="ff"><label>租金 (NT$)</label><input class="fi" type="number" id="f-pl-rent" value="${d?.['租金']||''}"></div>
+      <div class="ff"><label>租送 租金 (NT$)</label><input class="fi" type="number" id="f-pl-send-rent" value="${d?.['租送 租金']||d?.['租送租金']||''}"></div>
+      <div class="ff"><label>租送 押金 (NT$)</label><input class="fi" type="number" id="f-pl-send-deposit" value="${d?.['租送 押金']||d?.['租送押金']||''}"></div>
+      <div class="ff"><label>售價 (NT$)</label><input class="fi" type="number" id="f-pl-price" value="${d?.['售價']||''}"></div>
+      ${mkPlChips('pl-chip-ice','iceType','pl_icetypes','冰型')}
+      ${mkPlChips('pl-chip-cap','capacity','pl_capacity','產能')}
+      ${mkPlMultiChips('pl-chip-volt','pl_voltages','電壓')}
+      ${mkPlChips('pl-chip-cool','cooling','pl_cooling','散熱')}
+      ${mkPlChips('pl-chip-coolant','coolant','pl_coolants','冷媒')}
+      <div class="ff"><label>備註</label><input class="fi" id="f-pl-note" value="${d?.['備註']||''}"></div>
+      <div class="ff"><label>停售</label>
+        <button type="button" id="f-pl-discontinued"
+          class="pay-m-btn${isDiscontinued?' sel':''}"
+          style="${isDiscontinued?'background:var(--danger-bg);border-color:var(--danger2);color:var(--danger2)':''}"
+          onclick="togglePlDiscontinued()">
+          ${isDiscontinued?'✓ 已停售':'未停售'}
+        </button>
+        <input type="hidden" id="f-pl-discontinued-val" value="${isDiscontinued?'是':''}">
+      </div>`;
+  } else {
+    // 材料 & 維修報價：統一固定欄位（名稱/價格/庫存/狀態/附註）
+    const FIXED_STATUSES = ['有現貨','缺貨','已停售'];
+    const curStatus = d?.['狀態']||'';
+    const sheetLabel = tab===1 ? '材料' : '維修項目';
+    fields = `
+      <div class="ff"><label>名稱<span class="req">*</span></label><input class="fi" data-pl-key="名稱" value="${String(d?.['名稱']||'').replace(/"/g,'&quot;')}"></div>
+      <div class="ff"><label>價格 (NT$)</label><input class="fi" type="number" data-pl-key="價格" value="${String(d?.['價格']||d?.['單價']||'').replace(/"/g,'&quot;')}"></div>
+      <div class="ff"><label>庫存</label><input class="fi" data-pl-key="庫存" value="${String(d?.['庫存']||'').replace(/"/g,'&quot;')}" placeholder="例：3個、無庫存"></div>
+      <div class="ff"><label>狀態</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${FIXED_STATUSES.map(s=>{
+            const c=MATERIAL_STATUS_COLOR[s]; const bg=MATERIAL_STATUS_BG[s];
+            const active = curStatus===s;
+            return `<button type="button" id="mat-st-${s}" class="pay-m-btn${active?' sel':''}"
+              style="${active?'background:'+bg+';border-color:'+c+';color:'+c:''}"
+              onclick="selectMaterialStatus('${s}')">${s}</button>`;
+          }).join('')}
+        </div>
+        <input type="hidden" id="f-mat-status" value="${curStatus}">
+      </div>
+      <div class="ff"><label>附註</label><textarea class="fi" data-pl-key="附註" rows="2">${String(d?.['附註']||d?.['備註']||'').replace(/</g,'&lt;')}</textarea></div>`;
+  }
+  return `<div class="form-body">${fields}</div>
+  <div class="form-actions">
+    <button class="btn-cancel" onclick="closeModal('form-modal')">取消</button>
+    <button class="btn-save" onclick="if(!isSaving)savePricelistEntry()">儲存</button>
+  </div>`;
+}
+
+// ============================================================
+// 報價表 製冰機 chip 選擇（獨立於機器表單）
+// ============================================================
+let plSelections = {};
+
+const PL_ICE_TYPES    = ['角冰','衛生冰','半月冰','圓帽冰','碎冰'];
+const PL_CAPACITY     = ['100磅','200磅','400磅','600磅','800磅','1000磅'];
+const PL_VOLTAGES     = ['110V','220V','3∅220V'];
+const PL_COOLING      = ['水冷','氣冷','氣水冷'];
+const PL_COOLANTS     = ['R404a','R134a','R408a','R452a'];
+
+function getPlOpts(key) {
+  const defaults = { pl_icetypes: PL_ICE_TYPES, pl_capacity: PL_CAPACITY, pl_voltages: PL_VOLTAGES, pl_cooling: PL_COOLING, pl_coolants: PL_COOLANTS };
+  const custom  = JSON.parse(localStorage.getItem('custom_'+key)||'[]');
+  const deleted = JSON.parse(localStorage.getItem('del_pl_'+key)||'[]');
+  return [...new Set([...(defaults[key]||[]), ...custom])].filter(v=>!deleted.includes(v));
+}
+
+function selectPlChip(field, val, groupId) {
+  plSelections[field] = val;
+  document.querySelectorAll(`#${groupId} .pl-chip`).forEach(b=>b.classList.toggle('selected', b.dataset.val===val));
+}
+
+function renderPlChipGroup(groupId, field, key) {
+  const wrap = document.getElementById(groupId); if (!wrap) return;
+  const opts = getPlOpts(key);
+  const sel  = plSelections[field]||'';
+  wrap.innerHTML = opts.map(o=>`<button type="button" class="pl-chip pay-item-chip${sel===o?' selected':''}" data-val="${o}" onclick="selectPlChip('${field}','${o}','${groupId}')">${o}</button>`).join('')
+    || '<span style="font-size:0.857em;color:var(--text3)">尚無選項</span>';
+}
+
+let _plEditorState = {};
+function openPlChipEditor(groupId, field, key, placeholder) {
+  _plEditorState = { groupId, field, key, placeholder };
+  _chipEditorState = {}; // 清除 machine 狀態
+  renderPlChipEditorDeck();
+  document.getElementById('chip-editor-deck').classList.add('open');
+}
+
+function renderPlChipEditorDeck() {
+  const {groupId, field, key, placeholder} = _plEditorState;
+  const opts = getPlOpts(key);
+  const title = document.getElementById('chip-editor-title');
+  const body  = document.getElementById('chip-editor-body');
+  const labels = { pl_icetypes:'冰型', pl_capacity:'產能', pl_voltages:'電壓', pl_cooling:'散熱', pl_coolants:'冷媒' };
+  if (title) title.textContent = '編輯選項：' + (labels[key]||field);
+  body.innerHTML = `
+    <div style="padding:12px 16px;display:flex;gap:8px;border-bottom:1px solid var(--border)">
+      <input class="fi" id="pl-editor-inp" placeholder="${placeholder||'新增選項...'}" style="flex:1;font-size:0.929em">
+      <button type="button" onclick="addPlChipEditorOption()"
+        style="padding:10px 14px;background:var(--accent2);border:none;border-radius:8px;color:#fff;font-size:0.929em;cursor:pointer;white-space:nowrap;font-family:inherit">＋ 新增</button>
+    </div>
+    <div style="padding:8px 0">
+      ${opts.length ? opts.map(o=>`
+        <div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);gap:10px">
+          <span style="flex:1;font-size:0.929em">${o}</span>
+          <button type="button" onclick="deletePlChipEditorOption('${o.replace(/'/g,"\\'")}')"
+            style="background:var(--danger-bg);border:1px solid rgba(229,57,53,.3);color:var(--danger2);border-radius:6px;padding:4px 10px;font-size:0.857em;cursor:pointer;white-space:nowrap;font-family:inherit">✕ 刪除</button>
+        </div>`).join('')
+      : '<div style="padding:20px;text-align:center;color:var(--text3);font-size:0.857em">尚無選項，請新增</div>'}
+    </div>`;
+}
+
+function addPlChipEditorOption() {
+  const inp = document.getElementById('pl-editor-inp');
+  const val = inp?.value.trim(); if (!val) return;
+  const {groupId, field, key} = _plEditorState;
+  const custom = JSON.parse(localStorage.getItem('custom_'+key)||'[]');
+  if (!custom.includes(val)) { custom.push(val); localStorage.setItem('custom_'+key, JSON.stringify(custom)); }
+  if (inp) inp.value = '';
+  renderPlChipGroup(groupId, field, key);
+  renderPlChipEditorDeck();
+  showToast(`已新增「${val}」`);
+}
+
+function deletePlChipEditorOption(val) {
+  if (!confirm(`刪除「${val}」嗎？`)) return;
+  const {groupId, field, key} = _plEditorState;
+  const custom = JSON.parse(localStorage.getItem('custom_'+key)||'[]');
+  localStorage.setItem('custom_'+key, JSON.stringify(custom.filter(x=>x!==val)));
+  const del = JSON.parse(localStorage.getItem('del_pl_'+key)||'[]');
+  if (!del.includes(val)) { del.push(val); localStorage.setItem('del_pl_'+key, JSON.stringify(del)); }
+  if (plSelections[field]===val) plSelections[field]='';
+  renderPlChipGroup(groupId, field, key);
+  renderPlChipEditorDeck();
+  showToast(`已刪除「${val}」`);
+}
+
+// 讓 chip-editor-deck 根據來源（machine or pricelist）呼叫正確的 render
+function _reopenChipEditorDeck() {
+  if (_plEditorState.key) renderPlChipEditorDeck();
+  else if (_chipEditorState.groupId) renderChipEditorDeck();
+}
+
+function togglePlVoltage(val, groupId) {
+  if (!window._plVoltages) window._plVoltages = [];
+  const idx = window._plVoltages.indexOf(val);
+  if (idx >= 0) window._plVoltages.splice(idx, 1);
+  else window._plVoltages.push(val);
+  document.querySelectorAll(`#${groupId} .pl-chip`).forEach(b =>
+    b.classList.toggle('selected', window._plVoltages.includes(b.dataset.val)));
+}
+
+function togglePlDiscontinued() {
+  const val = document.getElementById('f-pl-discontinued-val');
+  const btn = document.getElementById('f-pl-discontinued');
+  if (!val||!btn) return;
+  const isNow = val.value !== '是';
+  val.value = isNow ? '是' : '';
+  btn.textContent = isNow ? '✓ 已停售' : '未停售';
+  btn.classList.toggle('sel', isNow);
+  btn.style.background = isNow ? 'var(--danger-bg)' : '';
+  btn.style.borderColor = isNow ? 'var(--danger2)' : '';
+  btn.style.color = isNow ? 'var(--danger2)' : '';
+}
+
+function selectMaterialStatus(s) {
+  document.getElementById('f-mat-status').value = s;
+  const MATERIAL_STATUSES = ['有現貨','缺貨','已停售'];
+  MATERIAL_STATUSES.forEach(st=>{
+    const b = document.getElementById('mat-st-'+st); if (!b) return;
+    const active = st===s;
+    const c=MATERIAL_STATUS_COLOR[st]; const bg=MATERIAL_STATUS_BG[st];
+    b.classList.toggle('sel', active);
+    b.style.background=active?bg:''; b.style.borderColor=active?c:''; b.style.color=active?c:'';
+  });
+}
+
+async function savePricelistEntry() {
+  isSaving = true;
+  let data = {}, sheet = '', idKey = '報價ID';
+  if (priceTab === 0) {
+    const brandSel = document.getElementById('f-pl-brand');
+    const brand = brandSel?.value==='__new__' ? document.getElementById('f-pl-brand-custom')?.value.trim() : brandSel?.value;
+    const model = document.getElementById('f-pl-model')?.value.trim();
+    if (!brand||!model) { showToast('請填寫廠牌和機型'); isSaving=false; return; }
+    // 加入自訂廠牌
+    if (brandSel?.value==='__new__' && brand) {
+      const cb=JSON.parse(localStorage.getItem('custom_brands')||'[]');
+      if(!cb.includes(brand)){cb.push(brand);localStorage.setItem('custom_brands',JSON.stringify(cb));}
+    }
+    data = {
+      '廠牌':brand,'機型':model,
+      '租金':document.getElementById('f-pl-rent')?.value||'',
+      '租送 租金':document.getElementById('f-pl-send-rent')?.value||'',
+      '租送 押金':document.getElementById('f-pl-send-deposit')?.value||'',
+      '售價':document.getElementById('f-pl-price')?.value||'',
+      '冰型':plSelections['iceType']||'',
+      '產能':plSelections['capacity']||'',
+      '電壓':(window._plVoltages||[]).filter(Boolean).join('/'),
+      '散熱':plSelections['cooling']||'',
+      '冷媒':plSelections['coolant']||'',
+      '備註':document.getElementById('f-pl-note')?.value||'',
+      '停售':document.getElementById('f-pl-discontinued-val')?.value||'',
+    };
+    sheet='pricelist'; idKey='機型';
+    if (!cache.pricelist) cache.pricelist=[];
+    if (editMode) {
+      const idx=cache.pricelist.findIndex(r=>r['廠牌']===editId.split('|')[0]&&r['機型']===editId.split('|')[1]);
+      if(idx>=0) Object.assign(cache.pricelist[idx],data); else cache.pricelist.push(data);
+      enqueue({action:'update',sheet,data,id:editId});
+    } else {
+      cache.pricelist.push(data);
+      enqueue({action:'add',sheet,data,id:null});
+    }
+  } else {
+    const inputs = document.querySelectorAll('[data-pl-key]');
+    inputs.forEach(inp=>{ data[inp.dataset.plKey] = inp.value.trim(); });
+    // 兩個分頁都有狀態欄位
+    const matStatus = document.getElementById('f-mat-status')?.value||'';
+    if (matStatus) data['狀態'] = matStatus;
+    sheet = priceTab===1?'materials':'repairPricelist';
+    const arr = priceTab===1?cache.materials:cache.repairPricelist;
+    if(!arr) { priceTab===1?(cache.materials=[]):(cache.repairPricelist=[]); }
+    if (editMode) {
+      const id = editId;
+      const arr2 = priceTab===1?cache.materials:cache.repairPricelist;
+      // 先確保 data 有 ID
+      data['報價ID'] = id;
+      const idx = arr2.findIndex(r=>String(r['報價ID']||r[Object.keys(r)[0]]||'')===String(id));
+      if(idx>=0) Object.assign(arr2[idx], data);
+      enqueue({action:'update', sheet, data, id});
+    } else {
+      data['報價ID']='P'+Date.now().toString(36).toUpperCase();
+      (priceTab===1?cache.materials:cache.repairPricelist).push(data);
+      enqueue({action:'add', sheet, data, id: data['報價ID']});
+    }
+  }
+  saveCache();
+  closeModal('form-modal');
+  renderPage();
+  showToast(editMode?'已更新報價':'已新增報價');
+  editMode=false; editId='';
+  setTimeout(()=>{ isSaving=false; },300);
+}
+
+
+// ============================================================
+// 報價表
+// ============================================================
+let priceTab = 0; // 0=製冰機 1=材料 2=維修
+
+const MATERIAL_STATUS_COLOR = { '有現貨':'var(--green2)', '缺貨':'var(--danger2)', '已停售':'var(--blue2)' };
+const MATERIAL_STATUS_BG    = { '有現貨':'var(--green-bg)', '缺貨':'var(--danger-bg)', '已停售':'var(--blue-bg)' };
+
+function materialStatusChip(s) {
+  const c  = MATERIAL_STATUS_COLOR[s]||'var(--text2)';
+  const bg = MATERIAL_STATUS_BG[s]||'rgba(255,255,255,.07)';
+  return s ? `<span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:0.786em;font-weight:700;background:${bg};color:${c}">${s}</span>` : '';
+}
+
+function renderPriceList() {
+  const role = authState?.role;
+  const isAdmin = role === 'admin';
+  const tabs = ['製冰機','材料','維修'];
+  const tabHtml = `<div class="task-tabs" style="margin-bottom:0">
+    ${tabs.map((t,i)=>`<div class="task-tab${priceTab===i?' active':''}" onclick="setPriceTab(${i})">${t}</div>`).join('')}
+  </div>`;
+
+  let list = [], html = '';
+
+  if (priceTab === 0) {
+    list = [...(cache.pricelist||[])];
+    if (searchQuery) list = list.filter(r=>JSON.stringify(r).includes(searchQuery));
+    if (!list.length) return tabHtml+'<div class="empty">沒有製冰機報價資料</div>';
+    // 依全新庫存數量排序（多→少）
+    const countNew  = r => { const b=(r['廠牌']||'').trim(); const m=(r['機型']||'').trim(); return cache.machines.filter(mc=>(!b||(mc['廠牌']||'').trim()===b)&&(!m||(mc['機型']||'').trim()===m)&&String(mc['類型']||'').trim()==='全新機').length; };
+    const countRent = r => { const b=(r['廠牌']||'').trim(); const m=(r['機型']||'').trim(); return cache.machines.filter(mc=>(!b||(mc['廠牌']||'').trim()===b)&&(!m||(mc['機型']||'').trim()===m)&&String(mc['類型']||'').trim()==='待出租').length; };
+    list.sort((a,b)=>{ const dn=countNew(b)-countNew(a); return dn!==0?dn:countRent(b)-countRent(a); });
+    html = list.map((r,i)=>{
+      const realIdx = (cache.pricelist||[]).indexOf(r);
+      // 副標題：租金 + 售價
+      const rentStr  = r['租金']  ? `租金 NT$${Number(r['租金']).toLocaleString()}` : '';
+      const priceStr = r['售價']  ? `售價 NT$${Number(r['售價']).toLocaleString()}` : '';
+      const sub = [rentStr, priceStr].filter(Boolean).join(' · ');
+      // 靠右：庫存數量（全新機、待出租）
+      const brand = r['廠牌']||''; const model = r['機型']||'';
+      const isStopped = r['停售']==='是';
+      const matchMachine = m => {
+        const mb = (m['廠牌']||'').trim(); const mm = (m['機型']||'').trim();
+        return (!brand||mb===brand) && (!model||mm===model);
+      };
+      const newCount    = cache.machines.filter(m=>matchMachine(m)&&String(m['類型']||'').trim()==='全新機').length;
+      const rentCount   = cache.machines.filter(m=>matchMachine(m)&&String(m['類型']||'').trim()==='待出租').length;
+      return `<div class="customer-item" onclick="showPricelistDetail(${realIdx})" style="${isStopped?'opacity:.55':''}">
+        <div style="flex:1;min-width:0">
+          <div class="c-name" style="display:flex;align-items:center;gap:6px">
+            ${brand} ${model}
+            ${isStopped?'<span style="font-size:0.714em;font-weight:700;color:var(--danger2);background:var(--danger-bg);border-radius:4px;padding:1px 6px">停售</span>':''}
+          </div>
+          ${sub?`<div class="c-addr">${sub}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:10px">
+          ${newCount>0?`<div style="font-size:0.786em;color:var(--purple-bg)"><span style="color:#ce93d8;font-weight:700">${newCount}</span> <span style="color:var(--text3)">全新</span></div>`:''}
+          ${rentCount>0?`<div style="font-size:0.786em;color:var(--text3)"><span style="color:var(--red2);font-weight:700">${rentCount}</span> 待租</div>`:''}
+          ${newCount===0&&rentCount===0?`<div style="font-size:0.786em;color:var(--text3)">無庫存</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+
+  } else if (priceTab === 1) {
+    list = [...(cache.materials||[])];
+    if (searchQuery) list = list.filter(r=>JSON.stringify(r).includes(searchQuery));
+    if (!list.length) return tabHtml+'<div class="empty">沒有材料報價資料</div>';
+    html = list.map((r,i)=>{
+      const realIdx = (cache.materials||[]).indexOf(r);
+      const name   = r['名稱']||Object.values(r)[0]||'—';
+      const price  = r['價格']||r['單價']||'';
+      const stock  = r['庫存']||'';
+      const status = r['狀態']||'';
+      const note   = r['附註']||r['備註']||'';
+      const subParts = [stock?`庫存：${stock}`:'', note].filter(Boolean).join('  ');
+      return `<div class="customer-item" onclick="showPricelistDetail(${realIdx})">
+        <div style="flex:1;min-width:0">
+          <div class="c-name" style="display:flex;align-items:center;gap:6px">
+            ${name}
+            ${materialStatusChip(status)}
+          </div>
+          ${subParts?`<div class="c-addr">${subParts}</div>`:''}
+        </div>
+        ${price?`<div style="font-size:0.929em;font-weight:700;color:var(--green2);flex-shrink:0;margin-left:10px">NT$${Number(price).toLocaleString()}</div>`:''}
+      </div>`;
+    }).join('');
+
+  } else {
+    list = [...(cache.repairPricelist||[])];
+    if (searchQuery) list = list.filter(r=>JSON.stringify(r).includes(searchQuery));
+    if (!list.length) return tabHtml+'<div class="empty">沒有維修報價資料</div>';
+    html = list.map((r,i)=>{
+      const realIdx = (cache.repairPricelist||[]).indexOf(r);
+      const name   = r['名稱']||Object.values(r)[0]||'—';
+      const price  = r['價格']||r['單價']||'';
+      const stock  = r['庫存']||'';
+      const status = r['狀態']||'';
+      const note   = r['附註']||r['備註']||'';
+      const subParts = [stock?`庫存：${stock}`:'', note].filter(Boolean).join('  ');
+      return `<div class="customer-item" onclick="showPricelistDetail(${realIdx})">
+        <div style="flex:1;min-width:0">
+          <div class="c-name" style="display:flex;align-items:center;gap:6px">
+            ${name}
+            ${materialStatusChip(status)}
+          </div>
+          ${subParts?`<div class="c-addr">${subParts}</div>`:''}
+        </div>
+        ${price?`<div style="font-size:0.929em;font-weight:700;color:var(--green2);flex-shrink:0;margin-left:10px">NT$${Number(price).toLocaleString()}</div>`:''}
+      </div>`;
+    }).join('');
+  }
+
+  return tabHtml + `<div style="padding-bottom:80px">${html}</div>`;
+}
+
+function setPriceTab(i) { priceTab = i; renderPage(); }
+
+function showPricelistDetail(idx) {
+  const sources = [cache.pricelist, cache.materials, cache.repairPricelist];
+  const item = (sources[priceTab]||[])[idx];
+  if (!item) return;
+  const keys = Object.keys(item).filter(k=>k&&String(k).trim());
+  const body = document.getElementById('detail-modal-body');
+  const titles = ['製冰機報價','材料報價','維修報價'];
+  document.getElementById('detail-modal-title').textContent = titles[priceTab];
+  const isAdmin = authState?.role === 'admin';
+  document.getElementById('detail-edit-btn').style.display = isAdmin ? '' : 'none';
+  detailType = 'pricelist'; detailIdx = idx;
+
+  let rowHtml = '';
+
+  if (priceTab === 0) {
+    // 製冰機：特殊彩色大字排版
+    const isStopped = item['停售'] === '是';
+    const fmt = (v) => v ? `NT$${Number(v).toLocaleString()}` : '—';
+    const bigRow = (label, val, color, extra='') =>
+      val ? `<div class="det-row" style="padding:8px 0">
+        <span class="det-key">${label}</span>
+        <span style="font-size:1.143em;font-weight:700;color:${color}">${val}${extra}</span>
+      </div>` : '';
+    const normalRow = (label, val) =>
+      val ? `<div class="det-row"><span class="det-key">${label}</span><span class="det-val">${val}</span></div>` : '';
+
+    rowHtml = `
+      ${isStopped?`<div style="padding:10px 0;text-align:center">
+        <span style="font-size:1.2em;font-weight:900;color:var(--danger2);letter-spacing:2px">⚠ 已停售</span>
+      </div>`:''}
+      <div class="det-sec-title" style="margin-top:4px">基本資訊</div>
+      ${normalRow('廠牌', item['廠牌'])}
+      ${normalRow('機型', item['機型'])}
+      ${normalRow('冰型', item['冰型'])}
+      ${normalRow('產能', item['產能']||item['磅數'])}
+      ${normalRow('電壓', item['電壓'])}
+      ${normalRow('散熱', item['散熱'])}
+      ${normalRow('冷媒', item['冷媒'])}
+      <div class="det-sec-title" style="margin-top:12px">租賃價格</div>
+      ${bigRow('租金', fmt(item['租金']), 'var(--green2)')}
+      ${bigRow('租送租金', fmt(item['租送 租金']||item['租送租金']), '#ffde87')}
+      ${bigRow('租送押金', fmt(item['租送 押金']||item['租送押金']), '#ffde87')}
+      ${bigRow('售價', fmt(item['售價']), 'var(--blue2)')}
+      ${normalRow('備註', item['備註'])}`;
+  } else {
+    // 材料/維修：通用渲染
+    rowHtml = keys.filter(k=>item[k]!==undefined&&item[k]!=='').map(k=>{
+      let val = String(item[k]);
+      if (k === '狀態' && priceTab === 1) val = materialStatusChip(item[k]) || val;
+      return `<div class="det-row"><span class="det-key">${k}</span><span class="det-val">${val}</span></div>`;
+    }).join('');
+  }
+
+  body.innerHTML = `<div class="det-section">${rowHtml}</div>
+  ${isAdmin?`<div style="padding:14px 15px">
+    <button class="btn-cancel" style="color:var(--danger2);border-color:var(--border);width:100%" onclick="confirmDeletePricelist(${idx})">🗑 刪除</button>
+  </div>`:''}`;
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function confirmDeletePricelist(idx) {
+  if (!confirm('確定要刪除這筆報價嗎？')) return;
+  const sources = [cache.pricelist, cache.materials, cache.repairPricelist];
+  const sheetNames = ['pricelist','materials','repairPricelist'];
+  const arr = sources[priceTab];
+  const item = arr?.[idx];
+  if (!item) return;
+  const id = item['機型']||item['報價ID']||item[Object.keys(item)[0]]||'';
+  arr.splice(idx,1);
+  saveCache();
+  enqueue({action:'delete', sheet:sheetNames[priceTab], data:null, id});
+  closeModal('detail-modal');
+  renderPage();
+  showToast('已刪除');
+}
+
+
+// ============================================================
+// 總覽頁面
+// ============================================================
+function renderOverview() {
+  const role = authState?.role;
+  const myName = authState?.name||'';
+
+  // ── 施工紀錄統計 ──
+  let tasks = [...cache.tasks];
+  if (role !== 'admin') {
+    tasks = tasks.filter(t => {
+      const assigned = getTaskAssign(t);
+      return !assigned.length || assigned.includes(myName);
+    });
+  }
+  const pendingTasks = tasks.filter(t => !isTaskDone(t));
+  const todayStr = new Date().toISOString().substring(0,10);
+  const doneTasks    = tasks.filter(t => {
+    if (!isTaskDone(t)) return false;
+    const doneDate = String(t['完成時間']||t['紀錄日期']||'').substring(0,10).replace(/\//g,'-');
+    return doneDate === todayStr;
+  });
+
+  // ── 維修紀錄統計 ──
+  let repairs = [...(cache.repairs||[])];
+  const pendingRepairs = repairs.filter(r => (r['狀態']||'待維修') !== '已完成');
+  const doneRepairs    = repairs.filter(r => {
+    if ((r['狀態']||'') !== '已完成') return false;
+    const doneDate = String(r['完成日期']||'').substring(0,10).replace(/\//g,'-');
+    return doneDate === todayStr;
+  });
+
+  // ── 收租統計（未收款）──
+  const today = new Date(new Date().toDateString());
+  let contracts = [...cache.contracts].filter(c => {
+    const e = String(c['到期日期']||'').replace('T',' ').substring(0,10);
+    return !e || new Date(e) >= today;
+  });
+  if (role !== 'admin') {
+    contracts = contracts.filter(c => {
+      const h = String(c['經手人']||'').trim();
+      return !h || h.split(/[,、，]/).map(s=>s.trim()).includes(myName);
+    });
+  }
+  const unpaidContracts = contracts.filter(c => !isRentPaidThisPeriod(c['合約ID']));
+
+  // ── 本月收款統計 ──
+  const thisMonthStr = new Date().toISOString().substring(0,7); // 'YYYY-MM'
+  const thisMonthPayments = cache.payments.filter(p=>{
+    const d = String(p['結帳日期']||'').replace(/\//g,'-').substring(0,7);
+    return d === thisMonthStr && (Number(p['金額'])||0) > 0;
+  });
+  const thisMonthPayTotal = thisMonthPayments.reduce((s,p)=>s+(Number(p['金額'])||0), 0);
+  // 本月應收租金（已標記已收的）
+  const thisMonthRentTotal = cache.contracts
+    .filter(c=>isRentPaidThisPeriod(c['合約ID']))
+    .reduce((s,c)=>s+(Number(c['租金'])||0), 0);
+  const thisMonthTotal = thisMonthPayTotal + thisMonthRentTotal;
+
+  // ── 即將到期合約（3個月內）──
+  const in3m = new Date(today); in3m.setMonth(in3m.getMonth()+3);
+  const expiringSoon = contracts.filter(c=>{
+    const e = String(c['到期日期']||'').replace('T',' ').substring(0,10);
+    if (!e) return false;
+    const ed = new Date(e);
+    return ed >= today && ed <= in3m;
+  }).sort((a,b)=>String(a['到期日期']||'').localeCompare(String(b['到期日期']||'')));
+
+  // ── 色卡產生器 ──
+  const card = (icon, label, count, color, bgColor, tabIdx, extraHtml='') => `
+    <div onclick="switchTab(${tabIdx})" style="
+      background:var(--surface);border-radius:14px;padding:18px 16px;
+      border:1px solid var(--border);cursor:pointer;position:relative;overflow:hidden;
+      display:flex;flex-direction:column;gap:6px;transition:background .1s;
+      border-left:4px solid ${color};"
+      onpointerdown="this.style.background='var(--surface2)'" onpointerup="this.style.background='var(--surface)'" onpointercancel="this.style.background='var(--surface)'">
+      <div style="display:flex;align-items:center;gap:8px;color:var(--text2);font-size:0.857em;font-weight:600">
+        <span style="font-size:1.2em">${icon}</span>${label}
+      </div>
+      <div style="font-size:2.2em;font-weight:900;color:${color};line-height:1">${count}</div>
+      ${extraHtml}
+      <div style="font-size:0.75em;color:var(--text3);margin-top:2px">點擊查看 →</div>
+    </div>`;
+
+  // ── 近期施工紀錄（最新5筆待施工）──
+  const recentTasks = pendingTasks
+    .sort((a,b) => String(b['紀錄日期']||'').localeCompare(String(a['紀錄日期']||'')))
+    .slice(0,5);
+
+  const recentTasksHtml = recentTasks.length ? recentTasks.map(t => {
+    const date = String(t['紀錄日期']||'').substring(0,10).replace(/-/g,'/');
+    const assigned = getTaskAssign(t);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"
+      onclick="switchTab(2)" style="cursor:pointer">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:0.929em;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t['客戶名稱']||'—'}</div>
+        <div style="font-size:0.786em;color:var(--text2);margin-top:2px">${t['工作內容']||''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:0.786em;color:var(--text3)">${date}</div>
+        ${assigned.length?`<div style="font-size:0.714em;color:var(--accent2)">👤 ${assigned.join('、')}</div>`:''}
+      </div>
+    </div>`;
+  }).join('') : `<div style="padding:16px 0;text-align:center;color:var(--text3);font-size:0.857em">沒有待施工項目 🎉</div>`;
+
+  // ── 近期維修紀錄（最新5筆待維修）──
+  const recentRepairs = pendingRepairs
+    .sort((a,b) => String(b['紀錄日期']||'').localeCompare(String(a['紀錄日期']||'')))
+    .slice(0,5);
+
+  const recentRepairsHtml = recentRepairs.length ? recentRepairs.map(r => {
+    const date = String(r['紀錄日期']||'').substring(0,10).replace(/-/g,'/');
+    const kc = REPAIR_KIND_COLOR[r['種類']||'']||'var(--text2)';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"
+      onclick="switchTab(7)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:0.929em;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r['客戶名稱']||r['機型']||'—'} <span style="font-size:0.857em;color:var(--text2)">${r['機號']||''}</span></div>
+        <div style="font-size:0.786em;color:var(--text2);margin-top:2px">${r['維修項目']||''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:0.786em;color:var(--text3)">${date}</div>
+        ${r['種類']?`<div style="font-size:0.714em;color:${kc}">${r['種類']}</div>`:''}
+      </div>
+    </div>`;
+  }).join('') : `<div style="padding:16px 0;text-align:center;color:var(--text3);font-size:0.857em">沒有待維修項目 🎉</div>`;
+
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return '早安';
+    if (h < 18) return '午安';
+    return '晚安';
+  })();
+  const userName = authState?.name || '';
+
+  return `<div style="padding:16px 14px 90px;display:flex;flex-direction:column;gap:16px">
+    <div style="padding:4px 2px 8px">
+      <div style="font-size:1.143em;font-weight:900;color:var(--text)">${greeting}，${userName} 👋</div>
+      <div style="font-size:0.857em;color:var(--text3);margin-top:3px">${new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric',weekday:'long'})}</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      ${card('🔨','待施工', pendingTasks.length, 'var(--accent2)', 'var(--accent-bg)', 2,
+        `<div style="font-size:0.786em;color:var(--text3)">已完成 ${doneTasks.length} 筆</div>`)}
+      ${card('🔧','待維修', pendingRepairs.length, 'var(--danger2)', 'var(--danger-bg)', 7,
+        `<div style="font-size:0.786em;color:var(--text3)">已完成 ${doneRepairs.length} 筆</div>`)}
+      ${card('💰','待收租', unpaidContracts.length, 'var(--green2)', 'var(--green-bg)', 4,
+        `<div style="font-size:0.786em;color:var(--text3)">共 ${contracts.length} 份合約</div>`)}
+    </div>
+
+    <div onclick="switchTab(3)" style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:14px 16px;cursor:pointer;border-left:4px solid var(--green2)"
+      onpointerdown="this.style.background='var(--surface2)'" onpointerup="this.style.background='var(--surface)'" onpointercancel="this.style.background='var(--surface)'">
+      <div style="font-size:0.786em;font-weight:700;color:var(--text2);margin-bottom:8px">💵 本月收入（${new Date().getMonth()+1}月）</div>
+      <div style="display:flex;gap:0">
+        <div style="flex:1;border-right:1px solid var(--border);padding-right:12px">
+          <div style="font-size:0.714em;color:var(--text3)">收款紀錄</div>
+          <div style="font-size:1.2em;font-weight:800;color:var(--green2)">NT$${thisMonthPayTotal.toLocaleString()}</div>
+        </div>
+        <div style="flex:1;border-right:1px solid var(--border);padding:0 12px">
+          <div style="font-size:0.714em;color:var(--text3)">已收租金</div>
+          <div style="font-size:1.2em;font-weight:800;color:var(--green2)">NT$${thisMonthRentTotal.toLocaleString()}</div>
+        </div>
+        <div style="flex:1;padding-left:12px">
+          <div style="font-size:0.714em;color:var(--text3)">合計</div>
+          <div style="font-size:1.2em;font-weight:800;color:var(--text)">NT$${thisMonthTotal.toLocaleString()}</div>
+        </div>
+      </div>
+      <div style="font-size:0.75em;color:var(--text3);margin-top:6px">點擊查看收款紀錄 →</div>
+    </div>
+
+    <div style="background:var(--surface);border-radius:12px;border:1px solid var(--border);overflow:hidden">
+      <div style="padding:12px 14px 6px;font-size:0.857em;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        🔨 待施工紀錄
+        <button onclick="switchTab(2)" style="background:none;border:none;color:var(--accent2);font-size:0.857em;cursor:pointer;font-family:inherit">全部 →</button>
+      </div>
+      <div style="padding:0 14px">${recentTasksHtml}</div>
+    </div>
+
+    <div style="background:var(--surface);border-radius:12px;border:1px solid var(--border);overflow:hidden">
+      <div style="padding:12px 14px 6px;font-size:0.857em;font-weight:700;color:var(--text2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        🔧 待維修紀錄
+        <button onclick="switchTab(7)" style="background:none;border:none;color:var(--danger2);font-size:0.857em;cursor:pointer;font-family:inherit">全部 →</button>
+      </div>
+      <div style="padding:0 14px">${recentRepairsHtml}</div>
+    </div>
+    ${expiringSoon.length?`<div style="background:var(--surface);border-radius:12px;border:1px solid rgba(249,168,37,.4);overflow:hidden">
+      <div style="padding:12px 14px 6px;font-size:0.857em;font-weight:700;color:var(--yellow);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        ⚠️ 即將到期（3個月內）
+        <button onclick="switchTab(4)" style="background:none;border:none;color:var(--yellow);font-size:0.857em;cursor:pointer;font-family:inherit">全部 →</button>
+      </div>
+      <div style="padding:0 14px">
+        ${expiringSoon.map(c=>{
+          const ed = new Date(String(c['到期日期']||'').replace('T',' ').substring(0,10));
+          const days = Math.round((ed-today)/86400000);
+          return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)" onclick="switchTab(4)">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.929em;font-weight:600">${c['客戶名稱']||'—'}</div>
+              <div style="font-size:0.786em;color:var(--text2);margin-top:2px">${c['機型']||''} ${c['機號']||''}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:0.786em;font-weight:700;color:var(--yellow)">${days<=0?'今日到期':days+'天後'}</div>
+              <div style="font-size:0.714em;color:var(--text3)">${String(c['到期日期']||'').substring(0,10).replace(/-/g,'/')}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`:''}
+  </div>`;
+}
+
 function renderSettings() {
   const theme = localStorage.getItem('app_theme')||'dark';
   const fontSize = parseFloat(localStorage.getItem('app_fontscale')||'1');
@@ -2200,6 +3768,25 @@ function renderSettings() {
         <button class="btn-test" style="background:transparent;color:var(--text3);border:1px solid var(--border)" onclick="clearAllCache()">🗑 清除本機快取</button>
       </div>
     </div>
+    ${cache.staff.length ? `<div class="settings-card">
+      <div class="settings-card-title">👥 人員名單（${cache.staff.length} 人）</div>
+      ${cache.staff.map(s=>{
+        const name = s['姓名']||s['名稱']||'';
+        const role = s['角色']||s['職稱']||'';
+        const phone = s['電話']||'';
+        return `<div style="display:flex;align-items:center;gap:12px;padding:11px 15px;border-bottom:1px solid var(--border)">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-bg);border:1px solid var(--accent-glow);display:flex;align-items:center;justify-content:center;font-size:1.1em;font-weight:700;color:var(--accent2);flex-shrink:0">${name.charAt(0)||'?'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:0.929em">${name}</div>
+            ${role?`<div style="font-size:0.786em;color:var(--text2)">${role}</div>`:''}
+          </div>
+          ${phone?`<a href="tel:${phone}" style="background:var(--green-bg);color:var(--green2);border:1px solid rgba(67,160,71,.3);border-radius:6px;padding:4px 10px;font-size:0.786em;text-decoration:none;white-space:nowrap;flex-shrink:0">📞</a>`:''}
+        </div>`;
+      }).join('')}
+    </div>` : `<div class="settings-card">
+      <div class="settings-card-title">👥 人員名單</div>
+      <div style="padding:16px;color:var(--text3);font-size:0.857em">尚未同步人員名單，請先設定連結並同步</div>
+    </div>`}
   </div>`;
 }
 
@@ -2222,13 +3809,13 @@ async function testConn() {
 }
 
 function clearAllCache() {
-  cache = {customers:[],machines:[],contracts:[],payments:[],pricelist:[],staff:[],tasks:[],taskOptions:[],adminPin:'',machineStatuses:[]};
+  cache = {customers:[],machines:[],contracts:[],payments:[],pricelist:[],staff:[],tasks:[],taskOptions:[],adminPin:'',machineStatuses:[],repairs:[],materials:[],repairPricelist:[]};
   saveCache(); renderPage(); showToast('快取已清除');
 }
 
 function noConfig() {
   if (!cfg.url) return `<div class="empty">尚未設定 Google 試算表連結<br><br>
-    <button onclick="switchTab(4)" style="background:var(--red);border:none;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer">前往設定</button></div>`;
+    <button onclick="switchTab(6)" style="background:var(--red);border:none;color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer">前往設定</button></div>`;
   return '<div class="empty">沒有資料</div>';
 }
 
@@ -2247,7 +3834,7 @@ function showDetail(type, idx) {
   // task detail
   if (type === 'task') {
     document.getElementById('detail-edit-btn').style.display = ''; // 顯示編輯按鈕
-    title.textContent = item['客戶名稱']||'工作事項';
+    title.textContent = item['客戶名稱']||'施工紀錄';
     const fields = [
       {k:'客戶名稱', v: item['客戶名稱']||'—'},
       {k:'電話',     v: item['電話']||'—'},
@@ -2298,7 +3885,7 @@ function showDetail(type, idx) {
       ${machineBlock}
       <div style="padding:14px 15px;display:flex;gap:8px">
         <button class="btn-cancel" style="flex:1;color:var(--danger2)" onclick="confirmDelete('task',${idx})">🗑 刪除</button>
-        <button class="btn-save" style="flex:1" onclick="toggleTaskDone(${idx});closeModal('detail-modal')">${item['完成狀態']?'↩ 取消完成':'✓ 標記完成'}</button>
+        <button class="btn-save" style="flex:1" onclick="toggleTaskDone(${idx});closeModal('detail-modal')">${isTaskDone(item)?'↩ 取消完成':'✓ 標記完成'}</button>
       </div>`;
     document.getElementById('detail-modal').classList.add('open');
     return;
@@ -2347,11 +3934,22 @@ function showDetail(type, idx) {
     });
     // 客戶註記：優先抓「客戶註記」欄位，其次備註
     const note = item['客戶註記']||item['客戶備註']||item['備註']||'';
+    // 多電話解析
+    const phones = item['電話'] ? item['電話'].split(/[\/、,]/).map(p=>p.trim()).filter(Boolean) : [];
+    const phoneHtml = phones.length
+      ? phones.map(p=>`<div style="display:flex;align-items:center;gap:8px;margin-top:3px">
+          <span>${p}</span>
+          <a href="tel:${p}" style="background:var(--green-bg);color:var(--green2);border:1px solid rgba(67,160,71,.3);border-radius:6px;padding:3px 10px;font-size:11px;text-decoration:none;white-space:nowrap">📞 撥打</a>
+        </div>`).join('')
+      : '<span style="color:var(--text3)">—</span>';
     body.innerHTML = `
       <div class="det-section">
         <div class="det-sec-title">聯絡資訊</div>
-        <div class="det-row"><span class="det-key">電話</span><span class="det-val" style="display:flex;align-items:center;gap:8px">${item['電話']||'—'}${item['電話']?`<a href="tel:${item['電話']}" style="background:var(--green-bg);color:var(--green2);border:1px solid rgba(67,160,71,.3);border-radius:6px;padding:3px 10px;font-size:11px;text-decoration:none;white-space:nowrap">📞 撥打</a>`:''}</span></div>
+        <div class="det-row" style="align-items:flex-start"><span class="det-key">電話</span><div style="text-align:right">${phoneHtml}</div></div>
         <div class="det-row"><span class="det-key">地址</span><span class="det-val" style="font-size:12px">${item['地址']||'—'}</span></div>
+        ${item['統一編號']?`<div class="det-row"><span class="det-key">統一編號</span><span class="det-val">${item['統一編號']}</span></div>`:''}
+        ${item['負責人']?`<div class="det-row"><span class="det-key">負責人</span><span class="det-val">${item['負責人']}</span></div>`:''}
+        ${item['負責人 資訊']||item['負責人資訊']?`<div class="det-row" style="align-items:flex-start"><span class="det-key">負責人資訊</span><span class="det-val" style="font-size:12px;white-space:pre-wrap">${item['負責人 資訊']||item['負責人資訊']}</span></div>`:''}
         ${note?`<div class="det-row"><span class="det-key">客戶註記</span><span class="det-val" style="color:var(--yellow)">${note}</span></div>`:''}
       </div>
       <div class="det-section">
@@ -2393,6 +3991,21 @@ function showDetail(type, idx) {
           </div>`;
         }).join('')}
       </div>` : ''}
+      ${(()=>{
+        const custPayments = cache.payments.filter(p=>p['客戶名稱']===item['客戶名稱']);
+        if (!custPayments.length) return '';
+        const total = custPayments.reduce((s,p)=>s+(Number(p['金額'])||0),0);
+        return `<div class="det-section">
+          <div class="det-sec-title" style="display:flex;justify-content:space-between;align-items:center">
+            收款紀錄（${custPayments.length}筆）
+            <span style="color:var(--green2);font-weight:700">合計 NT$${total.toLocaleString()}</span>
+          </div>
+          ${custPayments.slice(-5).reverse().map(p=>`<div class="det-row">
+            <span class="det-key" style="font-size:0.786em">${String(p['結帳日期']||'').substring(0,10).replace(/-/g,'/')}</span>
+            <span class="det-val"><span class="chip chip-pay" style="font-size:0.714em">${p['收款項目']||''}</span> <span style="color:var(--green2);font-weight:600">NT$${Number(p['金額']||0).toLocaleString()}</span></span>
+          </div>`).join('')}
+        </div>`;
+      })()}
       <div style="padding:14px 15px">
         <button class="btn-cancel" style="width:100%;color:var(--danger2)" onclick="confirmDelete('customer',${idx})">🗑 刪除</button>
       </div>`;
@@ -2410,10 +4023,11 @@ function showDetail(type, idx) {
         <div class="det-row"><span class="det-key">型號</span><span class="det-val">${item['機型']||'—'}</span></div>
         <div class="det-row"><span class="det-key">機號</span><span class="det-val" style="font-size:11px">${item['機號']||'—'}</span></div>
         <div class="det-row"><span class="det-key">冰型</span><span class="det-val">${item['冰型']||'—'}</span></div>
-        <div class="det-row"><span class="det-key">磅數</span><span class="det-val">${item['磅數']||'—'}</span></div>
+        <div class="det-row"><span class="det-key">產能</span><span class="det-val">${item['產能']||item['磅數']||'—'}</span></div>
         <div class="det-row"><span class="det-key">電壓</span><span class="det-val">${item['電壓']||'—'}</span></div>
         <div class="det-row"><span class="det-key">冷媒</span><span class="det-val">${item['冷媒']||'—'}</span></div>
         <div class="det-row"><span class="det-key">散熱</span><span class="det-val">${item['散熱']||'—'}</span></div>
+        ${item['備註']?`<div class="det-row"><span class="det-key">備註</span><span class="det-val" style="color:var(--yellow)">${item['備註']}</span></div>`:''}
       </div>
       <div class="det-section">
         <div class="det-sec-title">狀態</div>
@@ -2425,6 +4039,17 @@ function showDetail(type, idx) {
         ${contract ? `<div class="det-row"><span class="det-key">租借日期</span><span class="det-val">${String(contract['租借日期']||'').replace('T',' ').substring(0,10).replace(/-/g,'/')}</span></div>` : ''}
         ${contract ? `<div class="det-row"><span class="det-key">到期日期</span><span class="det-val">${String(contract['到期日期']||'').replace('T',' ').substring(0,10).replace(/-/g,'/')}</span></div>` : ''}
       </div>
+      ${String(item['類型']||'').trim()==='借用機' ? (()=>{
+        // 找最近的借用相關施工紀錄
+        const borrowTasks = cache.tasks.filter(t=>(t['機號']===item['機號']||t['機型']===item['機型'])&&!isTaskDone(t));
+        return borrowTasks.length ? `<div class="det-section">
+          <div class="det-sec-title" style="color:var(--yellow)">🔧 借用中的施工紀錄</div>
+          ${borrowTasks.map(t=>`<div class="det-row">
+            <span class="det-key" style="font-size:0.786em">${t['客戶名稱']||'—'}</span>
+            <span class="det-val" style="font-size:0.857em">${t['工作內容']||''}</span>
+          </div>`).join('')}
+        </div>` : '';
+      })() : ''}
       <div style="padding:14px 15px">
         <button class="btn-cancel" style="width:100%;color:var(--danger2)" onclick="confirmDelete('machine',${idx})">🗑 刪除</button>
       </div>`;
@@ -2432,8 +4057,11 @@ function showDetail(type, idx) {
 
   else if (type === 'contract') {
     title.textContent = `合約 ${item['合約ID']||''}`;
-    // 清理日期：只取 yyyy/MM/dd 或 yyyy-MM-dd 前10碼
     function fmtDate(v){ if(!v) return '—'; return String(v).replace('T',' ').substring(0,10).replace(/-/g,'/'); }
+    const ctType = item['類型']||'';
+    // 該合約相關收款
+    const relPayments = cache.payments.filter(p=>p['合約ID']===item['合約ID']||p['客戶名稱']===item['客戶名稱']);
+    const payTotal = relPayments.reduce((s,p)=>s+(Number(p['金額'])||0),0);
     body.innerHTML = `
       <div class="det-section">
         <div class="det-sec-title">客戶資訊</div>
@@ -2443,13 +4071,25 @@ function showDetail(type, idx) {
       </div>
       <div class="det-section">
         <div class="det-sec-title">租賃條件</div>
+        <div class="det-row"><span class="det-key">狀態</span><span class="det-val">${chipHtml(ctType||'—')}</span></div>
         <div class="det-row"><span class="det-key">機型</span><span class="det-val">${item['機型']||'—'}</span></div>
         <div class="det-row"><span class="det-key">機號</span><span class="det-val" style="font-size:11px">${item['機號']||'—'}</span></div>
         <div class="det-row"><span class="det-key">租借日期</span><span class="det-val">${fmtDate(item['租借日期'])}</span></div>
         <div class="det-row"><span class="det-key">到期日期</span><span class="det-val">${fmtDate(item['到期日期'])}</span></div>
-        <div class="det-row"><span class="det-key">月租金</span><span class="det-val" style="color:var(--green2)">${item['租金']?'NT$'+Number(item['租金']).toLocaleString():'—'}</span></div>
-        <div class="det-row"><span class="det-key">押金</span><span class="det-val">${item['押金']?'NT$'+Number(item['押金']).toLocaleString():'—'}</span></div>
+        <div class="det-row"><span class="det-key">月租金</span><span class="det-val" style="color:var(--green2);font-weight:700">${item['租金']?'NT$'+Number(item['租金']).toLocaleString():'—'}</span></div>
+        ${item['押金']?`<div class="det-row"><span class="det-key">押金</span><span class="det-val">${'NT$'+Number(item['押金']).toLocaleString()}</span></div>`:''}
+        ${item['經手人']?`<div class="det-row"><span class="det-key">經手人</span><span class="det-val">${item['經手人']}</span></div>`:''}
       </div>
+      ${relPayments.length?`<div class="det-section">
+        <div class="det-sec-title" style="display:flex;justify-content:space-between">
+          相關收款
+          <span style="color:var(--green2);font-weight:700">合計 NT$${payTotal.toLocaleString()}</span>
+        </div>
+        ${relPayments.slice(0,5).map(p=>`<div class="det-row">
+          <span class="det-key" style="font-size:0.786em">${String(p['結帳日期']||'').substring(0,10).replace(/-/g,'/')}</span>
+          <span class="det-val">${p['收款項目']||''} <span style="color:var(--green2);font-weight:700">NT$${Number(p['金額']||0).toLocaleString()}</span></span>
+        </div>`).join('')}
+      </div>`:''}
       <div style="padding:14px 15px">
         <button class="btn-cancel" style="width:100%;color:var(--danger2)" onclick="confirmDelete('contract',${idx})">🗑 刪除</button>
       </div>`;
@@ -2458,23 +4098,56 @@ function showDetail(type, idx) {
   else if (type === 'payment') {
     title.textContent = `收款 ${item['收款ID']||''}`;
     const fmtDate = v => String(v||'').replace('T',' ').substring(0,10).replace(/-/g,'/');
+
+    // 解析收款明細 JSON，產生細項表格
+    let lineItemsHtml = '';
+    if (item['收款明細']) {
+      try {
+        const lines = JSON.parse(item['收款明細']);
+        if (lines.length) {
+          lineItemsHtml = `
+          <div class="det-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+            <span class="det-key">細項明細</span>
+            <div style="width:100%;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:2px">
+              ${lines.map((l,i)=>`
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;${i>0?'border-top:1px solid var(--border)':''}">
+                <div style="min-width:0">
+                  <span style="font-size:0.929em">${l.name}</span>
+                  ${l.detail?`<span style="font-size:0.786em;color:var(--text2);margin-left:6px">${l.detail}</span>`:''}
+                  ${l.taxable?`<span style="font-size:0.714em;color:var(--accent2);margin-left:4px">含稅</span>`:''}
+                </div>
+                <span style="font-weight:700;color:var(--green2);white-space:nowrap;margin-left:10px">NT$${Number(l.amount||0).toLocaleString()}</span>
+              </div>`).join('')}
+              <div style="display:flex;justify-content:space-between;padding:9px 12px;border-top:1px solid var(--border);background:var(--surface2)">
+                <span style="font-size:0.857em;color:var(--text2)">合計</span>
+                <span style="font-weight:700">NT$${Number(item['金額']||0).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>`;
+        }
+      } catch(e) {}
+    }
+
     const fields = [
       {k:'收款ID',    v: item['收款ID']||'—'},
       {k:'合約ID',    v: item['合約ID']||'—'},
       {k:'客戶名稱',  v: item['客戶名稱']||'—'},
       {k:'結帳日期',  v: fmtDate(item['結帳日期'])||'—'},
       {k:'結帳方式',  v: item['結帳方式']||'—'},
-      {k:'金額',      v: item['金額']?'NT$'+Number(item['金額']).toLocaleString():'—', big:true},
+      {k:'金額',      v: item['金額']!=null?(Number(item['金額'])>=0?'NT$'+Number(item['金額']).toLocaleString():'－NT$'+Math.abs(Number(item['金額'])).toLocaleString()):'—', big:true, color:Number(item['金額'])<0?'var(--danger2)':'var(--green2)'},
       {k:'收款項目',  v: item['收款項目']||'—', big:true},
-      {k:'詳細內容',  v: item['詳細內容']||'—', big:true},
+      {k:'詳細內容',  v: item['詳細內容']||''},
+      {k:'發票',      v: item['發票']||''},
+      {k:'統一編號',  v: item['統一編號']||''},
       {k:'經手人',    v: item['經手人']||'—'},
-    ];
+    ].filter(f=>f.v&&f.v!=='—');
     body.innerHTML = `
       <div class="det-section">
         ${fields.map(f=>`<div class="det-row">
           <span class="det-key">${f.k}</span>
-          <span class="det-val" style="${f.big?'font-size:16px;font-weight:700;color:var(--text)':''}">${f.v}</span>
+          <span class="det-val" style="${f.big?'font-size:16px;font-weight:700;color:'+(f.color||'var(--text)'):''}">${f.v}</span>
         </div>`).join('')}
+        ${lineItemsHtml}
       </div>
       <div style="padding:14px 15px">
         <button class="btn-cancel" style="width:100%;color:var(--danger2)" onclick="confirmDelete('payment',${idx})">🗑 刪除</button>
@@ -2484,7 +4157,33 @@ function showDetail(type, idx) {
   document.getElementById('detail-modal').classList.add('open');
 }
 
-function editCurrent() { closeModal('detail-modal'); openEditItem(detailType, detailIdx); }
+function editCurrent() {
+  closeModal('detail-modal');
+  if (detailType === 'repair') {
+    const item = (cache.repairs||[])[detailIdx];
+    if (!item) return;
+    editMode = true;
+    editId = item['維修ID']||item[Object.keys(item)[0]]||'';
+    _repairStatus = item['狀態']||'待維修';
+    _repairKind   = item['種類']||'';
+    selectedRepairItems = item['維修項目'] ? item['維修項目'].split(/[,、，]/).map(s=>s.trim()).filter(Boolean) : [''];
+    document.getElementById('form-modal-title').textContent = '編輯維修紀錄';
+    document.getElementById('form-modal-body').innerHTML = repairForm(item);
+    document.getElementById('form-modal').classList.add('open');
+  } else if (detailType === 'pricelist') {
+    const sources = [cache.pricelist, cache.materials, cache.repairPricelist];
+    const item = (sources[priceTab]||[])[detailIdx];
+    if (!item) return;
+    editMode = true;
+    editId = priceTab===0 ? (item['廠牌']+'|'+item['機型']) : (item['報價ID']||'');
+    const titles = ['編輯製冰機報價','編輯材料報價','編輯維修報價'];
+    document.getElementById('form-modal-title').textContent = titles[priceTab];
+    document.getElementById('form-modal-body').innerHTML = pricelistEntryForm(item);
+    document.getElementById('form-modal').classList.add('open');
+  } else {
+    openEditItem(detailType, detailIdx);
+  }
+}
 
 // ============================================================
 // STATUS DECK (機器清單 → 更改狀態)
@@ -2710,17 +4409,161 @@ function addMachineChipOption(groupId, field, getterFn, customKey, inputId) {
 function renderMachineChipGroup(groupId, field, opts, selected, getterFn, customKey) {
   const wrap = document.getElementById(groupId);
   if (!wrap) return;
-  const defArrs = {custom_lbs:LBS_OPTIONS_DEFAULT, custom_ice_types:ICE_TYPES, custom_voltages:VOLTAGES_DEFAULT, custom_coolants:COOLANTS_DEFAULT, custom_brands:BRANDS_DEFAULT, none:[]};
   wrap.innerHTML = opts.map(o=>`<button type="button" class="m-chip pay-item-chip${selected===o?' selected':''}" data-val="${o}"
-    onclick="selectMachineChip('${field}','${o}','${groupId}')"
-    oncontextmenu="event.preventDefault();delMachineChip('${groupId}','${field}','${o}','${customKey}')"
-    ontouchstart="startMCLP('${groupId}','${field}','${o}','${customKey}')"
-    ontouchend="stopMCLP()" ontouchmove="stopMCLP()">${o}</button>`).join('');
+    onclick="selectMachineChip('${field}','${o}','${groupId}')">${o}</button>`).join('')
+    || '<span style="font-size:0.857em;color:var(--text3)">尚無選項</span>';
 }
 
 let mclpTimer=null;
 function startMCLP(g,f,v,ck){mclpTimer=setTimeout(()=>delMachineChip(g,f,v,ck),600);}
 function stopMCLP(){if(mclpTimer){clearTimeout(mclpTimer);mclpTimer=null;}}
+
+// ── 機器 chip 選項編輯彈窗 ──
+let _chipEditorState = {};
+function openPayItemEditor() {
+  const title = document.getElementById('chip-editor-title');
+  const body  = document.getElementById('chip-editor-body');
+  if (title) title.textContent = '編輯收款項目';
+  const allItems = getPayItems();
+  body.innerHTML = `
+    <div style="padding:12px 16px;display:flex;gap:8px;border-bottom:1px solid var(--border)">
+      <input class="fi" id="pay-editor-inp" placeholder="新增收款項目..." style="flex:1;font-size:0.929em">
+      <button type="button" onclick="addPayEditorItem()"
+        style="padding:10px 14px;background:var(--accent2);border:none;border-radius:8px;color:#fff;font-size:0.929em;cursor:pointer;white-space:nowrap;font-family:inherit">＋ 新增</button>
+    </div>
+    <div style="padding:8px 0">
+      ${allItems.map(item=>`
+        <div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);gap:10px">
+          <span style="flex:1;font-size:0.929em">${item}</span>
+          <button type="button" onclick="deletePayEditorItem('${item.replace(/'/g,"\\'")}')"
+            style="background:var(--danger-bg);border:1px solid rgba(229,57,53,.3);color:var(--danger2);border-radius:6px;padding:4px 10px;font-size:0.857em;cursor:pointer;white-space:nowrap;font-family:inherit">✕ 刪除</button>
+        </div>`).join('')}
+      ${allItems.length===0?'<div style="padding:20px;text-align:center;color:var(--text3);font-size:0.857em">尚無收款項目，請新增</div>':''}
+    </div>`;
+  document.getElementById('chip-editor-deck').classList.add('open');
+}
+
+function addPayEditorItem() {
+  const inp = document.getElementById('pay-editor-inp');
+  const val = inp?.value.trim(); if (!val) return;
+  const custom = JSON.parse(localStorage.getItem('custom_pay_items')||'[]');
+  if (!custom.includes(val) && !PAY_ITEMS.includes(val)) {
+    custom.push(val); localStorage.setItem('custom_pay_items', JSON.stringify(custom));
+  }
+  if (inp) inp.value = '';
+  openPayItemEditor();
+  // 同步更新表單 chip（含臨時項目）
+  const wrap = document.getElementById('pay-items-wrap');
+  if (wrap) {
+    const all = [...new Set([...getPayItems(), ...tempPayItems])];
+    wrap.innerHTML = all.map(i=>{
+      const isTemp = tempPayItems.includes(i) && !getPayItems().includes(i);
+      return `<button type="button" class="pay-item-chip${selectedPayItems.includes(i)?' selected':''}"
+        onclick="togglePayItemAndLine('${i.replace(/'/g,"\\'")}')"
+        ${!isTemp?`oncontextmenu="event.preventDefault();confirmDeletePayItem('${i.replace(/'/g,"\\'")}') " ontouchstart="startLongPress('${i.replace(/'/g,"\\'")}') " ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()"`:''}>
+        ${i}${isTemp?'<span style="opacity:.5;font-size:0.8em;margin-left:2px">⏱</span>':''}
+      </button>`;
+    }).join('');
+  }
+  showToast(`已新增「${val}」`);
+}
+
+function deletePayEditorItem(item) {
+  confirmDeletePayItem(item);
+  // 重新打開編輯器（讓列表更新）
+  setTimeout(()=>openPayItemEditor(), 100);
+}
+
+function openChipEditor(groupId, field, customKey, placeholder) {
+  _chipEditorState = { groupId, field, customKey, placeholder };
+  _plEditorState = {};
+  renderChipEditorDeck();
+  document.getElementById('chip-editor-deck').classList.add('open');
+}
+
+function renderChipEditorDeck() {
+  const {groupId, field, customKey, placeholder} = _chipEditorState;
+  const getters = {
+    custom_lbs: getLbsOptions, custom_ice_types: getIceTypes,
+    custom_voltages: getVoltages, custom_coolants: getCoolants,
+    custom_brands: getBrands, custom_cooling: getCoolings, none: ()=>[]
+  };
+  const fn = getters[customKey] || (()=>[]);
+  const opts = fn();
+  const defArrs = {
+    custom_lbs: LBS_OPTIONS_DEFAULT, custom_ice_types: ICE_TYPES,
+    custom_voltages: VOLTAGES_DEFAULT, custom_coolants: COOLANTS_DEFAULT,
+    custom_brands: BRANDS_DEFAULT, custom_cooling: COOLING_DEFAULT, none: []
+  };
+  const body = document.getElementById('chip-editor-body');
+  const fieldLabels = {
+    iceType:'冰型', lbs:'磅數', voltage:'電壓', coolant:'冷媒', cooling:'散熱'
+  };
+  const label = fieldLabels[field] || field;
+  document.getElementById('chip-editor-title').textContent = `編輯選項：${label}`;
+  body.innerHTML = `
+    <div style="padding:12px 16px;display:flex;gap:8px;border-bottom:1px solid var(--border)">
+      <input class="fi" id="chip-editor-inp" placeholder="${placeholder||'新增選項...'}" style="flex:1;font-size:0.929em">
+      <button type="button" onclick="addChipEditorOption()"
+        style="padding:10px 14px;background:var(--accent2);border:none;border-radius:8px;color:#fff;font-size:0.929em;cursor:pointer;white-space:nowrap;font-family:inherit">＋ 新增</button>
+    </div>
+    <div style="padding:8px 0">
+      ${opts.length ? opts.map(o=>`
+        <div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);gap:10px">
+          <span style="flex:1;font-size:0.929em">${o}</span>
+          <button type="button" onclick="deleteChipEditorOption('${o.replace(/'/g,"\\'")}')"
+            style="background:var(--danger-bg);border:1px solid rgba(229,57,53,.3);color:var(--danger2);border-radius:6px;padding:4px 10px;font-size:0.857em;cursor:pointer;white-space:nowrap;font-family:inherit">✕ 刪除</button>
+        </div>`).join('')
+      : '<div style="padding:20px;text-align:center;color:var(--text3);font-size:0.857em">尚無選項，請新增</div>'}
+    </div>`;
+}
+
+function addChipEditorOption() {
+  const inp = document.getElementById('chip-editor-inp');
+  const val = inp?.value.trim();
+  if (!val) return;
+  const {groupId, field, customKey} = _chipEditorState;
+  const custom = JSON.parse(localStorage.getItem(customKey)||'[]');
+  if (!custom.includes(val)) {
+    custom.push(val);
+    localStorage.setItem(customKey, JSON.stringify(custom));
+  }
+  machineSelections[field] = machineSelections[field] || val;
+  if (inp) inp.value = '';
+  // 同步更新主表單中的chip group
+  const getters = {
+    custom_lbs:getLbsOptions, custom_ice_types:getIceTypes,
+    custom_voltages:getVoltages, custom_coolants:getCoolants,
+    custom_brands:getBrands, custom_cooling:getCoolings
+  };
+  const fn = getters[customKey];
+  if (fn) renderMachineChipGroup(groupId, field, fn(), machineSelections[field], fn, customKey);
+  renderChipEditorDeck();
+  showToast(`已新增「${val}」`);
+}
+
+function deleteChipEditorOption(val) {
+  if (!confirm(`刪除「${val}」嗎？`)) return;
+  const {groupId, field, customKey} = _chipEditorState;
+  const defArrs2 = {custom_lbs:'lbs',custom_ice_types:'ice_types',custom_voltages:'voltages',custom_coolants:'coolants',custom_cooling:'cooling'};
+  const custom = JSON.parse(localStorage.getItem(customKey)||'[]');
+  localStorage.setItem(customKey, JSON.stringify(custom.filter(x=>x!==val)));
+  if (defArrs2[customKey]) {
+    const bl = JSON.parse(localStorage.getItem('del_'+defArrs2[customKey])||'[]');
+    if (!bl.includes(val)) { bl.push(val); localStorage.setItem('del_'+defArrs2[customKey], JSON.stringify(bl)); }
+  }
+  if (machineSelections[field]===val) machineSelections[field]='';
+  const getters = {
+    custom_lbs:getLbsOptions, custom_ice_types:getIceTypes,
+    custom_voltages:getVoltages, custom_coolants:getCoolants,
+    custom_brands:getBrands, custom_cooling:getCoolings
+  };
+  const fn = getters[customKey];
+  if (fn) renderMachineChipGroup(groupId, field, fn(), machineSelections[field]||'', fn, customKey);
+  renderChipEditorDeck();
+  showToast(`已刪除「${val}」`);
+}
+
 function delMachineChip(groupId,field,val,customKey){
   const defArrs={custom_lbs:LBS_OPTIONS_DEFAULT,custom_ice_types:ICE_TYPES,custom_voltages:VOLTAGES_DEFAULT,custom_coolants:COOLANTS_DEFAULT,custom_brands:BRANDS_DEFAULT,custom_cooling:COOLING_DEFAULT,none:[]};
   // 所有選項都可以刪除（預設+自訂）
@@ -2743,8 +4586,8 @@ function delMachineChip(groupId,field,val,customKey){
 
 
 function openAdd() {
-  editMode = false; editId = ''; payMethod = ''; selectedPayItems = []; selectedTaskItems = []; selectedHandlers = []; payLineItems = [];
-  const titles = ['新增客戶','新增機器','新增工作','新增收款','新增合約','新增合約'];
+  editMode = false; editId = ''; payMethod = ''; selectedPayItems = []; tempPayItems = []; selectedTaskItems = []; selectedHandlers = []; payLineItems = [];
+  const titles = ['新增客戶','新增機器','新增施工紀錄','新增收款','新增合約','新增合約','','新增維修紀錄','新增報價'];
   document.getElementById('form-modal-title').textContent = titles[currentTab]||'新增';
   const body = document.getElementById('form-modal-body');
   switch(currentTab) {
@@ -2754,19 +4597,28 @@ function openAdd() {
     case 3: body.innerHTML = paymentForm(null); break;
     case 4: body.innerHTML = contractForm(null); break;
     case 5: body.innerHTML = contractForm(null); break;
+    case 7: body.innerHTML = repairForm(null); break;
+    case 8: body.innerHTML = pricelistEntryForm(null); break;
     default: return;
   }
   document.getElementById('form-modal').classList.add('open');
 }
 
 function openEditItem(type, idx) {
-  editMode = true; selectedPayItems = []; selectedTaskItems = []; selectedHandlers = []; payLineItems = [];
+  editMode = true; selectedPayItems = []; tempPayItems = []; selectedTaskItems = []; selectedHandlers = []; payLineItems = [];
   const maps = {customer:cache.customers, machine:cache.machines, contract:cache.contracts, payment:cache.payments, task:cache.tasks};
   const item = maps[type]?.[idx];
   if (!item) return;
-  editId = item['收款ID']||item['合約ID']||item['機號']||item['客戶名稱']||item['紀錄日期']||'';
+  // 依資料類型取正確的 ID 欄位
+  if (type === 'task') {
+    editId = item['任務ID']||item['紀錄日期']||'';
+  } else if (type === 'repair') {
+    editId = item['維修ID']||item[Object.keys(item)[0]]||'';
+  } else {
+    editId = item['收款ID']||item['合約ID']||item['機號']||item['客戶名稱']||item['紀錄日期']||item['報價ID']||'';
+  }
   detailType = type; detailIdx = idx;
-  const titles = {customer:'編輯客戶',machine:'編輯機器',contract:'編輯合約',payment:'編輯收款',task:'編輯工作'};
+  const titles = {customer:'編輯客戶',machine:'編輯機器',contract:'編輯合約',payment:'編輯收款',task:'編輯施工紀錄'};
   document.getElementById('form-modal-title').textContent = titles[type];
   const body = document.getElementById('form-modal-body');
   switch(type) {
@@ -2787,16 +4639,49 @@ function openEditItem(type, idx) {
 
 // ---- Customer Form ----
 function customerForm(d) {
+  // 支援多電話：電話欄位以「/」或「、」分隔
+  const phones = d?.['電話'] ? d['電話'].split(/[\/、,]/).map(p=>p.trim()).filter(Boolean) : [''];
+  const phoneRows = phones.map((p,i)=>`
+    <div class="phone-row" id="phone-row-${i}">
+      <input class="fi" type="text" placeholder="電話 ${i+1}" value="${p}" data-phone-idx="${i}">
+      ${i>0?`<button type="button" class="phone-del" onclick="removePhoneRow(${i})">✕</button>`:'<span style="width:28px;flex-shrink:0"></span>'}
+    </div>`).join('');
   return `<div class="form-body">
     <div class="ff"><label>客戶名稱<span class="req">*</span></label><input class="fi" id="f-name" value="${d?.['客戶名稱']||''}"></div>
-    <div class="ff"><label>電話</label><input class="fi" id="f-phone" type="tel" inputmode="tel" value="${d?.['電話']||''}"></div>
+    <div class="ff"><label>電話</label>
+      <div id="phone-list">${phoneRows}</div>
+      <button type="button" class="phone-add-btn" onclick="addPhoneRow()">＋ 新增電話</button>
+    </div>
     <div class="ff"><label>地址</label><input class="fi" id="f-address" value="${d?.['地址']||''}"></div>
+    <div class="ff"><label>統一編號</label><input class="fi" id="f-tax-id" value="${d?.['統一編號']||''}"></div>
+    <div class="ff"><label>負責人</label><input class="fi" id="f-owner" value="${d?.['負責人']||''}"></div>
+    <div class="ff"><label>負責人資訊</label><textarea class="fi" id="f-owner-info" rows="3" placeholder="電話、地址、身分證號等...">${d?.['負責人 資訊']||d?.['負責人資訊']||''}</textarea></div>
     <div class="ff"><label>客戶備註</label><textarea class="fi" id="f-note" rows="3">${d?.['客戶註記']||d?.['客戶備註']||d?.['備註']||''}</textarea></div>
   </div>
   <div class="form-actions">
     <button class="btn-cancel" onclick="closeModal('form-modal')">取消</button>
     <button class="btn-save" onclick="if(!isSaving)saveCustomer()">儲存</button>
   </div>`;
+}
+
+function addPhoneRow() {
+  const list = document.getElementById('phone-list');
+  const idx = list.querySelectorAll('.phone-row').length;
+  const div = document.createElement('div');
+  div.className = 'phone-row'; div.id = 'phone-row-'+idx;
+  div.innerHTML = `<input class="fi" type="text" placeholder="電話 ${idx+1}" data-phone-idx="${idx}">
+    <button type="button" class="phone-del" onclick="removePhoneRow(${idx})">✕</button>`;
+  list.appendChild(div);
+}
+
+function removePhoneRow(idx) {
+  const row = document.getElementById('phone-row-'+idx);
+  if (row) row.remove();
+}
+
+function getPhoneValues() {
+  return [...document.querySelectorAll('#phone-list [data-phone-idx]')]
+    .map(inp=>inp.value.trim()).filter(Boolean).join(' / ');
 }
 
 // ---- Machine Form ----
@@ -2816,15 +4701,12 @@ function machineForm(d) {
   const mkChips = (groupId, field, opts, customKey, placeholder) => {
     const selVal = machineSelections[field];
     const chips = opts.map(o=>`<button type="button" class="m-chip pay-item-chip${selVal===o?' selected':''}" data-val="${o}"
-      onclick="selectMachineChip('${field}','${o}','${groupId}')"
-      oncontextmenu="event.preventDefault();delMachineChip('${groupId}','${field}','${o}','${customKey}')"
-      ontouchstart="startMCLP('${groupId}','${field}','${o}','${customKey}')"
-      ontouchend="stopMCLP()" ontouchmove="stopMCLP()">${o}</button>`).join('');
-    const addRow = customKey!=='none' ? `<div style="display:flex;gap:8px;margin-top:6px">
-      <input class="fi" id="${groupId}-inp" placeholder="${placeholder}" style="flex:1;font-size:0.857em">
-      <button type="button" onclick="addMachineChipOption('${groupId}','${field}',${customKey==='custom_lbs'?'getLbsOptions':customKey==='custom_ice_types'?'getIceTypes':customKey==='custom_voltages'?'getVoltages':customKey==='custom_coolants'?'getCoolants':customKey==='custom_cooling'?'getCoolings':'getBrands'},'${customKey}','${groupId}-inp')" style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;white-space:nowrap">＋</button>
-    </div><div style="font-size:0.714em;color:var(--text3);margin-top:3px">長按可刪除自訂選項</div>` : '';
-    return `<div id="${groupId}" style="display:flex;flex-wrap:wrap;gap:7px">${chips}</div>${addRow}`;
+      onclick="selectMachineChip('${field}','${o}','${groupId}')">${o}</button>`).join('');
+    return `<div style="display:flex;align-items:flex-start;gap:8px">
+      <div id="${groupId}" style="display:flex;flex-wrap:wrap;gap:7px;flex:1">${chips||'<span style="font-size:0.857em;color:var(--text3)">尚無選項</span>'}</div>
+      <button type="button" onclick="openChipEditor('${groupId}','${field}','${customKey}','${placeholder}')"
+        style="flex-shrink:0;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:0.857em;cursor:pointer;white-space:nowrap">✏️ 編輯</button>
+    </div>`;
   };
 
   return `<div class="form-body">
@@ -2984,6 +4866,8 @@ function paymentForm(d) {
   payInvoice = d?.['發票']||'不開發票';
   const preCustomer = d?.['客戶名稱']||'';
   const allPayItems = getPayItems();
+  // 合併臨時項目（不寫入選項庫，只本次顯示）
+  const allPayItemsWithTemp = [...new Set([...allPayItems, ...tempPayItems])];
   const loginName = authState?.name||'';
   if (!payLineItems.length) initPayLines(d);
   if (preCustomer) setTimeout(()=>{
@@ -3006,14 +4890,20 @@ function paymentForm(d) {
       <div id="f-pay-customer-hint" style="font-size:0.786em;color:var(--text2);margin-top:5px;padding:0 2px"></div>
     </div>
     <div class="ff"><label>收款項目（可複選）</label>
-      <div id="pay-items-wrap" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px">
-        ${allPayItems.map(item=>`<button type="button" class="pay-item-chip${selectedPayItems.includes(item)?' selected':''}" onclick="togglePayItemAndLine('${item}')" oncontextmenu="event.preventDefault();confirmDeletePayItem('${item}')" ontouchstart="startLongPress('${item}')" ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()">${item}</button>`).join('')}
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div id="pay-items-wrap" style="display:flex;flex-wrap:wrap;gap:7px;flex:1">
+          ${allPayItemsWithTemp.map(item=>{
+            const isTemp = tempPayItems.includes(item) && !allPayItems.includes(item);
+            return `<button type="button" class="pay-item-chip${selectedPayItems.includes(item)?' selected':''}"
+              onclick="togglePayItemAndLine('${item.replace(/'/g,"\\'")}')"
+              ${!isTemp?`oncontextmenu="event.preventDefault();confirmDeletePayItem('${item.replace(/'/g,"\\'")}')" ontouchstart="startLongPress('${item.replace(/'/g,"\\'")}') " ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()"`:''}>
+              ${item}${isTemp?'<span style="opacity:.5;font-size:0.8em;margin-left:2px">⏱</span>':''}
+            </button>`;
+          }).join('')}
+        </div>
+        <button type="button" onclick="openPayItemEditor()"
+          style="flex-shrink:0;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:0.857em;cursor:pointer;white-space:nowrap">✏️ 編輯</button>
       </div>
-      <div style="display:flex;gap:8px">
-        <input class="fi" id="f-item-custom" placeholder="新增自訂項目..." style="flex:1">
-        <button type="button" onclick="addCustomPayItem()" style="padding:10px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;font-size:0.929em;white-space:nowrap">＋ 新增</button>
-      </div>
-      <div style="font-size:0.714em;color:var(--text3);margin-top:5px">長按選項可刪除</div>
     </div>
     <div class="ff" id="pay-lines-section" style="${payLineItems.length?'':'display:none'}">
       <label>各項金額</label>
@@ -3025,7 +4915,7 @@ function paymentForm(d) {
     <div class="ff"><label>金額（合計）</label>
       <div class="amt-row">
         <span class="amt-pre">NT$</span>
-        <input class="amt-inp" type="number" id="f-amount" value="${total||d?.['金額']||0}" min="0">
+        <input class="amt-inp" type="number" id="f-amount" value="${total||d?.['金額']||0}">
         <button class="amt-btn" onclick="addAmt(-100)">－</button>
         <button class="amt-btn" onclick="addAmt(100)">＋</button>
       </div>
@@ -3036,7 +4926,10 @@ function paymentForm(d) {
         <button type="button" class="pay-m-btn pay-inv-btn${payInvoice==='不開發票'?' sel':''}" data-val="不開發票" onclick="setInvoice('不開發票')">不開發票</button>
         <button type="button" class="pay-m-btn pay-inv-btn${payInvoice==='開發票'?' sel':''}" data-val="開發票" onclick="setInvoice('開發票')">開發票</button>
       </div>
-      <input class="fi" id="f-invoice-no" placeholder="發票號碼（開發票時填入）" value="${d?.['發票號碼']||''}" style="${payInvoice==='開發票'?'':'display:none'}">
+      <div id="invoice-extra" style="${payInvoice==='開發票'?'':'display:none'}">
+        <input class="fi" id="f-invoice-no" placeholder="發票號碼" value="${d?.['發票']&&d['發票']!=='不開發票'&&d['發票']!=='開發票'?d['發票'].replace(/^開發票\s*/,''):''}" style="margin-bottom:8px">
+        <input class="fi" id="f-tax-id-pay" placeholder="統一編號（公司戶）" value="${d?.['統一編號']||''}">
+      </div>
     </div>
     <div class="ff"><label>結帳方式<span class="req">*</span></label>
       <div class="pay-m-row">${methods.map(m=>`<button class="pay-m-btn${payMethod===m?' sel':''}" onclick="selMethod('${m}')">${m}</button>`).join('')}</div>
@@ -3096,13 +4989,10 @@ function onPayCustomerChange(name) {
 function setInvoice(val) {
   payInvoice = val;
   document.querySelectorAll('.pay-inv-btn').forEach(b => b.classList.toggle('sel', b.dataset.val === val));
-  const noField = document.getElementById('f-invoice-no');
-  if (noField) noField.style.display = val === '開發票' ? '' : 'none';
+  const extra = document.getElementById('invoice-extra');
+  if (extra) extra.style.display = val === '開發票' ? '' : 'none';
 }
-function addAmt(d) {
-  const i = document.getElementById('f-amount');
-  i.value = Math.max(0, (parseInt(i.value)||0) + d);
-}
+function addAmt(d) { const i = document.getElementById('f-amount'); i.value = (parseInt(i.value)||0) + d; }
 
 // ---- Contract Form ----
 function contractForm(d, prefillMachine, prefillCustomer) {
@@ -3276,7 +5166,7 @@ function confirmDeleteHandler(h) {
 
 
 // ---- +機器 先詢問類型 ----
-// 從新增工作跳到新增客戶，完成後跳回新增工作
+// 從新增施工紀錄跳到新增客戶，完成後跳回新增施工紀錄
 function openAddCustomerFromTask() {
   window._taskFormBackup = {
     customer: document.getElementById('f-task-customer-inp')?.value||'',
@@ -3292,19 +5182,38 @@ function openAddCustomerFromTask() {
   document.getElementById('form-modal-body').innerHTML=customerForm(null);
 }
 
-// 攔截新增客戶儲存後跳回工作
-const _origSaveCustomer = typeof saveCustomer !== 'undefined' ? null : null;
 async function saveCustomerAndReturn() {
   const name = document.getElementById('f-name').value.trim();
   if (!name) { showToast('請填寫客戶名稱'); return; }
-  await doSave('customer', {'客戶名稱':name,'電話':document.getElementById('f-phone').value.trim(),'地址':document.getElementById('f-address').value.trim(),'客戶備註':document.getElementById('f-note').value.trim()});
-  if (window._returnToTask) {
+  await doSave('customer', {'客戶名稱':name,'電話':getPhoneValues(),'地址':document.getElementById('f-address').value.trim(),'統一編號':document.getElementById('f-tax-id')?.value.trim()||'','負責人':document.getElementById('f-owner')?.value.trim()||'','負責人 資訊':document.getElementById('f-owner-info')?.value.trim()||'','客戶備註':document.getElementById('f-note')?.value.trim()||''});
+  if (window._returnToRepair) {
+    window._returnToRepair = false;
+    const bk = window._repairFormBackup||{};
+    selectedRepairItems = bk.items||[];
+    _repairStatus = bk.status||'待維修';
+    _repairKind   = bk.kind||'';
+    setTimeout(()=>{
+      editMode=false; editId='';
+      document.getElementById('form-modal-title').textContent='新增維修紀錄';
+      const form = repairForm({'客戶名稱':name,'機型':bk.model||'','機號':bk.serial||'','備註':bk.note||'','紀錄日期':bk.date||'','狀態':bk.status||'待維修','種類':bk.kind||''});
+      document.getElementById('form-modal-body').innerHTML = form;
+      // 恢復選中項目
+      setTimeout(()=>{
+        selectRepairStatus(_repairStatus);
+        if (_repairKind) selectRepairKind(_repairKind);
+        // 填入客戶名稱並觸發機器推薦
+        const inp = document.getElementById('f-repair-customer');
+        if (inp) { inp.value = name; selectRepairCustomer(name); }
+      }, 50);
+      document.getElementById('form-modal').classList.add('open');
+    }, 200);
+  } else if (window._returnToTask) {
     window._returnToTask = false;
     const bk = window._taskFormBackup||{};
     selectedTaskItems = bk.items||[];
     setTimeout(()=>{
       editMode=false; editId=''; payMethod='';
-      document.getElementById('form-modal-title').textContent='新增工作';
+      document.getElementById('form-modal-title').textContent='新增施工紀錄';
       document.getElementById('form-modal-body').innerHTML=taskForm({
         '客戶名稱': name,
         '機型': bk.model||'', '機號': bk.serial||'',
@@ -3313,6 +5222,26 @@ async function saveCustomerAndReturn() {
       document.getElementById('form-modal').classList.add('open');
     },200);
   }
+}
+
+function openAddCustomerFromRepair() {
+  // 備份目前維修表單狀態
+  const statusBtn = document.querySelector('#form-modal-body .pay-m-btn.sel[id^="rs-"]');
+  const kindBtn   = document.querySelector('#form-modal-body .pay-m-btn.sel[id^="rk-"]');
+  window._repairFormBackup = {
+    customer: document.getElementById('f-repair-customer')?.value||'',
+    model:    document.getElementById('f-repair-model')?.value||'',
+    serial:   document.getElementById('f-repair-serial')?.value||'',
+    note:     document.getElementById('f-repair-note')?.value||'',
+    date:     document.getElementById('f-repair-date')?.value||'',
+    status:   statusBtn?.textContent.trim()||_repairStatus||'待維修',
+    kind:     kindBtn?.textContent.trim()||_repairKind||'',
+    items:    [...selectedRepairItems],
+  };
+  window._returnToRepair = true;
+  editMode=false; editId='';
+  document.getElementById('form-modal-title').textContent='新增客戶（儲存後跳回）';
+  document.getElementById('form-modal-body').innerHTML=customerForm(null);
 }
 
 // 可指派機器選擇器（待出租/全新機）
@@ -3548,8 +5477,8 @@ function quickCollect(contractIdx) {
 // ============================================================
 // SAVE
 // ============================================================
-const SHEET_MAP = {customer:'customers',machine:'machines',contract:'contracts',payment:'payments',task:'tasks'};
-const ID_FIELD  = {customer:'客戶名稱',machine:'機號',contract:'合約ID',payment:'收款ID',task:'紀錄日期'};
+const SHEET_MAP = {customer:'customers',machine:'machines',contract:'contracts',payment:'payments',task:'施工紀錄',repair:'repairs'};
+const ID_FIELD  = {customer:'客戶名稱',machine:'機號',contract:'合約ID',payment:'收款ID',task:'紀錄日期',repair:'維修ID'};
 
 function getFieldVal(fieldId, customId) {
   const el = document.getElementById(fieldId);
@@ -3587,15 +5516,38 @@ async function doSave(type, data) {
 async function saveCustomer() {
   const name = document.getElementById('f-name').value.trim();
   if (!name) { showToast('請填寫客戶名稱'); return; }
-  await doSave('customer', {'客戶名稱':name,'電話':document.getElementById('f-phone').value.trim(),'地址':document.getElementById('f-address').value.trim(),'客戶備註':document.getElementById('f-note').value.trim()});
-  // 若從新增工作跳過來，儲存後跳回
+  const phone = getPhoneValues();
+  const addr  = document.getElementById('f-address').value.trim();
+  const taxId = document.getElementById('f-tax-id')?.value.trim()||'';
+  const owner = document.getElementById('f-owner')?.value.trim()||'';
+  const ownerInfo = document.getElementById('f-owner-info')?.value.trim()||'';
+  const note  = document.getElementById('f-note')?.value.trim()||'';
+  const wasEdit = editMode;
+  const oldName = editId;
+  await doSave('customer', {'客戶名稱':name,'電話':phone,'地址':addr,'統一編號':taxId,'負責人':owner,'負責人 資訊':ownerInfo,'客戶備註':note});
+  if (wasEdit && oldName) {
+    cache.tasks.forEach(t => {
+      if (t['客戶名稱'] === oldName || t['客戶名稱'] === name) {
+        t['客戶名稱'] = name; t['電話'] = phone; t['地址'] = addr;
+        enqueue({action:'update', sheet:'施工紀錄', data:t, id:t['任務ID']||t['紀錄日期']});
+      }
+    });
+    cache.contracts.forEach(c => {
+      if (c['客戶名稱'] === oldName || c['客戶名稱'] === name) {
+        c['客戶名稱'] = name; c['電話'] = phone; c['地址'] = addr;
+        enqueue({action:'update', sheet:'contracts', data:c, id:c['合約ID']});
+      }
+    });
+    saveCache();
+  }
+  // 若從新增施工紀錄跳過來，儲存後跳回
   if (window._returnToTask) {
     window._returnToTask = false;
     const bk = window._taskFormBackup||{};
     selectedTaskItems = bk.items||[];
     setTimeout(()=>{
       editMode=false; editId='';
-      document.getElementById('form-modal-title').textContent='新增工作';
+      document.getElementById('form-modal-title').textContent='新增施工紀錄';
       document.getElementById('form-modal-body').innerHTML=taskForm({
         '客戶名稱': name,
         '機型': bk.model||'', '機號': bk.serial||'',
@@ -3603,6 +5555,13 @@ async function saveCustomer() {
       });
       document.getElementById('form-modal').classList.add('open');
     },200);
+  }
+  // 移機完成後的回呼（更新地址後詢問新增收款）
+  if (window._afterCustomerEdit) {
+    const cb = window._afterCustomerEdit;
+    window._afterCustomerEdit = null;
+    closeModal('form-modal');
+    setTimeout(cb, 300);
   }
 }
 
@@ -3634,19 +5593,61 @@ async function saveMachine() {
   if (customerEl) data['目前客戶'] = customerEl.value.trim();
   const arrivedEl = document.getElementById('f-arrived-customer');
   const arrivedVal = arrivedEl?.value.trim() || '';
-  if (arrivedVal) {
-    data['目前客戶'] = arrivedVal;  // 試算表欄位名稱
-  }
-  console.log('[saveMachine] 目前客戶:', arrivedVal, '→ data keys:', Object.keys(data).join(','));
+  if (arrivedVal) data['目前客戶'] = arrivedVal;
   await doSave('machine', data);
 
-  // 如果是從裝機工作跳來的，新增完後跳新增收款
+  // 新增機器後連動施工紀錄
   if (window._addMachineForTask) {
-    const { customer: taskCustomer, taskData } = window._addMachineForTask;
+    const flags = window._addMachineForTask;
+    const { customer: taskCustomer, taskData, isDismantled, afterInstall, isCustomerMachine, hasBorrow, isEstimateReturn } = flags;
     window._addMachineForTask = null;
+    // 把新機器的機型機號寫回施工紀錄
+    const taskToUpdate = cache.tasks.find(t => (t['任務ID']||t['紀錄日期']) === (taskData['任務ID']||taskData['紀錄日期']));
+    if (taskToUpdate) {
+      taskToUpdate['機型'] = data['機型'];
+      taskToUpdate['機號'] = data['機號'];
+      saveCache();
+      enqueue({action:'update', sheet:'施工紀錄', data:taskToUpdate, id:taskToUpdate['任務ID']||taskToUpdate['紀錄日期']});
+    }
     setTimeout(()=>{
-      openQuickPayment(taskCustomer, taskData, ['裝機費']);
-      confirmTaskDone();
+      if (isDismantled) {
+        // 舊版搬回流程
+        const deck = document.getElementById('confirm-deck');
+        document.getElementById('confirm-deck-title').textContent = '搬回後機器狀態';
+        document.getElementById('confirm-deck-msg').textContent = '請選擇搬回後此機器的狀態：';
+        const btns = deck.querySelector('div[style*="display:flex"]');
+        const newBtns = btns.cloneNode(false);
+        newBtns.innerHTML = `
+          <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn1">待出租</button>
+          <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn2">◎進廠</button>
+          <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn3">取消</button>`;
+        btns.parentNode.replaceChild(newBtns, btns);
+        newBtns.querySelector('#_dm_btn1').onclick=()=>{ deck.classList.remove('open'); updateMachineStatus(data['機型'],data['機號'],'待出租'); confirmTaskDone(); };
+        newBtns.querySelector('#_dm_btn2').onclick=()=>{ deck.classList.remove('open'); updateMachineStatus(data['機型'],data['機號'],'◎進廠'); confirmTaskDone(); };
+        newBtns.querySelector('#_dm_btn3').onclick=()=>{ deck.classList.remove('open'); window._pendingDoneTask=null; };
+        deck.classList.add('open');
+      } else if (afterInstall) {
+        // 裝機（無機號→新增機器）→ 直接跳新增收款（裝機費）
+        openQuickPayment(taskCustomer, taskData, ['裝機費']);
+        confirmTaskDone();
+      } else if (isEstimateReturn) {
+        // 拆回估回：機器已建（◎進廠），新增收款（估回）
+        openQuickPayment(taskCustomer, { '客戶名稱':taskCustomer, '機型':data['機型'], '機號':data['機號'] }, ['估回']);
+        confirmTaskDone();
+      } else if (isCustomerMachine) {
+        // 搬回修理客人機：機器已建 → 若有借用機先選
+        if (hasBorrow) {
+          openBorrowMachinePicker(()=>{
+            openQuickRepairFromTask(taskCustomer, data['機型'], data['機號'], taskData);
+          });
+        } else {
+          openQuickRepairFromTask(taskCustomer, data['機型'], data['機號'], taskData);
+        }
+      } else {
+        // 一般裝機：直接跳新增收款（裝機費）
+        openQuickPayment(taskCustomer, taskData, ['裝機費']);
+        confirmTaskDone();
+      }
     }, 400);
   }
 }
@@ -3673,6 +5674,17 @@ async function savePayment() {
   const {total} = calcPayTotal();
   const finalAmount = total || parseInt(document.getElementById('f-amount').value)||0;
   const invoiceNo = document.getElementById('f-invoice-no')?.value.trim()||'';
+  const taxIdPay  = document.getElementById('f-tax-id-pay')?.value.trim()||'';
+
+  // 產生純文字細項說明供試算表閱讀
+  const lineItemsText = payLineItems.length
+    ? payLineItems.map(l => {
+        const tax = l.taxable ? '(含稅)' : '';
+        const det = l.detail ? ` [${l.detail}]` : '';
+        return `${l.name}: NT$${Number(l.amount||0).toLocaleString()}${tax}${det}`;
+      }).join(' / ')
+    : '';
+
   await doSave('payment', {
     '收款ID': document.getElementById('f-pid').value,
     '合約ID': document.getElementById('f-cid').value,
@@ -3681,7 +5693,9 @@ async function savePayment() {
     '詳細內容': document.getElementById('f-detail')?.value.trim()||'',
     '金額': finalAmount,
     '收款明細': payLineItems.length ? JSON.stringify(payLineItems) : '',
+    '細項說明': lineItemsText,
     '發票': payInvoice + (invoiceNo ? ' '+invoiceNo : ''),
+    '統一編號': taxIdPay,
     '結帳方式': payMethod,
     '結帳日期': document.getElementById('f-date').value.replace(/-/g,'/'),
     '經手人': handler,
@@ -3722,21 +5736,16 @@ async function saveContract() {
 function confirmDelete(type, idx) {
   if (!confirm('確定要刪除這筆資料嗎？')) return;
   const sheet = SHEET_MAP[type];
-  const idF = ID_FIELD[type];
   const arr = cache[sheet];
   const item = arr[idx];
   if (!item) return;
-  const id = item[idF];
+  // task 優先用任務ID，fallback 紀錄日期
+  const id = type === 'task'
+    ? (item['任務ID']||item['紀錄日期'])
+    : item[ID_FIELD[type]];
   arr.splice(idx,1);
   saveCache();
-  // task用staffUrl，其他用mainUrl
-  if (type === 'task') {
-    pendingQueue.push({action:'delete', sheet, data:null, id, url:'staff', ts:Date.now()});
-    saveQueue();
-    flushTaskQueue();
-  } else {
-    enqueue({action:'delete', sheet, data:null, id});
-  }
+  enqueue({action:'delete', sheet, data:null, id});
   closeModal('detail-modal');
   renderPage();
   showToast('已刪除');
