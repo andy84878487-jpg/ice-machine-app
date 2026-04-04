@@ -385,7 +385,7 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
 <body>
 
 <!-- ══ 登入畫面 ══ -->
-<div id="login-screen">
+<div id="login-screen" class="hidden">
   <div class="login-card">
     <div class="login-header">
       <span class="login-snowflake">❄️</span>
@@ -659,9 +659,15 @@ let authState = JSON.parse(localStorage.getItem(AUTH_KEY)||'null');
 
 function initAuth() {
   updateNameSuggestions();
-  if (authState && authState.name && authState.role) {
+  // 訪客角色不從 localStorage 恢復（訪客不記住登入狀態）
+  if (authState && authState.name && authState.role && authState.role !== 'guest') {
     applyRole(authState.role, authState.name, false);
   } else {
+    // 清除任何殘留的 guest authState
+    if (authState?.role === 'guest') {
+      authState = null;
+      localStorage.removeItem(AUTH_KEY);
+    }
     document.getElementById('login-screen').classList.remove('hidden');
   }
 }
@@ -891,9 +897,10 @@ function selectRole(el) {
 }
 
 function doGuestLogin() {
-  // 訪客登入（後續再設定內容）
+  // 訪客模式不記住登入狀態，關閉 App 後回到登入頁
   authState = { name:'訪客', role:'guest', ts: Date.now() };
-  localStorage.setItem(AUTH_KEY, JSON.stringify(authState));
+  // 不存 localStorage，只存 sessionStorage（分頁/App 關閉後自動清除）
+  try { sessionStorage.setItem(AUTH_KEY, JSON.stringify(authState)); } catch(e) {}
   document.getElementById('login-screen').classList.add('hidden');
   applyRole('guest', '訪客', true);
 }
@@ -1001,6 +1008,7 @@ function showRoleScreen() {
 function doLogout() {
   authState = null;
   localStorage.removeItem(AUTH_KEY);
+  try { sessionStorage.removeItem(AUTH_KEY); } catch(e) {}
   document.getElementById('login-name').value = '';
   document.getElementById('login-id').value = '';
   document.getElementById('login-err').textContent = '';
@@ -1047,7 +1055,7 @@ let pickerCustomerName = '';
 let selectedPayItems = [];
 let tempPayItems = []; // 臨時收款項目（僅本次顯示，不寫入選項庫）
 
-window.addEventListener('online',  () => { isOnline = true;  updateOfflineBanner(); showToast('🌐 已恢復連線，同步中...'); syncAll().then(()=>flushQueue()); });
+window.addEventListener('online',  () => { isOnline = true;  updateOfflineBanner(); showToast('🌐 已恢復連線，同步中...'); syncAll().then(()=>{ flushQueue(); renderPage(); }); });
 window.addEventListener('offline', () => { isOnline = false; updateOfflineBanner(); showToast('📵 已離線，變更將在連線後自動同步'); });
 
 function updateOfflineBanner() {
@@ -1198,7 +1206,7 @@ async function syncAllExcept(skip) {
     saveCache();
     setSyncDot('ok');
     showToast('✓ 同步完成');
-    renderPage();
+    // renderPage 由呼叫端的 .then() 負責，避免重複
   } catch(e) {
     setSyncDot('err');
     showToast('同步失敗：' + e.message);
@@ -1209,12 +1217,13 @@ async function syncNow() {
   showToast('同步中...');
   await syncAll();
   await flushQueue();
+  renderPage();
 }
 
 // Auto sync every 30 min
 function startAutoSync() {
   if (syncTimer) clearInterval(syncTimer);
-  syncTimer = setInterval(() => { if (isOnline) syncAll(); }, 30 * 60 * 1000);
+  syncTimer = setInterval(() => { if (isOnline) syncAll().then(()=>renderPage()); }, 30 * 60 * 1000);
 }
 
 // ============================================================
@@ -6441,19 +6450,21 @@ function showToast(msg, duration) {
 updateOfflineBanner();
 updatePendingBadge();
 initAppearance();
-renderPage();
 
-// 清除超過24小時的舊 pendingQueue（避免累積的失敗操作無限重試）
+// 清除超過24小時的舊 pendingQueue
 const _24h = 24 * 60 * 60 * 1000;
 const _oldLen = pendingQueue.length;
 pendingQueue = pendingQueue.filter(op => Date.now() - (op.ts||0) < _24h);
 if (pendingQueue.length !== _oldLen) { saveQueue(); console.log('清除過舊的 pendingQueue', _oldLen - pendingQueue.length, '筆'); }
 
-// 快速登入按鈕、登入狀態判斷：立即執行，不等 syncAll
+// 1. 快速登入按鈕（localStorage，無需網路）
 renderBiometricList();
+// 2. 判斷登入狀態（localStorage，無需網路）
 initAuth();
+// 3. 渲染主畫面（已登入者才需要）
+renderPage();
 
-// syncAll 在背景執行，完成後更新頁面資料
+// 背景同步試算表
 if (cfg.url) {
   syncAll().then(() => { renderPage(); });
 }
