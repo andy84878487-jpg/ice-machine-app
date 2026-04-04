@@ -341,6 +341,14 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
 .login-guest-btn{width:100%;padding:11px;background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:12px;color:#888;font-size:13px;font-family:inherit;cursor:pointer;margin-top:10px;transition:all .15s}
 .login-guest-btn:active{background:rgba(255,255,255,.05);color:#ccc}
 .login-err{font-size:12px;color:#ff5252;text-align:center;margin-top:10px;min-height:18px}
+/* 生物辨識登入 */
+.biometric-section{margin-top:14px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px}
+.biometric-title{font-size:11px;color:#555;text-align:center;margin-bottom:10px;letter-spacing:.5px}
+.biometric-list{display:flex;flex-direction:column;gap:8px}
+.biometric-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer;transition:all .15s}
+.biometric-item:active{background:rgba(255,255,255,.08)}
+.biometric-name{flex:1;font-size:14px;color:#ccc;font-weight:600}
+.biometric-icon{font-size:22px;flex-shrink:0}
 
 /* ══ ROLE SCREEN ══ */
 #role-screen{position:fixed;inset:0;z-index:9998;display:flex;flex-direction:column;justify-content:center;padding:28px 24px;background:#0f0f0f}
@@ -397,6 +405,11 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
     <button class="login-btn" onclick="doLogin()">登 入</button>
     <button class="login-guest-btn" onclick="doGuestLogin()">訪客進入</button>
     <div class="login-err" id="login-err"></div>
+    <!-- 生物辨識快速登入（有設定過的人才顯示）-->
+    <div class="biometric-section" id="biometric-section" style="display:none">
+      <div class="biometric-title">快速登入</div>
+      <div class="biometric-list" id="biometric-list"></div>
+    </div>
   </div>
 </div>
 
@@ -676,6 +689,142 @@ function togglePinVisible() {
 }
 
 // 帳號密碼驗證（從人員名單抓取）
+// ============================================================
+// 生物辨識登入（WebAuthn / Passkey）
+// ============================================================
+const BIOMETRIC_KEY = 'iceapp_passkeys_v1'; // {name: credentialId_base64}
+
+function getBiometricMap() {
+  try { return JSON.parse(localStorage.getItem(BIOMETRIC_KEY)||'{}'); } catch(e) { return {}; }
+}
+function saveBiometricMap(map) { localStorage.setItem(BIOMETRIC_KEY, JSON.stringify(map)); }
+
+function isWebAuthnSupported() {
+  return !!(window.PublicKeyCredential && navigator.credentials?.create);
+}
+
+// 頁面載入時渲染已設定生物辨識的使用者列表
+function renderBiometricList() {
+  if (!isWebAuthnSupported()) return;
+  const map = getBiometricMap();
+  const names = Object.keys(map);
+  const section = document.getElementById('biometric-section');
+  const list = document.getElementById('biometric-list');
+  if (!section || !list || !names.length) { if(section) section.style.display='none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = names.map(name => `
+    <div class="biometric-item" onclick="doBiometricLogin('${name.replace(/'/g,"\\'")}')">
+      <span class="biometric-icon">🔐</span>
+      <span class="biometric-name">${name}</span>
+      <span style="font-size:11px;color:#555">臉部/指紋</span>
+    </div>`).join('');
+}
+
+// 登入後詢問是否設定生物辨識
+async function askSetupBiometric(name, staffData) {
+  if (!isWebAuthnSupported()) return;
+  const map = getBiometricMap();
+  if (map[name]) return; // 已設定過，跳過
+  if (!confirm(`要設定「${name}」的臉部/指紋快速登入嗎？\n之後可以直接用臉部或指紋登入，不需輸入身分證號。`)) return;
+  try {
+    const challenge = new Uint8Array(32);
+    crypto.getRandomValues(challenge);
+    const userId = new TextEncoder().encode(name);
+    const cred = await navigator.credentials.create({
+      publicKey: {
+        challenge,
+        rp: { name: '冰機管理系統', id: location.hostname },
+        user: { id: userId, name, displayName: name },
+        pubKeyCredParams: [
+          { type: 'public-key', alg: -7 },   // ES256
+          { type: 'public-key', alg: -257 },  // RS256
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: 'platform', // 限裝置內建（臉部/指紋）
+          userVerification: 'required',
+        },
+        timeout: 60000,
+      }
+    });
+    if (cred) {
+      // 儲存 credentialId（base64）
+      const credId = btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
+      map[name] = credId;
+      saveBiometricMap(map);
+      renderBiometricList();
+      showToast('✓ 已設定臉部/指紋快速登入');
+    }
+  } catch(e) {
+    if (e.name !== 'NotAllowedError') showToast('設定失敗：' + e.message);
+  }
+}
+
+// 使用生物辨識登入
+async function doBiometricLogin(name) {
+  if (!isWebAuthnSupported()) { showToast('此裝置不支援生物辨識'); return; }
+  const map = getBiometricMap();
+  const credId = map[name];
+  if (!credId) return;
+
+  const err = document.getElementById('login-err');
+  try {
+    const challenge = new Uint8Array(32);
+    crypto.getRandomValues(challenge);
+    const credIdBytes = Uint8Array.from(atob(credId), c=>c.charCodeAt(0));
+    const assertion = await navigator.credentials.get({
+      publicKey: {
+        challenge,
+        allowCredentials: [{ type: 'public-key', id: credIdBytes }],
+        userVerification: 'required',
+        timeout: 60000,
+      }
+    });
+    if (assertion) {
+      // 驗證通過：找到對應的職員資料
+      const staff = cache.staff.find(s=>String(s['姓名']||'').trim()===name);
+      if (!staff) { err.textContent='找不到職員資料，請用密碼登入'; return; }
+      err.textContent = '';
+      document.getElementById('login-name').value = name;
+      // 直接進入角色選擇（不需身分證號）
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('role-username').textContent = name;
+      document.getElementById('role-screen').classList.remove('hidden');
+      document.getElementById('role-pin').value = '';
+      window._loginName = name;
+      window._staffData = staff;
+      const savedNames = JSON.parse(localStorage.getItem('login_names')||'[]');
+      if (!savedNames.includes(name)) { savedNames.push(name); localStorage.setItem('login_names', JSON.stringify(savedNames)); }
+      updateNameSuggestions();
+      // 套用角色篩選
+      const staffRoles = staff?.['角色'] ? String(staff['角色']).split(/[,、，]/).map(s=>s.trim()).filter(Boolean) : [];
+      const roleHierarchy = { '管理員':['admin','engineer','billing'], '工程師':['engineer','billing'], '帳款專員':['billing'] };
+      let allowedRoles = ['admin','engineer','billing'];
+      if (staffRoles.length) {
+        const sets = staffRoles.map(r=>roleHierarchy[r]||[]);
+        allowedRoles = [...new Set(sets.flat())];
+        if (!allowedRoles.length) allowedRoles = ['billing'];
+      }
+      document.querySelectorAll('.role-item').forEach(el => {
+        el.style.display = allowedRoles.includes(el.dataset.role) ? 'flex' : 'none';
+      });
+      const firstVisible = document.querySelector('.role-item:not([style*="none"])') || document.querySelector('.role-item');
+      if (firstVisible) selectRole(firstVisible);
+    }
+  } catch(e) {
+    if (e.name === 'NotAllowedError') err.textContent = '已取消驗證';
+    else err.textContent = '驗證失敗，請用密碼登入';
+  }
+}
+
+// 移除某人的生物辨識設定
+function removeBiometric(name) {
+  const map = getBiometricMap();
+  delete map[name];
+  saveBiometricMap(map);
+  renderBiometricList();
+  showToast(`已移除「${name}」的快速登入`);
+}
+
 function doLogin() {
   const name = document.getElementById('login-name').value.trim();
   const id   = document.getElementById('login-id').value.trim();
@@ -730,6 +879,8 @@ function doLogin() {
   // 自動選第一個可見角色
   const firstVisible = document.querySelector('.role-item[style*="flex"]') || document.querySelector('.role-item');
   if (firstVisible) selectRole(firstVisible);
+  // 詢問是否設定生物辨識（setTimeout 讓角色頁先出現）
+  setTimeout(() => askSetupBiometric(name, staff), 1000);
 }
 
 function selectRole(el) {
@@ -3973,6 +4124,9 @@ function renderSettings() {
       <div class="settings-row">
         <button class="btn-test" style="background:transparent;color:var(--text3);border:1px solid var(--border)" onclick="clearAllCache()">🗑 清除本機快取</button>
       </div>
+      ${Object.keys(getBiometricMap()).length?`<div class="settings-row">
+        <button class="btn-test" style="background:transparent;color:var(--danger2);border:1px solid rgba(229,57,53,.3)" onclick="if(confirm('確定要移除臉部/指紋快速登入設定嗎？'))${'{'}localStorage.removeItem('${BIOMETRIC_KEY}');renderBiometricList();showToast('已移除快速登入設定')${'}'}">🔐 移除臉部/指紋登入設定</button>
+      </div>`:''}
     </div>
     ${cache.staff.length ? `<div class="settings-card">
       <div class="settings-card-title">👥 人員名單（${cache.staff.length} 人）</div>
@@ -6288,9 +6442,10 @@ pendingQueue = pendingQueue.filter(op => Date.now() - (op.ts||0) < _24h);
 if (pendingQueue.length !== _oldLen) { saveQueue(); console.log('清除過舊的 pendingQueue', _oldLen - pendingQueue.length, '筆'); }
 
 if (cfg.url) {
-  syncAll().then(() => initAuth());
+  syncAll().then(() => { initAuth(); renderBiometricList(); });
 } else {
   initAuth();
+  renderBiometricList();
 }
 startAutoSync();
 </script>
