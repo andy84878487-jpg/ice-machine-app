@@ -448,9 +448,22 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
         客戶資料
       </div>
+      <div class="sidemenu-item" onclick="closeSideMenu();showMachineListPage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        機器清單
+      </div>
+      <div class="sidemenu-item" onclick="closeSideMenu();switchTab(5)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        租賃紀錄
+      </div>
+      <div class="sidemenu-divider"></div>
       <div class="sidemenu-item" onclick="closeSideMenu();switchTab(2)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
         施工紀錄
+      </div>
+      <div class="sidemenu-item" onclick="closeSideMenu();switchTab(7)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        維修紀錄
       </div>
       <div class="sidemenu-item" onclick="closeSideMenu();switchTab(3)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
@@ -461,24 +474,14 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
         收租清單
       </div>
       <div class="sidemenu-divider"></div>
-      <div class="sidemenu-item" onclick="closeSideMenu();showMachineListPage()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-        機器清單
-      </div>
-      <div class="sidemenu-item" onclick="closeSideMenu();switchTab(5)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        租賃紀錄
-      </div>
-      <div class="sidemenu-divider"></div>
-      <div class="sidemenu-item" onclick="closeSideMenu();switchTab(7)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-        維修紀錄
+      <div class="sidemenu-item" id="sidemenu-staff" onclick="closeSideMenu();switchTab(10)" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        職員名單
       </div>
       <div class="sidemenu-item" onclick="closeSideMenu();switchTab(8)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         報價表
       </div>
-      <div class="sidemenu-divider"></div>
       <div class="sidemenu-item" onclick="closeSideMenu();switchTab(6)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
         系統設定
@@ -620,9 +623,12 @@ const AUTH_KEY = 'iceapp_auth';
 // 角色可見的分頁 (tab index)
 // 0=客戶 1=機器 2=施工 3=收款 4=收租 5=租賃紀錄 6=設定 7=維修 8=報價 9=總覽
 const ROLE_TABS = {
-  admin:   [0,1,2,3,4,5,7,8,9],
-  engineer:[0,2,3,4,7,9],
-  billing: [2,3,4,9],
+  // 管理員：全開
+  admin:   [0,1,2,3,4,5,6,7,8,9,10],
+  // 工程師：無收款(3)、無職員(10)
+  engineer:[0,1,2,4,5,7,8,9],
+  // 帳款專員：無機器(1)、無施工(2)、無職員(10)
+  billing: [0,3,4,5,7,8,9],
   guest:   [9],
 };
 const ROLE_DEFAULT_TAB = { admin:9, engineer:9, billing:9, guest:9 };
@@ -771,6 +777,24 @@ function applyRole(role, name, isNew) {
 function updateSideMenuForRole(role, allowedTabs) {
   const custItem = document.querySelector('.sidemenu-item[data-menu="customers"]');
   if (custItem) custItem.style.display = allowedTabs.includes(0) ? 'flex' : 'none';
+  const staffItem = document.getElementById('sidemenu-staff');
+  if (staffItem) staffItem.style.display = role === 'admin' ? 'flex' : 'none';
+  // 依 allowedTabs 控制各側選單項目顯示
+  // 各選單項透過 onclick 內的 switchTab(N) 判斷
+  const menuTabMap = [
+    {tab:1, selector:'[onclick*="showMachineListPage"]'},
+    {tab:5, selector:'[onclick*="switchTab(5)"]'},
+    {tab:2, selector:'[onclick*="switchTab(2)"]'},
+    {tab:7, selector:'[onclick*="switchTab(7)"]'},
+    {tab:3, selector:'[onclick*="switchTab(3)"]'},
+    {tab:4, selector:'[onclick*="switchTab(4)"]'},
+    {tab:8, selector:'[onclick*="switchTab(8)"]'},
+    {tab:6, selector:'[onclick*="switchTab(6)"]'},
+  ];
+  menuTabMap.forEach(({tab, selector}) => {
+    const el = document.querySelector('.sidemenu-item'+selector);
+    if (el) el.style.display = allowedTabs.includes(tab) ? 'flex' : 'none';
+  });
 }
 
 function showRoleScreen() {
@@ -886,13 +910,14 @@ function enqueue(op) {
     const existing = pendingQueue.findIndex(q => q.action === 'update' && q.sheet === op.sheet && q.id === op.id);
     if (existing >= 0) { pendingQueue[existing] = { ...op, ts: Date.now() }; saveQueue(); flushQueue(); return; }
   }
-  // 同 sheet 同內容的 add：以 data 的唯一欄位（維修ID、收款ID、任務ID 等）去重
+  // 同 sheet 同內容的 add：以主鍵 id 或 data 唯一欄位去重
   if (op.action === 'add') {
-    const uid = op.data?.['紀錄日期']||op.data?.['維修ID']||op.data?.['收款ID']||op.data?.['任務ID']||op.data?.['合約ID']||op.data?.['機號']||op.data?.['客戶名稱']||'';
+    const uid = op.id || op.data?.['紀錄日期']||op.data?.['維修ID']||op.data?.['收款ID']||op.data?.['任務ID']||op.data?.['合約ID']||op.data?.['機號']||op.data?.['客戶名稱']||'';
     if (uid) {
       const dup = pendingQueue.some(q => q.action === 'add' && q.sheet === op.sheet &&
-        (q.data?.['紀錄日期']||q.data?.['維修ID']||q.data?.['收款ID']||q.data?.['任務ID']||q.data?.['合約ID']||q.data?.['機號']||q.data?.['客戶名稱']||'') === uid);
-      if (dup) return; // 已在佇列，跳過
+        ((q.id && q.id === op.id) ||
+         (q.data?.['紀錄日期']||q.data?.['維修ID']||q.data?.['收款ID']||q.data?.['任務ID']||q.data?.['合約ID']||q.data?.['機號']||q.data?.['客戶名稱']||'') === uid));
+      if (dup) return;
     }
   }
   pendingQueue.push({ ...op, ts: Date.now() });
@@ -1034,8 +1059,19 @@ function closeSideMenu() { document.getElementById('sidemenu-overlay').classList
 // CONTRACT PAGE (from side menu)
 // ============================================================
 function renderContracts() {
+  const role = authState?.role;
+  const myName = authState?.name||'';
   const today = new Date(new Date().toDateString());
   let list = [...cache.contracts];
+
+  // 工程師/帳款專員：只顯示自己是經手人的合約
+  if (role !== 'admin') {
+    list = list.filter(c => {
+      const h = String(c['經手人']||'').split(/[,、，]/).map(s=>s.trim());
+      return !h.length || h.some(Boolean) ? h.includes(myName) || !h.filter(Boolean).length : true;
+    });
+  }
+
   if (searchQuery) list = list.filter(c => JSON.stringify(c).includes(searchQuery));
   if (!list.length) return '<div class="empty">沒有租賃紀錄</div>';
   // 依租借日期倒序
@@ -1083,7 +1119,7 @@ function switchTab(idx) {
   searchQuery = '';
   searchVisible = false;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', parseInt(el.dataset.tab)===idx));
-  const titles = ['客戶資料','機器清單','施工紀錄','收款紀錄','收租清單','租賃紀錄','系統設定','維修紀錄','報價表','總覽'];
+  const titles = ['客戶資料','機器清單','施工紀錄','收款紀錄','收租清單','租賃紀錄','系統設定','維修紀錄','報價表','總覽','職員名單'];
   document.getElementById('header-title').textContent = titles[idx] || '';
   const isAdmin = authState?.role === 'admin';
   document.getElementById('fab-btn').style.display = (idx === 6 || idx === 9 || (idx === 8 && !isAdmin)) ? 'none' : 'flex';
@@ -1098,7 +1134,7 @@ function toggleSearch() { searchVisible = !searchVisible; renderPage(); }
 function renderPage() {
   const c = document.getElementById('main-content');
   let html = '';
-  if (searchVisible && currentTab !== 6 && currentTab !== 9) {
+  if (searchVisible && currentTab !== 6 && currentTab !== 9 && currentTab !== 10) {
     html += `<div class="search-bar"><div class="search-wrap">
       <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>
       <input id="search-inp" class="search-input" placeholder="搜尋..." value="${searchQuery}" oninput="onSearch(this.value)" autofocus>
@@ -1115,6 +1151,7 @@ function renderPage() {
     case 8: html += renderPriceList(); break;
     case 9: html += renderOverview(); break;
     case 6: html += renderSettings(); break;
+    case 10: html += renderStaffList(); break;
   }
   c.innerHTML = html;
 }
@@ -1136,6 +1173,7 @@ function onSearch(v) {
     case 8: html = renderPriceList(); break;
     case 9: html = renderOverview(); break;
     default: html = renderSettings(); break;
+    case 10: html = renderStaffList(); break;
   }
   // 只替換 search-bar 以下的內容
   const sb = c.querySelector('.search-bar');
@@ -1204,14 +1242,30 @@ function renderCustomers() {
   const myName = authState?.name||'';
   let list = [...cache.customers];
 
-  // 工程師/帳款：只顯示自己派單施工紀錄中出現過的客戶
-  if (role !== 'admin') {
+  if (role === 'engineer') {
+    // 工程師：只顯示自己派單施工/維修中出現的客戶
     const myTasks = cache.tasks.filter(t => {
       const assigned = getTaskAssign(t);
       return !assigned.length || assigned.includes(myName);
     });
-    const relatedCustomers = new Set(myTasks.map(t=>String(t['客戶名稱']||'').trim()).filter(Boolean));
-    list = list.filter(c => relatedCustomers.has(String(c['客戶名稱']||'').trim()));
+    const myRepairs = cache.repairs.filter(r => String(r['經手人']||'').split(/[,、，]/).map(s=>s.trim()).includes(myName));
+    const related = new Set([
+      ...myTasks.map(t=>String(t['客戶名稱']||'').trim()),
+      ...myRepairs.map(r=>String(r['客戶名稱']||'').trim()),
+    ].filter(Boolean));
+    list = list.filter(c => related.has(String(c['客戶名稱']||'').trim()));
+  } else if (role === 'billing') {
+    // 帳款專員：依收款紀錄/租賃紀錄中的經手人篩選
+    const myPayCust = new Set(
+      cache.payments.filter(p=>String(p['經手人']||'').split(/[,、，]/).map(s=>s.trim()).includes(myName))
+        .map(p=>String(p['客戶名稱']||'').trim())
+    );
+    const myContractCust = new Set(
+      cache.contracts.filter(c=>String(c['經手人']||'').split(/[,、，]/).map(s=>s.trim()).includes(myName))
+        .map(c=>String(c['客戶名稱']||'').trim())
+    );
+    const related = new Set([...myPayCust, ...myContractCust].filter(Boolean));
+    list = list.filter(c => related.has(String(c['客戶名稱']||'').trim()));
   }
 
   if (searchQuery) list = list.filter(c => JSON.stringify(c).includes(searchQuery));
@@ -1427,7 +1481,8 @@ function getAllTaskItems() {
     cache.tasks.flatMap(t => (t['工作內容']||'').split(/[,、，]/).map(s=>s.trim()).filter(Boolean))
   )].filter(i=>!hidden.includes(i));
   const custom = JSON.parse(localStorage.getItem('custom_task_items')||'[]').filter(i=>!hidden.includes(i));
-  return [...new Set([...TASK_FALLBACK, ...fromValidation, ...fromHistory, ...custom])];
+  const arr = [...new Set([...TASK_FALLBACK, ...fromValidation, ...fromHistory, ...custom])];
+  return applyOrder(arr, 'order_task_items');
 }
 let selectedTaskItems = [];
 
@@ -1600,15 +1655,41 @@ function openTaskItemEditor() {
         style="padding:10px 14px;background:var(--accent2);border:none;border-radius:8px;color:#fff;font-size:0.929em;cursor:pointer;white-space:nowrap;font-family:inherit">＋ 新增</button>
     </div>
     <div style="padding:8px 0">
-      ${allItems.map(item=>`
-        <div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);gap:10px">
+      ${allItems.map((item,i)=>`
+        <div style="display:flex;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);gap:8px">
+          <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
+            <button type="button" onclick="moveTaskItem(${i},-1)"
+              ${i===0?'disabled style="opacity:.25"':''}
+              style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:0.75em;cursor:pointer;color:var(--text2);font-family:inherit;line-height:1">▲</button>
+            <button type="button" onclick="moveTaskItem(${i},1)"
+              ${i===allItems.length-1?'disabled style="opacity:.25"':''}
+              style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:0.75em;cursor:pointer;color:var(--text2);font-family:inherit;line-height:1">▼</button>
+          </div>
           <span style="flex:1;font-size:0.929em">${item}</span>
           <button type="button" onclick="deleteTaskEditorItem('${item.replace(/'/g,"\\'")}')"
-            style="background:var(--danger-bg);border:1px solid rgba(229,57,53,.3);color:var(--danger2);border-radius:6px;padding:4px 10px;font-size:0.857em;cursor:pointer;white-space:nowrap;font-family:inherit">✕ 刪除</button>
+            style="background:var(--danger-bg);border:1px solid rgba(229,57,53,.3);color:var(--danger2);border-radius:6px;padding:4px 10px;font-size:0.857em;cursor:pointer;white-space:nowrap;font-family:inherit">✕</button>
         </div>`).join('')}
       ${allItems.length===0?'<div style="padding:20px;text-align:center;color:var(--text3);font-size:0.857em">尚無工作項目，請新增</div>':''}
     </div>`;
   document.getElementById('chip-editor-deck').classList.add('open');
+}
+
+function moveTaskItem(idx, dir) {
+  const all = getAllTaskItems();
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= all.length) return;
+  let order = JSON.parse(localStorage.getItem('order_task_items')||'null') || all;
+  all.forEach(o=>{ if(!order.includes(o)) order.push(o); });
+  order = order.filter(o=>all.includes(o));
+  [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
+  localStorage.setItem('order_task_items', JSON.stringify(order));
+  openTaskItemEditor();
+  // 同步更新表單 chip
+  const wrap = document.getElementById('task-items-wrap');
+  if (wrap) {
+    const newAll = getAllTaskItems();
+    wrap.innerHTML = newAll.map(i=>`<button type="button" class="pay-item-chip${selectedTaskItems.includes(i)?' selected':''}" onclick="toggleTaskItem('${i}')" oncontextmenu="event.preventDefault();confirmDeleteTaskItem('${i}')" ontouchstart="startTaskLongPress('${i}')" ontouchend="cancelTaskLongPress()" ontouchmove="cancelTaskLongPress()">${i}</button>`).join('');
+  }
 }
 
 function addTaskEditorItem() {
@@ -2099,19 +2180,40 @@ function afterTaskSave(customer, items, model, serial, taskData) {
 
 // ── 借用機選擇器（搬回修理用）──
 function openBorrowMachinePicker(afterCb) {
-  const available = cache.machines.filter(m=>String(m['類型']||'').trim()==='待出租');
+  window._borrowCallback = afterCb;
+  window._borrowMachineSerial = '';
+  window._borrowMachineModel  = '';
   const body = document.getElementById('machine-deck-body');
   const header = document.querySelector('#machine-deck .deck-title');
   if (header) header.textContent = '選擇借用給客戶的機器';
-  body.innerHTML = available.length ? available.map(m=>{
-    const no = (m['機號']||'').replace(/'/g,"\\'");
-    const mt = (m['機型']||'').replace(/'/g,"\\'");
-    return `<div class="list-item" onclick="onBorrowMachineSelect('${no}','${mt}');closeModal('machine-deck');window._borrowCallback&&window._borrowCallback()">
-      <div class="li-body"><div class="li-title">${m['廠牌']||''} ${m['機型']||''}</div><div class="li-sub">${m['機號']||''}</div></div>
-    </div>`;
-  }).join('') : '<div class="empty">沒有待出租的機器可借用</div>';
-  window._borrowCallback = afterCb;
+  renderBorrowMachineList('');
   document.getElementById('machine-deck').classList.add('open');
+}
+
+function renderBorrowMachineList(q) {
+  const body = document.getElementById('machine-deck-body');
+  const available = cache.machines.filter(m=>{
+    if (String(m['類型']||'').trim()!=='待出租') return false;
+    if (!q) return true;
+    return JSON.stringify(m).toLowerCase().includes(q.toLowerCase());
+  });
+  body.innerHTML = `
+    <div style="padding:10px 14px;border-bottom:1px solid var(--border)">
+      <input class="fi" id="borrow-search-inp" placeholder="搜尋機型/機號..." value="${q.replace(/"/g,'&quot;')}"
+        oninput="renderBorrowMachineList(this.value)" style="font-size:0.929em;margin:0">
+    </div>
+    <div>
+      ${available.length ? available.map(m=>{
+        const no = (m['機號']||'').replace(/'/g,"\\'");
+        const mt = (m['機型']||'').replace(/'/g,"\\'");
+        return `<div class="list-item" onclick="onBorrowMachineSelect('${no}','${mt}');closeModal('machine-deck');window._borrowCallback&&window._borrowCallback()">
+          <div class="li-body">
+            <div class="li-title">${m['廠牌']||''} ${m['機型']||''}</div>
+            <div class="li-sub">${m['機號']||''}</div>
+          </div>
+        </div>`;
+      }).join('') : '<div class="empty">沒有符合的待出租機器</div>'}
+    </div>`;
 }
 
 function onBorrowMachineSelect(serial, model) {
@@ -2121,6 +2223,7 @@ function onBorrowMachineSelect(serial, model) {
 }
 
 function openQuickRepairFromTask(customer, model, serial, taskData) {
+  // 維修紀錄填客人機（搬回修理的機器），借用機資訊不帶入
   const m = getMachineByTaskInfo(model, serial);
   const kind = inferRepairKind(m?.['類型']||'');
   closeModal('detail-modal');
@@ -2134,6 +2237,9 @@ function openQuickRepairFromTask(customer, model, serial, taskData) {
     '紀錄日期': taskData?.['紀錄日期']||'',
   });
   document.getElementById('form-modal').classList.add('open');
+  // 清除借用機暫存
+  window._borrowMachineSerial = '';
+  window._borrowMachineModel  = '';
   confirmTaskDone();
 }
 
@@ -2262,8 +2368,11 @@ function showMachineListPage() {
       }).join('')}
     </div>`;
   });
-  body.innerHTML = (html||'<div class="empty">沒有機器資料</div>') +
-    `<div style="padding:14px 15px"><button class="btn-save" onclick="closeModal('detail-modal');openAddMachine()">＋ 新增機器</button></div>`;
+  body.innerHTML =
+    `<div style="padding:12px 15px;border-bottom:1px solid var(--border)">
+      <button class="btn-save" style="width:100%" onclick="closeModal('detail-modal');openAddMachine()">＋ 新增機器</button>
+    </div>` +
+    (html||'<div class="empty">沒有機器資料</div>');
   document.getElementById('detail-modal').classList.add('open');
 }
 
@@ -2542,7 +2651,24 @@ function repairKindChip(k) {
 
 let repairViewTab = 0;
 function renderRepairs() {
+  const role = authState?.role;
+  const myName = authState?.name||'';
   let list = [...(cache.repairs||[])];
+
+  // 工程師：只顯示自己是指派對象（或客戶相關）的維修紀錄
+  if (role === 'engineer') {
+    list = list.filter(r => {
+      const h = String(r['指派人員']||r['經手人']||'').split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
+      return !h.length || h.includes(myName);
+    });
+  } else if (role === 'billing') {
+    // 帳款專員：只顯示含自己經手人的
+    list = list.filter(r => {
+      const h = String(r['經手人']||'').split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
+      return !h.length || h.includes(myName);
+    });
+  }
+
   if (searchQuery) list = list.filter(r=>JSON.stringify(r).includes(searchQuery));
 
   // 子分頁：待維修 / 已完成
@@ -2865,10 +2991,10 @@ function repairForm(d) {
       </div>
     </div>
     <div class="ff"><label>機型</label>
-      <input class="fi" id="f-repair-model" value="${editMode?(d?.['機型']||''):''}" placeholder="選客戶後可選擇機器">
+      <input class="fi" id="f-repair-model" value="${d?.['機型']||''}" placeholder="選客戶後可選擇機器">
       <div id="repair-machine-suggestions" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
     </div>
-    <div class="ff"><label>機號</label><input class="fi" id="f-repair-serial" value="${editMode?(d?.['機號']||''):''}"></div>
+    <div class="ff"><label>機號</label><input class="fi" id="f-repair-serial" value="${d?.['機號']||''}"></div>
     <div class="ff"><label>種類</label>
       <div id="repair-kind-wrap" style="display:flex;gap:8px;flex-wrap:wrap">
         ${REPAIR_KINDS.map(k=>{
@@ -2998,7 +3124,7 @@ async function saveRepair() {
     enqueue({action:'update', sheet:'repairs', data, id:editId});
   } else {
     cache.repairs.push(data);
-    enqueue({action:'add', sheet:'repairs', data, id:null});
+    enqueue({action:'add', sheet:'repairs', data, id: data['維修ID']||null});
   }
   saveCache();
   closeModal('form-modal');
@@ -3128,7 +3254,13 @@ function getPlOpts(key) {
   const defaults = { pl_icetypes: PL_ICE_TYPES, pl_capacity: PL_CAPACITY, pl_voltages: PL_VOLTAGES, pl_cooling: PL_COOLING, pl_coolants: PL_COOLANTS };
   const custom  = JSON.parse(localStorage.getItem('custom_'+key)||'[]');
   const deleted = JSON.parse(localStorage.getItem('del_pl_'+key)||'[]');
-  return [...new Set([...(defaults[key]||[]), ...custom])].filter(v=>!deleted.includes(v));
+  const arr = [...new Set([...(defaults[key]||[]), ...custom])].filter(v=>!deleted.includes(v));
+  // 套用自訂排序
+  const order = JSON.parse(localStorage.getItem('order_pl_'+key)||'null');
+  if (!order) return arr;
+  const ordered = order.filter(o=>arr.includes(o));
+  const rest = arr.filter(o=>!ordered.includes(o));
+  return [...ordered, ...rest];
 }
 
 function selectPlChip(field, val, groupId) {
@@ -3166,20 +3298,45 @@ function renderPlChipEditorDeck() {
         style="padding:10px 14px;background:var(--accent2);border:none;border-radius:8px;color:#fff;font-size:0.929em;cursor:pointer;white-space:nowrap;font-family:inherit">＋ 新增</button>
     </div>
     <div style="padding:8px 0">
-      ${opts.length ? opts.map(o=>`
-        <div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);gap:10px">
+      ${opts.length ? opts.map((o,i)=>`
+        <div style="display:flex;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);gap:8px">
+          <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
+            <button type="button" onclick="movePlChipOption(${i},-1)"
+              ${i===0?'disabled style="opacity:.25"':''}
+              style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:0.75em;cursor:pointer;color:var(--text2);font-family:inherit;line-height:1">▲</button>
+            <button type="button" onclick="movePlChipOption(${i},1)"
+              ${i===opts.length-1?'disabled style="opacity:.25"':''}
+              style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:0.75em;cursor:pointer;color:var(--text2);font-family:inherit;line-height:1">▼</button>
+          </div>
           <span style="flex:1;font-size:0.929em">${o}</span>
           <button type="button" onclick="deletePlChipEditorOption('${o.replace(/'/g,"\\'")}')"
-            style="background:var(--danger-bg);border:1px solid rgba(229,57,53,.3);color:var(--danger2);border-radius:6px;padding:4px 10px;font-size:0.857em;cursor:pointer;white-space:nowrap;font-family:inherit">✕ 刪除</button>
+            style="background:var(--danger-bg);border:1px solid rgba(229,57,53,.3);color:var(--danger2);border-radius:6px;padding:4px 10px;font-size:0.857em;cursor:pointer;white-space:nowrap;font-family:inherit">✕</button>
         </div>`).join('')
       : '<div style="padding:20px;text-align:center;color:var(--text3);font-size:0.857em">尚無選項，請新增</div>'}
     </div>`;
+}
+
+function movePlChipOption(idx, dir) {
+  const {groupId, field, key} = _plEditorState;
+  const opts = getPlOpts(key);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= opts.length) return;
+  let order = JSON.parse(localStorage.getItem('order_pl_'+key)||'null') || opts;
+  opts.forEach(o=>{ if(!order.includes(o)) order.push(o); });
+  order = order.filter(o=>opts.includes(o));
+  [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
+  localStorage.setItem('order_pl_'+key, JSON.stringify(order));
+  renderPlChipGroup(groupId, field, key);
+  renderPlChipEditorDeck();
 }
 
 function addPlChipEditorOption() {
   const inp = document.getElementById('pl-editor-inp');
   const val = inp?.value.trim(); if (!val) return;
   const {groupId, field, key} = _plEditorState;
+  // 從黑名單移除（讓刪掉的可以重新加回）
+  const del = JSON.parse(localStorage.getItem('del_pl_'+key)||'[]');
+  localStorage.setItem('del_pl_'+key, JSON.stringify(del.filter(x=>x!==val)));
   const custom = JSON.parse(localStorage.getItem('custom_'+key)||'[]');
   if (!custom.includes(val)) { custom.push(val); localStorage.setItem('custom_'+key, JSON.stringify(custom)); }
   if (inp) inp.value = '';
@@ -3550,6 +3707,12 @@ function renderOverview() {
   }
   const unpaidContracts = contracts.filter(c => !isRentPaidThisPeriod(c['合約ID']));
 
+  // ── 待叫貨：材料報價 + 維修報價中狀態為「缺貨」的數量 ──
+  const outOfStock = [
+    ...(cache.materials||[]),
+    ...(cache.repairPricelist||[])
+  ].filter(r=>String(r['狀態']||'').trim()==='缺貨');
+
   // ── 本月收款統計 ──
   const thisMonthStr = new Date().toISOString().substring(0,7); // 'YYYY-MM'
   const thisMonthPayments = cache.payments.filter(p=>{
@@ -3651,6 +3814,8 @@ function renderOverview() {
         `<div style="font-size:0.786em;color:var(--text3)">已完成 ${doneRepairs.length} 筆</div>`)}
       ${card('💰','待收租', unpaidContracts.length, 'var(--green2)', 'var(--green-bg)', 4,
         `<div style="font-size:0.786em;color:var(--text3)">共 ${contracts.length} 份合約</div>`)}
+      ${card('📦','待叫貨', outOfStock.length, 'var(--yellow)', 'rgba(249,168,37,.1)', 8,
+        `<div style="font-size:0.786em;color:var(--text3)">材料/維修報價缺貨</div>`)}
     </div>
 
     <div onclick="switchTab(3)" style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:14px 16px;cursor:pointer;border-left:4px solid var(--green2)"
@@ -3774,11 +3939,13 @@ function renderSettings() {
         const name = s['姓名']||s['名稱']||'';
         const role = s['角色']||s['職稱']||'';
         const phone = s['電話']||'';
+        const email = s['E-mail']||s['Email']||'';
         return `<div style="display:flex;align-items:center;gap:12px;padding:11px 15px;border-bottom:1px solid var(--border)">
           <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-bg);border:1px solid var(--accent-glow);display:flex;align-items:center;justify-content:center;font-size:1.1em;font-weight:700;color:var(--accent2);flex-shrink:0">${name.charAt(0)||'?'}</div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:600;font-size:0.929em">${name}</div>
             ${role?`<div style="font-size:0.786em;color:var(--text2)">${role}</div>`:''}
+            ${email?`<div style="font-size:0.786em;color:var(--text3)">${email}</div>`:''}
           </div>
           ${phone?`<a href="tel:${phone}" style="background:var(--green-bg);color:var(--green2);border:1px solid rgba(67,160,71,.3);border-radius:6px;padding:4px 10px;font-size:0.786em;text-decoration:none;white-space:nowrap;flex-shrink:0">📞</a>`:''}
         </div>`;
@@ -4158,9 +4325,21 @@ function showDetail(type, idx) {
 }
 
 function editCurrent() {
+  // 先快照，再關 modal（避免 modal 關閉觸發 overlay click 重置 detailType）
+  const type = detailType;
+  const idx  = detailIdx;
+  isSaving = false; // 清除可能卡住的 isSaving 狀態
   closeModal('detail-modal');
-  if (detailType === 'repair') {
-    const item = (cache.repairs||[])[detailIdx];
+
+  if (type === 'staff') {
+    const item = (cache.staff||[])[idx];
+    if (!item) return;
+    editMode = true; editId = item['姓名']||'';
+    document.getElementById('form-modal-title').textContent = '編輯職員';
+    document.getElementById('form-modal-body').innerHTML = staffForm(item);
+    document.getElementById('form-modal').classList.add('open');
+  } else if (type === 'repair') {
+    const item = (cache.repairs||[])[idx];
     if (!item) return;
     editMode = true;
     editId = item['維修ID']||item[Object.keys(item)[0]]||'';
@@ -4170,9 +4349,9 @@ function editCurrent() {
     document.getElementById('form-modal-title').textContent = '編輯維修紀錄';
     document.getElementById('form-modal-body').innerHTML = repairForm(item);
     document.getElementById('form-modal').classList.add('open');
-  } else if (detailType === 'pricelist') {
+  } else if (type === 'pricelist') {
     const sources = [cache.pricelist, cache.materials, cache.repairPricelist];
-    const item = (sources[priceTab]||[])[detailIdx];
+    const item = (sources[priceTab]||[])[idx];
     if (!item) return;
     editMode = true;
     editId = priceTab===0 ? (item['廠牌']+'|'+item['機型']) : (item['報價ID']||'');
@@ -4181,7 +4360,7 @@ function editCurrent() {
     document.getElementById('form-modal-body').innerHTML = pricelistEntryForm(item);
     document.getElementById('form-modal').classList.add('open');
   } else {
-    openEditItem(detailType, detailIdx);
+    openEditItem(type, idx);
   }
 }
 
@@ -4366,25 +4545,39 @@ function getModelsForBrand(brand) {
   if (!brand) return [];
   return [...new Set(cache.pricelist.filter(p=>p['廠牌']===brand).map(p=>p['機型']).filter(Boolean))];
 }
+// 套用自訂排序（編輯器排序後存入 order_custom_{key}）
+function applyOrder(arr, customKey) {
+  const order = JSON.parse(localStorage.getItem('order_'+customKey)||'null');
+  if (!order) return arr;
+  const ordered = order.filter(o=>arr.includes(o));
+  const rest = arr.filter(o=>!ordered.includes(o));
+  return [...ordered, ...rest];
+}
+
 function getVoltages() {
   const custom = JSON.parse(localStorage.getItem('custom_voltages')||'[]');
-  return [...new Set([...VOLTAGES_DEFAULT, ...custom])].filter(v=>!getBlacklist('voltages').includes(v));
+  const arr = [...new Set([...VOLTAGES_DEFAULT, ...custom])].filter(v=>!getBlacklist('voltages').includes(v));
+  return applyOrder(arr, 'custom_voltages');
 }
 function getCoolants() {
   const custom = JSON.parse(localStorage.getItem('custom_coolants')||'[]');
-  return [...new Set([...COOLANTS_DEFAULT, ...custom])].filter(v=>!getBlacklist('coolants').includes(v));
+  const arr = [...new Set([...COOLANTS_DEFAULT, ...custom])].filter(v=>!getBlacklist('coolants').includes(v));
+  return applyOrder(arr, 'custom_coolants');
 }
 function getCoolings() {
   const custom = JSON.parse(localStorage.getItem('custom_cooling')||'[]');
-  return [...new Set([...COOLING_DEFAULT, ...custom])].filter(v=>!getBlacklist('cooling').includes(v));
+  const arr = [...new Set([...COOLING_DEFAULT, ...custom])].filter(v=>!getBlacklist('cooling').includes(v));
+  return applyOrder(arr, 'custom_cooling');
 }
 function getLbsOptions() {
   const custom = JSON.parse(localStorage.getItem('custom_lbs')||'[]');
-  return [...new Set([...LBS_OPTIONS_DEFAULT, ...custom])].filter(v=>!getBlacklist('lbs').includes(v));
+  const arr = [...new Set([...LBS_OPTIONS_DEFAULT, ...custom])].filter(v=>!getBlacklist('lbs').includes(v));
+  return applyOrder(arr, 'custom_lbs');
 }
 function getIceTypes() {
   const custom = JSON.parse(localStorage.getItem('custom_ice_types')||'[]');
-  return [...new Set([...ICE_TYPES, ...custom])].filter(v=>!getBlacklist('ice_types').includes(v));
+  const arr = [...new Set([...ICE_TYPES, ...custom])].filter(v=>!getBlacklist('ice_types').includes(v));
+  return applyOrder(arr, 'custom_ice_types');
 }
 
 // Chip選擇器
@@ -4432,15 +4625,35 @@ function openPayItemEditor() {
         style="padding:10px 14px;background:var(--accent2);border:none;border-radius:8px;color:#fff;font-size:0.929em;cursor:pointer;white-space:nowrap;font-family:inherit">＋ 新增</button>
     </div>
     <div style="padding:8px 0">
-      ${allItems.map(item=>`
-        <div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);gap:10px">
+      ${allItems.map((item,i)=>`
+        <div style="display:flex;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);gap:8px">
+          <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
+            <button type="button" onclick="movePayItem(${i},-1)"
+              ${i===0?'disabled style="opacity:.25"':''}
+              style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:0.75em;cursor:pointer;color:var(--text2);font-family:inherit;line-height:1">▲</button>
+            <button type="button" onclick="movePayItem(${i},1)"
+              ${i===allItems.length-1?'disabled style="opacity:.25"':''}
+              style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:0.75em;cursor:pointer;color:var(--text2);font-family:inherit;line-height:1">▼</button>
+          </div>
           <span style="flex:1;font-size:0.929em">${item}</span>
           <button type="button" onclick="deletePayEditorItem('${item.replace(/'/g,"\\'")}')"
-            style="background:var(--danger-bg);border:1px solid rgba(229,57,53,.3);color:var(--danger2);border-radius:6px;padding:4px 10px;font-size:0.857em;cursor:pointer;white-space:nowrap;font-family:inherit">✕ 刪除</button>
+            style="background:var(--danger-bg);border:1px solid rgba(229,57,53,.3);color:var(--danger2);border-radius:6px;padding:4px 10px;font-size:0.857em;cursor:pointer;white-space:nowrap;font-family:inherit">✕</button>
         </div>`).join('')}
       ${allItems.length===0?'<div style="padding:20px;text-align:center;color:var(--text3);font-size:0.857em">尚無收款項目，請新增</div>':''}
     </div>`;
   document.getElementById('chip-editor-deck').classList.add('open');
+}
+
+function movePayItem(idx, dir) {
+  const all = getPayItems();
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= all.length) return;
+  let order = JSON.parse(localStorage.getItem('order_pay_items')||'null') || all;
+  all.forEach(o=>{ if(!order.includes(o)) order.push(o); });
+  order = order.filter(o=>all.includes(o));
+  [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
+  localStorage.setItem('order_pay_items', JSON.stringify(order));
+  openPayItemEditor();
 }
 
 function addPayEditorItem() {
@@ -4490,17 +4703,10 @@ function renderChipEditorDeck() {
   };
   const fn = getters[customKey] || (()=>[]);
   const opts = fn();
-  const defArrs = {
-    custom_lbs: LBS_OPTIONS_DEFAULT, custom_ice_types: ICE_TYPES,
-    custom_voltages: VOLTAGES_DEFAULT, custom_coolants: COOLANTS_DEFAULT,
-    custom_brands: BRANDS_DEFAULT, custom_cooling: COOLING_DEFAULT, none: []
-  };
-  const body = document.getElementById('chip-editor-body');
-  const fieldLabels = {
-    iceType:'冰型', lbs:'磅數', voltage:'電壓', coolant:'冷媒', cooling:'散熱'
-  };
+  const fieldLabels = {iceType:'冰型', lbs:'磅數', voltage:'電壓', coolant:'冷媒', cooling:'散熱'};
   const label = fieldLabels[field] || field;
   document.getElementById('chip-editor-title').textContent = `編輯選項：${label}`;
+  const body = document.getElementById('chip-editor-body');
   body.innerHTML = `
     <div style="padding:12px 16px;display:flex;gap:8px;border-bottom:1px solid var(--border)">
       <input class="fi" id="chip-editor-inp" placeholder="${placeholder||'新增選項...'}" style="flex:1;font-size:0.929em">
@@ -4508,14 +4714,40 @@ function renderChipEditorDeck() {
         style="padding:10px 14px;background:var(--accent2);border:none;border-radius:8px;color:#fff;font-size:0.929em;cursor:pointer;white-space:nowrap;font-family:inherit">＋ 新增</button>
     </div>
     <div style="padding:8px 0">
-      ${opts.length ? opts.map(o=>`
-        <div style="display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);gap:10px">
+      ${opts.length ? opts.map((o,i)=>`
+        <div style="display:flex;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);gap:8px">
+          <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
+            <button type="button" onclick="moveChipEditorOption(${i},-1)"
+              ${i===0?'disabled style="opacity:.25"':''}
+              style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:0.75em;cursor:pointer;color:var(--text2);font-family:inherit;line-height:1">▲</button>
+            <button type="button" onclick="moveChipEditorOption(${i},1)"
+              ${i===opts.length-1?'disabled style="opacity:.25"':''}
+              style="background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:0.75em;cursor:pointer;color:var(--text2);font-family:inherit;line-height:1">▼</button>
+          </div>
           <span style="flex:1;font-size:0.929em">${o}</span>
           <button type="button" onclick="deleteChipEditorOption('${o.replace(/'/g,"\\'")}')"
-            style="background:var(--danger-bg);border:1px solid rgba(229,57,53,.3);color:var(--danger2);border-radius:6px;padding:4px 10px;font-size:0.857em;cursor:pointer;white-space:nowrap;font-family:inherit">✕ 刪除</button>
+            style="background:var(--danger-bg);border:1px solid rgba(229,57,53,.3);color:var(--danger2);border-radius:6px;padding:4px 10px;font-size:0.857em;cursor:pointer;white-space:nowrap;font-family:inherit">✕</button>
         </div>`).join('')
       : '<div style="padding:20px;text-align:center;color:var(--text3);font-size:0.857em">尚無選項，請新增</div>'}
     </div>`;
+}
+
+function moveChipEditorOption(idx, dir) {
+  const {groupId, field, customKey} = _chipEditorState;
+  const getters = {custom_lbs:getLbsOptions,custom_ice_types:getIceTypes,custom_voltages:getVoltages,custom_coolants:getCoolants,custom_brands:getBrands,custom_cooling:getCoolings};
+  const fn = getters[customKey]; if (!fn) return;
+  const opts = fn();
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= opts.length) return;
+  // 調整順序：存入 custom_order_{customKey}
+  const orderKey = 'order_' + customKey;
+  let order = JSON.parse(localStorage.getItem(orderKey)||'null') || opts;
+  // 確保 order 包含所有當前選項
+  opts.forEach(o=>{ if(!order.includes(o)) order.push(o); });
+  order = order.filter(o=>opts.includes(o));
+  [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
+  localStorage.setItem(orderKey, JSON.stringify(order));
+  renderChipEditorDeck();
 }
 
 function addChipEditorOption() {
@@ -4523,6 +4755,12 @@ function addChipEditorOption() {
   const val = inp?.value.trim();
   if (!val) return;
   const {groupId, field, customKey} = _chipEditorState;
+  // 從黑名單移除（讓刪掉的選項可以重新加回）
+  const defArrs2 = {custom_lbs:'lbs',custom_ice_types:'ice_types',custom_voltages:'voltages',custom_coolants:'coolants',custom_cooling:'cooling'};
+  if (defArrs2[customKey]) {
+    const bl = JSON.parse(localStorage.getItem('del_'+defArrs2[customKey])||'[]');
+    localStorage.setItem('del_'+defArrs2[customKey], JSON.stringify(bl.filter(x=>x!==val)));
+  }
   const custom = JSON.parse(localStorage.getItem(customKey)||'[]');
   if (!custom.includes(val)) {
     custom.push(val);
@@ -4530,7 +4768,6 @@ function addChipEditorOption() {
   }
   machineSelections[field] = machineSelections[field] || val;
   if (inp) inp.value = '';
-  // 同步更新主表單中的chip group
   const getters = {
     custom_lbs:getLbsOptions, custom_ice_types:getIceTypes,
     custom_voltages:getVoltages, custom_coolants:getCoolants,
@@ -4587,7 +4824,7 @@ function delMachineChip(groupId,field,val,customKey){
 
 function openAdd() {
   editMode = false; editId = ''; payMethod = ''; selectedPayItems = []; tempPayItems = []; selectedTaskItems = []; selectedHandlers = []; payLineItems = [];
-  const titles = ['新增客戶','新增機器','新增施工紀錄','新增收款','新增合約','新增合約','','新增維修紀錄','新增報價'];
+  const titles = ['新增客戶','新增機器','新增施工紀錄','新增收款','新增合約','新增合約','','新增維修紀錄','新增報價','','','新增職員'];
   document.getElementById('form-modal-title').textContent = titles[currentTab]||'新增';
   const body = document.getElementById('form-modal-body');
   switch(currentTab) {
@@ -4599,13 +4836,24 @@ function openAdd() {
     case 5: body.innerHTML = contractForm(null); break;
     case 7: body.innerHTML = repairForm(null); break;
     case 8: body.innerHTML = pricelistEntryForm(null); break;
+    case 10: body.innerHTML = staffForm(null); break;
     default: return;
   }
   document.getElementById('form-modal').classList.add('open');
 }
 
 function openEditItem(type, idx) {
-  editMode = true; selectedPayItems = []; tempPayItems = []; selectedTaskItems = []; selectedHandlers = []; payLineItems = [];
+  editMode = true; isSaving = false; selectedPayItems = []; tempPayItems = []; selectedTaskItems = []; selectedHandlers = []; payLineItems = [];
+  // staff 由 editCurrent 直接處理；這裡作為保底
+  if (type === 'staff') {
+    const item = (cache.staff||[])[idx];
+    if (!item) return;
+    editId = item['姓名']||'';
+    document.getElementById('form-modal-title').textContent = '編輯職員';
+    document.getElementById('form-modal-body').innerHTML = staffForm(item);
+    document.getElementById('form-modal').classList.add('open');
+    return;
+  }
   const maps = {customer:cache.customers, machine:cache.machines, contract:cache.contracts, payment:cache.payments, task:cache.tasks};
   const item = maps[type]?.[idx];
   if (!item) return;
@@ -5106,7 +5354,8 @@ function confirmDeletePayItem(item) {
 function getPayItems() {
   const hidden = JSON.parse(localStorage.getItem('hidden_pay_items')||'[]');
   const custom = JSON.parse(localStorage.getItem('custom_pay_items')||'[]');
-  return [...PAY_ITEMS.filter(i=>!hidden.includes(i)), ...custom.filter(i=>!PAY_ITEMS.includes(i))];
+  const arr = [...PAY_ITEMS.filter(i=>!hidden.includes(i)), ...custom.filter(i=>!PAY_ITEMS.includes(i)&&!hidden.includes(i))];
+  return applyOrder(arr, 'order_pay_items');
 }
 let selectedHandlers = []; // 改為複選陣列
 
@@ -5504,7 +5753,9 @@ async function doSave(type, data) {
     enqueue({action:'update', sheet, data, id:editId});
   } else {
     arr.push(data);
-    enqueue({action:'add', sheet, data, id:null});
+    // 傳入主鍵讓 App 端去重邏輯生效，防止網路重試重複送出
+    const addId = data[idF] || null;
+    enqueue({action:'add', sheet, data, id: addId});
   }
   saveCache();
   closeModal('form-modal');
@@ -5731,19 +5982,230 @@ async function saveContract() {
 }
 
 // ============================================================
-// DELETE
+// 職員名單（Tab 10，僅管理員）
+// ============================================================
+const STAFF_ROLES = ['管理員','工程師','帳款專員'];
+let _staffRoles = []; // 目前選取的角色陣列
+
+function toggleStaffRole(r) {
+  const idx = _staffRoles.indexOf(r);
+  if (idx >= 0) _staffRoles.splice(idx,1); else _staffRoles.push(r);
+  document.querySelectorAll('.staff-role-chip').forEach(b => {
+    b.classList.toggle('selected', _staffRoles.includes(b.dataset.role));
+  });
+}
+
+function renderStaffList() {
+  const list = cache.staff||[];
+  if (!list.length) return '<div class="empty">尚無職員資料<br><br><span style="font-size:0.857em;color:var(--text3)">請先連線同步試算表</span></div>';
+  return `<div style="padding-bottom:80px">
+    ${list.map((s,i)=>{
+      const name  = s['姓名']||'';
+      const role  = s['角色']||'';
+      const phone = s['電話']||'';
+      const email = s['Email']||s['E-mail']||'';
+      return `<div class="customer-item" onclick="showStaffDetail(${i})">
+        <div style="width:38px;height:38px;border-radius:50%;background:var(--accent-bg);border:1px solid var(--accent-glow);display:flex;align-items:center;justify-content:center;font-size:1.1em;font-weight:700;color:var(--accent2);flex-shrink:0">${name.charAt(0)||'?'}</div>
+        <div style="flex:1;min-width:0;margin-left:12px">
+          <div class="c-name" style="display:flex;align-items:center;gap:6px">
+            ${name}
+            ${role?`<span style="font-size:0.714em;background:var(--accent-bg);color:var(--accent2);border-radius:4px;padding:1px 6px;font-weight:600">${role}</span>`:''}
+          </div>
+          <div class="c-addr">${[phone, email].filter(Boolean).join(' · ')}</div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function showStaffDetail(idx) {
+  const item = (cache.staff||[])[idx];
+  if (!item) return;
+  const body = document.getElementById('detail-modal-body');
+  document.getElementById('detail-modal-title').textContent = item['姓名']||'職員詳情';
+  document.getElementById('detail-edit-btn').style.display = 'none';
+  detailType = 'staff'; detailIdx = idx;
+  const phone = item['電話']||'';
+  const email = item['E-mail']||item['Email']||'';
+  const rows = [
+    {k:'角色',      v: item['角色']||''},
+    {k:'電話',      v: phone,    phone: true},
+    {k:'Email',     v: email},
+    {k:'地址',      v: item['地址']||''},
+    {k:'備註',      v: item['備註']||''},
+    {k:'身分證號',  v: item['身分證號']||'', mask:true},
+    {k:'PIN',       v: item['PIN']||'',       mask:true},
+  ].filter(r=>r.v);
+  body.innerHTML = '<div class="det-section">'
+    + rows.map(r=>'<div class="det-row"><span class="det-key">'+r.k+'</span><span class="det-val">'
+      + (r.mask ? '••••••'
+        : r.phone ? r.v+' <a href="tel:'+r.v+'" style="background:var(--green-bg);color:var(--green2);border:1px solid rgba(67,160,71,.3);border-radius:6px;padding:3px 9px;font-size:11px;text-decoration:none;white-space:nowrap">📞</a>'
+        : String(r.v))
+      + '</span></div>').join('')
+    + '</div>'
+    + '<div style="padding:14px 15px;display:flex;flex-direction:column;gap:10px">'
+    + '<button class="btn-save" style="width:100%" onclick="staffEditInPlace('+idx+')">✏️ 編輯資料</button>'
+    + '<button class="btn-cancel" style="width:100%;color:var(--danger2)" onclick="confirmDeleteStaff('+idx+')">🗑 刪除</button>'
+    + '</div>';
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function staffEditInPlace(idx) {
+  const item = (cache.staff||[])[idx];
+  if (!item) return;
+  isSaving = false;
+  editMode = true;
+  editId = item['姓名']||'';
+  // 在 detail-modal 原地替換為編輯表單，不關閉再開（避免手機觸控延遲問題）
+  document.getElementById('detail-modal-title').textContent = '編輯職員';
+  const curRoles = item['角色'] ? String(item['角色']).split(/[,、，]/).map(s=>s.trim()).filter(Boolean) : [];
+  _staffRoles = [...curRoles];
+  const roleChips = STAFF_ROLES.map(r=>{
+    const sel = curRoles.includes(r) ? ' selected' : '';
+    return '<button type="button" data-role="'+r+'" class="pay-item-chip staff-role-chip'+sel+'" onclick="toggleStaffRole(\''+r+'\')">'+r+'</button>';
+  }).join('');
+  const esc = s=>(s||'').replace(/"/g,'&quot;');
+  document.getElementById('detail-modal-body').innerHTML =
+    '<div class="form-body">'
+    +'<div class="ff"><label>姓名<span class="req">*</span></label><input class="fi" id="se-name" value="'+esc(item['姓名'])+'"></div>'
+    +'<div class="ff"><label>角色（可複選）</label><div style="display:flex;flex-wrap:wrap;gap:7px">'+roleChips+'</div></div>'
+    +'<div class="ff"><label>電話</label><input class="fi" id="se-phone" type="tel" value="'+esc(item['電話'])+'"></div>'
+    +'<div class="ff"><label>E-mail</label><input class="fi" id="se-email" type="email" value="'+esc(item['E-mail']||item['Email'])+'"></div>'
+    +'<div class="ff"><label>地址</label><input class="fi" id="se-addr" value="'+esc(item['地址'])+'"></div>'
+    +'<div class="ff"><label>備註</label><input class="fi" id="se-note" value="'+esc(item['備註'])+'"></div>'
+    +'<div class="ff"><label>身分證號</label><input class="fi" id="se-id" value="'+esc(item['身分證號'])+'"></div>'
+    +'<div class="ff"><label>PIN</label><input class="fi" id="se-pin" type="text" inputmode="numeric" maxlength="8" value="'+esc(item['PIN'])+'"></div>'
+    +'</div>'
+    +'<div class="form-actions">'
+    +'<button class="btn-cancel" onclick="showStaffDetail('+idx+')">取消</button>'
+    +'<button class="btn-save" onclick="saveStaffEdit('+idx+')">儲存</button>'
+    +'</div>';
+}
+
+async function saveStaffEdit(idx) {
+  if (isSaving) return;
+  isSaving = true;
+  try {
+    const name = (document.getElementById('se-name')?.value||'').trim();
+    if (!name) { showToast('請填寫姓名'); return; }
+    const data = {
+      '姓名':   name,
+      '角色':   _staffRoles.join('、'),
+      '電話':   (document.getElementById('se-phone')?.value||'').trim(),
+      'E-mail': (document.getElementById('se-email')?.value||'').trim(),
+      '地址':   (document.getElementById('se-addr')?.value||'').trim(),
+      '備註':   (document.getElementById('se-note')?.value||'').trim(),
+      '身分證號':(document.getElementById('se-id')?.value||'').trim(),
+      'PIN':    (document.getElementById('se-pin')?.value||'').trim(),
+    };
+    if (!cache.staff) cache.staff=[];
+    const fi = cache.staff.findIndex(r=>String(r['姓名']||'')===String(editId));
+    if (fi>=0) Object.assign(cache.staff[fi], data); else cache.staff.push(data);
+    enqueue({action:'update', sheet:'staff', data, id:editId});
+    saveCache();
+    editMode=false; editId='';
+    closeModal('detail-modal');
+    renderPage();
+    showToast('✓ 已更新職員');
+  } catch(e) {
+    showToast('儲存失敗：'+e.message);
+  } finally {
+    isSaving=false;
+  }
+}
+
+function confirmDeleteStaff(idx) {
+  if (!confirm('確定要刪除這位職員嗎？')) return;
+  const item = (cache.staff||[])[idx];
+  if (!item) return;
+  const id = item['姓名']||'';
+  cache.staff.splice(idx,1);
+  saveCache();
+  enqueue({action:'delete', sheet:'staff', data:null, id});
+  closeModal('detail-modal');
+  renderPage();
+  showToast('已刪除');
+}
+
+function staffForm(d) {
+  const curRoles = d?.['角色'] ? String(d['角色']).split(/[,、，]/).map(s=>s.trim()).filter(Boolean) : [];
+  _staffRoles = [...curRoles];
+  return `<div class="form-body">
+    <div class="ff"><label>姓名<span class="req">*</span></label>
+      <input class="fi" id="f-staff-name" value="${(d?.['姓名']||'').replace(/"/g,'&quot;')}"></div>
+    <div class="ff"><label>角色（可複選）</label>
+      <div style="display:flex;flex-wrap:wrap;gap:7px">
+        ${STAFF_ROLES.map(r=>`<button type="button" data-role="${r}"
+          class="pay-item-chip staff-role-chip${curRoles.includes(r)?' selected':''}"
+          onclick="toggleStaffRole('${r}')">${r}</button>`).join('')}
+      </div>
+    </div>
+    <div class="ff"><label>電話</label>
+      <input class="fi" id="f-staff-phone" type="tel" value="${(d?.['電話']||'').replace(/"/g,'&quot;')}"></div>
+    <div class="ff"><label>E-mail</label>
+      <input class="fi" id="f-staff-email" type="email" value="${(d?.['Email']||d?.['E-mail']||'').replace(/"/g,'&quot;')}" placeholder="example@email.com"></div>
+    <div class="ff"><label>地址</label>
+      <input class="fi" id="f-staff-addr" value="${(d?.['地址']||'').replace(/"/g,'&quot;')}"></div>
+    <div class="ff"><label>備註</label>
+      <input class="fi" id="f-staff-note" value="${(d?.['備註']||'').replace(/"/g,'&quot;')}"></div>
+    <div class="ff"><label>身分證號（登入用）</label>
+      <input class="fi" id="f-staff-id" value="${(d?.['身分證號']||'').replace(/"/g,'&quot;')}"></div>
+    <div class="ff"><label>PIN（切換管理員用）</label>
+      <input class="fi" id="f-staff-pin" type="text" inputmode="numeric" maxlength="8"
+        value="${(d?.['PIN']||'').replace(/"/g,'&quot;')}" placeholder="選填，4-8 位數字"></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn-cancel" onclick="closeModal('form-modal')">取消</button>
+    <button class="btn-save" onclick="if(!isSaving)saveStaff()">儲存</button>
+  </div>`;
+}
+
+async function saveStaff() {
+  if (isSaving) return; isSaving = true;
+  try {
+    const name  = document.getElementById('f-staff-name')?.value.trim();
+    if (!name) { showToast('請填寫姓名'); return; }
+    const role  = _staffRoles.join('、');
+    const phone = document.getElementById('f-staff-phone')?.value.trim()||'';
+    const email = document.getElementById('f-staff-email')?.value.trim()||'';
+    const addr  = document.getElementById('f-staff-addr')?.value.trim()||'';
+    const note  = document.getElementById('f-staff-note')?.value.trim()||'';
+    const idNo  = document.getElementById('f-staff-id')?.value.trim()||'';
+    const pin   = document.getElementById('f-staff-pin')?.value.trim()||'';
+    const data  = { '姓名':name, '角色':role, '電話':phone, 'E-mail':email, '地址':addr, '備註':note, '身分證號':idNo, 'PIN':pin };
+
+    if (!cache.staff) cache.staff=[];
+    if (editMode) {
+      const idx = cache.staff.findIndex(r=>String(r['姓名']||'')===String(editId));
+      if (idx>=0) Object.assign(cache.staff[idx], data); else cache.staff.push(data);
+      enqueue({action:'update', sheet:'staff', data, id:editId});
+    } else {
+      cache.staff.push(data);
+      enqueue({action:'add', sheet:'staff', data, id:name});
+    }
+    saveCache();
+    closeModal('form-modal');
+    renderPage();
+    showToast(editMode?'✓ 已更新職員':'✓ 已新增職員');
+  } catch(e) {
+    showToast('儲存失敗：'+e.message);
+  } finally {
+    isSaving = false;
+  }
+}
 // ============================================================
 function confirmDelete(type, idx) {
   if (!confirm('確定要刪除這筆資料嗎？')) return;
-  const sheet = SHEET_MAP[type];
-  const arr = cache[sheet];
-  const item = arr[idx];
+  const sheet = SHEET_MAP[type]; // 用於 enqueue 的工作表名稱
+  // 依類型取 cache 陣列（task 的 cache key 是 'tasks'，不是工作表名稱）
+  const cacheKey = type === 'task' ? 'tasks' : sheet;
+  const arr = cache[cacheKey];
+  const item = arr?.[idx];
   if (!item) return;
-  // task 優先用任務ID，fallback 紀錄日期
   const id = type === 'task'
     ? (item['任務ID']||item['紀錄日期'])
     : item[ID_FIELD[type]];
-  arr.splice(idx,1);
+  arr.splice(idx, 1);
   saveCache();
   enqueue({action:'delete', sheet, data:null, id});
   closeModal('detail-modal');
