@@ -6449,13 +6449,13 @@ const _oldLen = pendingQueue.length;
 pendingQueue = pendingQueue.filter(op => Date.now() - (op.ts||0) < _24h);
 if (pendingQueue.length !== _oldLen) { saveQueue(); console.log('清除過舊的 pendingQueue', _oldLen - pendingQueue.length, '筆'); }
 
-// 快速登入按鈕資料在 localStorage，立即顯示不需等同步
+// 快速登入按鈕、登入狀態判斷：立即執行，不等 syncAll
 renderBiometricList();
+initAuth();
 
+// syncAll 在背景執行，完成後更新頁面資料
 if (cfg.url) {
-  syncAll().then(() => { initAuth(); });
-} else {
-  initAuth();
+  syncAll().then(() => { renderPage(); });
 }
 startAutoSync();
 </script>
