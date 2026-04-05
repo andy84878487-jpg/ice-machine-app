@@ -24,7 +24,7 @@
   --orange:#ef6c00;--orange-bg:rgba(239,108,0,.12);
   --purple:#7b1fa2;--purple-bg:rgba(123,31,162,.12);
   --blue:#1565c0;--blue2:#42a5f5;--blue-bg:rgba(21,101,192,.12);
-  --nav-h:62px;--header-h:54px;
+  --nav-h:62px;--header-h:54px;--nav-icon:21px;--nav-font:0.714em;
   --accent:#e53935;--accent2:#ff5252;--accent-bg:rgba(229,57,53,.12);--accent-glow:rgba(229,57,53,.45);
   --font-scale:1;
   /* 固定紅色，不隨主題變動 */
@@ -49,7 +49,7 @@ body.theme-light{
 html{ font-size: calc(14px * var(--font-scale)); }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;overflow:hidden}
-#app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;position:relative;overflow-x:hidden;overflow-y:hidden}
 
 /* Header */
 .header{height:var(--header-h);min-height:var(--header-h);background:var(--surface);display:flex;align-items:center;padding:0 14px;gap:10px;border-bottom:1px solid var(--border);z-index:10;position:relative}
@@ -71,14 +71,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto S
 .content::-webkit-scrollbar{display:none}
 
 /* Nav */
-.nav{height:var(--nav-h);min-height:var(--nav-h);background:var(--surface);border-top:1px solid var(--border);display:flex}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border:none;background:none;color:var(--text3);font-size:0.714em;font-family:inherit;padding:0;transition:color .15s;position:relative}
-.nav-item svg{width:21px;height:21px}
+.nav{height:calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));min-height:var(--nav-h);padding-bottom:env(safe-area-inset-bottom, 0px);background:var(--surface);border-top:1px solid var(--border);display:flex}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border:none;background:none;color:var(--text3);font-size:var(--nav-font);font-family:inherit;padding:0;transition:color .15s;position:relative}
+.nav-item svg{width:var(--nav-icon);height:var(--nav-icon)}
+/* FAB style B：中央懸浮（純 CSS，不改變 nav 結構）*/
+.fab-style-b .fab{right:auto;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) - 14px + env(safe-area-inset-bottom,0px))}
 .nav-item.active{color:var(--red2)}
 .nav-item.active::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--red);border-radius:0 0 2px 2px}
 
 /* FAB */
-.fab{position:fixed;bottom:calc(var(--nav-h) + 14px);right:50%;transform:translateX(calc(50% - 224px + 14px));width:50px;height:50px;border-radius:50%;background:var(--accent2);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px var(--accent-glow);z-index:20}
+.fab{position:fixed;bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom, 0px));right:16px;width:52px;height:52px;border-radius:50%;background:var(--accent2);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px var(--accent-glow);z-index:200}
 .fab:active{opacity:.85}
 .fab svg{width:22px;height:22px}
 
@@ -276,7 +278,7 @@ body.theme-light .chip-pay{background:rgba(46,125,50,.12);color:#2e7d32;border:1
 .pay-item-chip{padding:7px 13px;background:var(--bg);border:1px solid var(--border);border-radius:99px;color:var(--text2);font-size:0.857em;font-family:inherit;cursor:pointer;transition:all .15s}
 .pay-item-chip.selected{background:var(--red-bg);border-color:var(--red);color:var(--red2)}
 
-@media(min-width:480px){.fab{right:14px;transform:none}}
+@media(min-width:480px){}
 
 /* Theme switcher */
 .theme-btn{flex:1;padding:12px 8px;border:2px solid var(--border);border-radius:10px;cursor:pointer;font-family:inherit;font-size:0.857em;font-weight:700;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--surface2);color:var(--text)}
@@ -1232,32 +1234,62 @@ function startAutoSync() {
 function setTheme(theme) {
   localStorage.setItem('app_theme', theme);
   document.body.classList.toggle('theme-light', theme === 'light');
-  // 重新渲染設定頁讓按鈕active狀態更新
   if (currentTab === 6) renderPage();
 }
 
 function setFontScale(val) {
   const scale = parseFloat(val);
   localStorage.setItem('app_fontscale', scale);
-  // 直接設定body的font-size基準值，讓整體縮放生效
   document.body.style.fontSize = (14 * scale) + 'px';
   document.documentElement.style.setProperty('--font-scale', scale);
   const lbl = document.getElementById('font-scale-label');
   if (lbl) lbl.textContent = Math.round(scale*100) + '%';
 }
 
+// FAB 樣式：A=右下角 B=中央懸浮
+function setFabStyle(style) {
+  localStorage.setItem('app_fab_style', style);
+  applyFabStyle(style);
+  if (currentTab === 6) renderPage();
+}
+function applyFabStyle(style) {
+  const app = document.getElementById('app');
+  if (!app) return;
+  if (style === 'B') {
+    app.classList.add('fab-style-b');
+  } else {
+    app.classList.remove('fab-style-b');
+  }
+}
+
+// 導覽列大小：sm=48 md=62 lg=78
+const NAV_SIZES = { sm: { h:48, icon:'18px', font:'0.643em' }, md: { h:62, icon:'21px', font:'0.714em' }, lg: { h:78, icon:'25px', font:'0.786em' } };
+function setNavSize(size) {
+  localStorage.setItem('app_nav_size', size);
+  applyNavSize(size);
+  if (currentTab === 6) renderPage();
+}
+function applyNavSize(size) {
+  const s = NAV_SIZES[size] || NAV_SIZES.md;
+  document.documentElement.style.setProperty('--nav-h', s.h + 'px');
+  document.documentElement.style.setProperty('--nav-icon', s.icon);
+  document.documentElement.style.setProperty('--nav-font', s.font);
+}
+
 function initAppearance() {
-  const theme = localStorage.getItem('app_theme')||'dark';
-  const scale = parseFloat(localStorage.getItem('app_fontscale')||'1');
+  const theme    = localStorage.getItem('app_theme')||'dark';
+  const scale    = parseFloat(localStorage.getItem('app_fontscale')||'1');
+  const fabStyle = localStorage.getItem('app_fab_style')||'A';
+  const navSize  = localStorage.getItem('app_nav_size')||'md';
   document.body.classList.toggle('theme-light', theme === 'light');
   document.body.style.fontSize = (14 * scale) + 'px';
   document.documentElement.style.setProperty('--font-scale', scale);
-  // 清除 localStorage 中與預設值重複的自訂收款項目（舊版殘留）
+  applyFabStyle(fabStyle);
+  applyNavSize(navSize);
+  // 清除舊版殘留的自訂收款項目
   const customPay = JSON.parse(localStorage.getItem('custom_pay_items')||'[]');
   const cleanedPay = customPay.filter(i => !PAY_ITEMS.includes(i));
-  if (cleanedPay.length !== customPay.length) {
-    localStorage.setItem('custom_pay_items', JSON.stringify(cleanedPay));
-  }
+  if (cleanedPay.length !== customPay.length) localStorage.setItem('custom_pay_items', JSON.stringify(cleanedPay));
 }
 
 
@@ -4088,8 +4120,12 @@ function renderOverview() {
 }
 
 function renderSettings() {
-  const theme = localStorage.getItem('app_theme')||'dark';
+  const theme    = localStorage.getItem('app_theme')||'dark';
   const fontSize = parseFloat(localStorage.getItem('app_fontscale')||'1');
+  const fabStyle = localStorage.getItem('app_fab_style')||'A';
+  const navSize  = localStorage.getItem('app_nav_size')||'md';
+  const fabDescs = { A:'按鈕固定在畫面右下角，不影響導覽列排版。', B:'按鈕懸浮在導覽列中央，視覺最顯眼，雙手皆好點擊。' };
+  const navDescs = { sm:'緊湊模式（48px），適合小螢幕，圖示較小。', md:'預設大小（62px），圖示與標籤清晰可見。', lg:'寬敞模式（78px），圖示較大，適合長輩使用。' };
   return `<div class="settings-page">
     <div class="settings-card">
       <div class="settings-card-title">🎨 外觀設定</div>
@@ -4097,12 +4133,10 @@ function renderSettings() {
         <div class="settings-label" style="margin-bottom:10px">頁面主題</div>
         <div style="display:flex;gap:10px">
           <button class="theme-btn${theme==='dark'?' active':''}" onclick="setTheme('dark')">
-            <div class="theme-preview theme-dark-prev"></div>
-            暗黑風格
+            <div class="theme-preview theme-dark-prev"></div>暗黑風格
           </button>
           <button class="theme-btn${theme==='light'?' active':''}" onclick="setTheme('light')">
-            <div class="theme-preview theme-light-prev"></div>
-            明亮風格
+            <div class="theme-preview theme-light-prev"></div>明亮風格
           </button>
         </div>
       </div>
@@ -4116,6 +4150,44 @@ function renderSettings() {
           <span id="font-scale-label" style="font-weight:700;color:var(--text)">${Math.round(fontSize*100)}%</span>
           <span>大</span>
         </div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">新增按鈕樣式</div>
+        <div style="display:flex;gap:10px;margin-bottom:10px">
+          ${['A','B'].map(s=>{
+            const labels = {A:'右下角', B:'中央懸浮'};
+            const descs  = {A:'固定右側，不擋導覽列', B:'中央懸浮，最顯眼'};
+            const isActive = fabStyle===s;
+            return `<button type="button" style="flex:1;padding:12px 8px;border:2px solid ${isActive?'var(--accent2)':'var(--border)'};border-radius:10px;background:${isActive?'var(--accent-bg)':'var(--surface2)'};cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px"
+              onclick="setFabStyle('${s}')">
+              <div style="font-size:1em;font-weight:700;color:${isActive?'var(--accent2)':'var(--text)'}">${labels[s]}</div>
+              <div style="font-size:0.714em;color:${isActive?'var(--accent2)':'var(--text3)'};">${descs[s]}</div>
+            </button>`;
+          }).join('')}
+        </div>
+        <div style="font-size:0.786em;color:var(--text3)">${fabDescs[fabStyle]}</div>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label">導覽列大小</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          ${['sm','md','lg'].map(s=>{
+            const labels={sm:'緊湊',md:'預設',lg:'寬敞'};
+            const px={sm:48,md:62,lg:78};
+            const iconSz={sm:'10px',md:'13px',lg:'16px'};
+            const isActive = navSize===s;
+            return `<div style="flex:1;border:2px solid ${isActive?'var(--accent2)':'var(--border)'};border-radius:10px;background:${isActive?'var(--accent-bg)':'var(--surface2)'};cursor:pointer;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:6px"
+              onclick="setNavSize('${s}')">
+              <div style="width:100%;height:26px;background:#111;border-radius:5px;overflow:hidden;border:1px solid #2a2a2a;display:flex;align-items:flex-end">
+                <div style="width:100%;background:#1a1a1a;border-top:1px solid #2a2a2a;display:flex;align-items:center;justify-content:space-around;padding:2px 0">
+                  ${'⊞✓🔧☰'.split('').map(ic=>`<span style="font-size:${iconSz[s]};opacity:.5">${ic}</span>`).join('')}
+                </div>
+              </div>
+              <div style="font-size:0.786em;font-weight:700;color:${isActive?'var(--accent2)':'var(--text)'}">${labels[s]}</div>
+              <div style="font-size:0.714em;color:var(--text3)">${px[s]}px</div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="font-size:0.786em;color:var(--text3)">${navDescs[navSize]}</div>
       </div>
     </div>
     <div class="info-card"><b>📋 設定步驟</b><br><ol>
