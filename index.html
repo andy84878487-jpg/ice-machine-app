@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>冰機管理系統</title>
 <!-- 加到主畫面 / PWA 設定 -->
 <link rel="apple-touch-icon" href="icon.png">
@@ -48,9 +48,8 @@ body.theme-light{
 /* 字體縮放 */
 html{ font-size: calc(14px * var(--font-scale)); }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html{height:-webkit-fill-available}
-html,body{min-height:-webkit-fill-available;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;overscroll-behavior:none;overflow:hidden}
-#app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
 
 /* Header */
 .header{height:var(--header-h);min-height:var(--header-h);background:var(--surface);display:flex;align-items:center;padding:0 14px;gap:10px;border-bottom:1px solid var(--border);z-index:10;position:relative}
@@ -72,18 +71,18 @@ html,body{min-height:-webkit-fill-available;background:var(--bg);color:var(--tex
 .content::-webkit-scrollbar{display:none}
 
 /* Nav */
-.nav{height:calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));min-height:var(--nav-h);padding-bottom:env(safe-area-inset-bottom, 0px);background:var(--surface);border-top:1px solid var(--border);display:flex}
+.nav{height:var(--nav-h);min-height:var(--nav-h);background:var(--surface);border-top:1px solid var(--border);display:flex}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;border:none;background:none;color:var(--text3);font-size:var(--nav-font);font-family:inherit;padding:0;transition:color .15s;position:relative}
 .nav-item svg{width:var(--nav-icon);height:var(--nav-icon)}
-/* FAB style B：中央懸浮（純 CSS，不改變 nav 結構）*/
-.fab-style-b .fab{right:auto;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) - 14px + env(safe-area-inset-bottom,0px))}
 .nav-item.active{color:var(--red2)}
 .nav-item.active::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--red);border-radius:0 0 2px 2px}
 
 /* FAB */
-.fab{position:fixed;bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom, 0px));right:16px;width:52px;height:52px;border-radius:50%;background:var(--accent2);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px var(--accent-glow);z-index:200}
+.fab{position:fixed;bottom:calc(var(--nav-h) + 16px);right:16px;width:52px;height:52px;border-radius:50%;background:var(--accent2);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px var(--accent-glow);z-index:20}
 .fab:active{opacity:.85}
 .fab svg{width:22px;height:22px}
+/* FAB style B：中央懸浮（純 CSS，不動 nav 結構）*/
+.fab-style-b .fab{right:auto;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) - 14px)}
 
 /* Search */
 .search-bar{padding:10px 14px;background:var(--bg);position:sticky;top:0;z-index:5}
@@ -144,7 +143,7 @@ html,body{min-height:-webkit-fill-available;background:var(--bg);color:var(--tex
 /* Modal */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;flex-direction:column;justify-content:flex-end;opacity:0;pointer-events:none;transition:opacity .2s}
 .modal-overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--surface);border-radius:18px 18px 0 0;max-height:93vh;max-height:93dvh;overflow-y:auto;transform:translateY(50px);transition:transform .25s cubic-bezier(.25,.8,.25,1);-webkit-overflow-scrolling:touch}
+.modal{background:var(--surface);border-radius:18px 18px 0 0;max-height:93vh;overflow-y:auto;transform:translateY(50px);transition:transform .25s cubic-bezier(.25,.8,.25,1)}
 .modal-overlay.open .modal{transform:translateY(0)}
 .modal-header{display:flex;align-items:center;padding:15px 15px 11px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:5}
 .modal-title{font-size:1.071em;font-weight:700;flex:1}
@@ -155,7 +154,7 @@ html,body{min-height:-webkit-fill-available;background:var(--bg);color:var(--tex
 .form-body{padding:15px;display:flex;flex-direction:column;gap:14px}
 .ff label{display:block;font-size:0.786em;color:var(--text2);margin-bottom:5px}
 .ff label .req{color:var(--red);margin-left:2px}
-.fi{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-size:0.929em;font-family:inherit;outline:none;transition:border-color .15s;-webkit-user-select:text;user-select:text;touch-action:manipulation}
+.fi{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-size:0.929em;font-family:inherit;outline:none;transition:border-color .15s}
 .fi:focus{border-color:var(--red)}
 .fi::placeholder{color:var(--text3)}
 .fi-sel{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
@@ -279,7 +278,7 @@ body.theme-light .chip-pay{background:rgba(46,125,50,.12);color:#2e7d32;border:1
 .pay-item-chip{padding:7px 13px;background:var(--bg);border:1px solid var(--border);border-radius:99px;color:var(--text2);font-size:0.857em;font-family:inherit;cursor:pointer;transition:all .15s}
 .pay-item-chip.selected{background:var(--red-bg);border-color:var(--red);color:var(--red2)}
 
-@media(min-width:480px){}
+@media(min-width:480px){.fab{right:14px;transform:none}}
 
 /* Theme switcher */
 .theme-btn{flex:1;padding:12px 8px;border:2px solid var(--border);border-radius:10px;cursor:pointer;font-family:inherit;font-size:0.857em;font-weight:700;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--surface2);color:var(--text)}
@@ -650,9 +649,9 @@ const ROLE_TABS = {
   // 管理員：全開
   admin:   [0,1,2,3,4,5,6,7,8,9,10],
   // 工程師：無收款(3)、無職員(10)
-  engineer:[0,1,2,4,5,7,8,9],
+  engineer:[0,1,2,4,5,6,7,8,9],
   // 帳款專員：無機器(1)、無施工(2)、無職員(10)
-  billing: [0,3,4,5,7,8,9],
+  billing: [0,3,4,5,6,7,8,9],
   guest:   [9],
 };
 const ROLE_DEFAULT_TAB = { admin:9, engineer:9, billing:9, guest:9 };
@@ -908,7 +907,7 @@ function doGuestLogin() {
   applyRole('guest', '訪客', true);
 }
 
-function enterApp() {
+async function enterApp() {
   const sel = document.querySelector('.role-item.selected');
   if (!sel) { showToast('請選擇角色'); return; }
   const role = sel.dataset.role;
@@ -918,19 +917,27 @@ function enterApp() {
     const pin = document.getElementById('role-pin')?.value.trim();
     if (!pin) { showToast('請輸入管理員 PIN 碼'); return; }
 
-    // 從人員名單找登入者的PIN欄位
-    const loginName = window._loginName || '';
-    const staffRow = cache.staff.find(s => String(s['姓名']||'').trim() === loginName);
-    const expectedPin = staffRow ? String(staffRow['PIN']||staffRow['Pin']||staffRow['pin']||'').trim() : '';
+    const errEl = document.getElementById('pin-err');
+    // PIN 從 Apps Script 即時查詢（不存在 cache，保護安全）
+    let expectedPin = '';
+    if (cfg.url) {
+      try {
+        const res = await jsonp(cfg.url, { action:'getPin', name });
+        expectedPin = String(res?.pin || '').trim();
+      } catch(e) {
+        // 網路失敗：fallback 到 cache（PIN 已被移除，提示重試）
+        if (errEl) errEl.textContent = '❌ 無法連線，請確認網路後再試';
+        else showToast('❌ 無法連線，請確認網路後再試');
+        return;
+      }
+    }
 
     if (!expectedPin) {
-      const errEl = document.getElementById('pin-err');
       if (errEl) errEl.textContent = '⚠️ 此帳號尚未設定 PIN';
       else showToast('⚠️ 此帳號尚未設定 PIN');
       return;
     }
     if (pin !== expectedPin) {
-      const errEl = document.getElementById('pin-err');
       if (errEl) { errEl.textContent = '❌ PIN 碼錯誤'; }
       else showToast('❌ PIN 碼錯誤');
       document.getElementById('role-pin').value = '';
@@ -1247,7 +1254,7 @@ function setFontScale(val) {
   if (lbl) lbl.textContent = Math.round(scale*100) + '%';
 }
 
-// FAB 樣式：A=右下角 B=中央懸浮
+// ── 按鈕位置 A=右下角 B=中央懸浮 ──
 function setFabStyle(style) {
   localStorage.setItem('app_fab_style', style);
   applyFabStyle(style);
@@ -1256,15 +1263,16 @@ function setFabStyle(style) {
 function applyFabStyle(style) {
   const app = document.getElementById('app');
   if (!app) return;
-  if (style === 'B') {
-    app.classList.add('fab-style-b');
-  } else {
-    app.classList.remove('fab-style-b');
-  }
+  if (style === 'B') app.classList.add('fab-style-b');
+  else app.classList.remove('fab-style-b');
 }
 
-// 導覽列大小：sm=48 md=62 lg=78
-const NAV_SIZES = { sm: { h:48, icon:'18px', font:'0.643em' }, md: { h:62, icon:'21px', font:'0.714em' }, lg: { h:78, icon:'25px', font:'0.786em' } };
+// ── 導覽列大小 sm/md/lg ──
+const NAV_SIZES = {
+  sm: { h:48, icon:'18px', font:'0.643em' },
+  md: { h:62, icon:'21px', font:'0.714em' },
+  lg: { h:78, icon:'25px', font:'0.786em' },
+};
 function setNavSize(size) {
   localStorage.setItem('app_nav_size', size);
   applyNavSize(size);
@@ -1278,19 +1286,20 @@ function applyNavSize(size) {
 }
 
 function initAppearance() {
-  const theme    = localStorage.getItem('app_theme')||'dark';
-  const scale    = parseFloat(localStorage.getItem('app_fontscale')||'1');
-  const fabStyle = localStorage.getItem('app_fab_style')||'A';
-  const navSize  = localStorage.getItem('app_nav_size')||'md';
+  const theme    = localStorage.getItem('app_theme') || 'dark';
+  const scale    = parseFloat(localStorage.getItem('app_fontscale') || '1');
+  const fabStyle = localStorage.getItem('app_fab_style') || 'A';
+  const navSize  = localStorage.getItem('app_nav_size') || 'md';
   document.body.classList.toggle('theme-light', theme === 'light');
   document.body.style.fontSize = (14 * scale) + 'px';
   document.documentElement.style.setProperty('--font-scale', scale);
   applyFabStyle(fabStyle);
   applyNavSize(navSize);
   // 清除舊版殘留的自訂收款項目
-  const customPay = JSON.parse(localStorage.getItem('custom_pay_items')||'[]');
+  const customPay = JSON.parse(localStorage.getItem('custom_pay_items') || '[]');
   const cleanedPay = customPay.filter(i => !PAY_ITEMS.includes(i));
-  if (cleanedPay.length !== customPay.length) localStorage.setItem('custom_pay_items', JSON.stringify(cleanedPay));
+  if (cleanedPay.length !== customPay.length)
+    localStorage.setItem('custom_pay_items', JSON.stringify(cleanedPay));
 }
 
 
@@ -4121,12 +4130,10 @@ function renderOverview() {
 }
 
 function renderSettings() {
-  const theme    = localStorage.getItem('app_theme')||'dark';
-  const fontSize = parseFloat(localStorage.getItem('app_fontscale')||'1');
-  const fabStyle = localStorage.getItem('app_fab_style')||'A';
-  const navSize  = localStorage.getItem('app_nav_size')||'md';
-  const fabDescs = { A:'按鈕固定在畫面右下角，不影響導覽列排版。', B:'按鈕懸浮在導覽列中央，視覺最顯眼，雙手皆好點擊。' };
-  const navDescs = { sm:'緊湊模式（48px），適合小螢幕，圖示較小。', md:'預設大小（62px），圖示與標籤清晰可見。', lg:'寬敞模式（78px），圖示較大，適合長輩使用。' };
+  const theme    = localStorage.getItem('app_theme') || 'dark';
+  const fontSize = parseFloat(localStorage.getItem('app_fontscale') || '1');
+  const fabStyle = localStorage.getItem('app_fab_style') || 'A';
+  const navSize  = localStorage.getItem('app_nav_size') || 'md';
   return `<div class="settings-page">
     <div class="settings-card">
       <div class="settings-card-title">🎨 外觀設定</div>
@@ -4134,10 +4141,12 @@ function renderSettings() {
         <div class="settings-label" style="margin-bottom:10px">頁面主題</div>
         <div style="display:flex;gap:10px">
           <button class="theme-btn${theme==='dark'?' active':''}" onclick="setTheme('dark')">
-            <div class="theme-preview theme-dark-prev"></div>暗黑風格
+            <div class="theme-preview theme-dark-prev"></div>
+            暗黑風格
           </button>
           <button class="theme-btn${theme==='light'?' active':''}" onclick="setTheme('light')">
-            <div class="theme-preview theme-light-prev"></div>明亮風格
+            <div class="theme-preview theme-light-prev"></div>
+            明亮風格
           </button>
         </div>
       </div>
@@ -4153,42 +4162,28 @@ function renderSettings() {
         </div>
       </div>
       <div class="settings-row">
-        <div class="settings-label">新增按鈕樣式</div>
-        <div style="display:flex;gap:10px;margin-bottom:10px">
-          ${['A','B'].map(s=>{
-            const labels = {A:'右下角', B:'中央懸浮'};
-            const descs  = {A:'固定右側，不擋導覽列', B:'中央懸浮，最顯眼'};
-            const isActive = fabStyle===s;
-            return `<button type="button" style="flex:1;padding:12px 8px;border:2px solid ${isActive?'var(--accent2)':'var(--border)'};border-radius:10px;background:${isActive?'var(--accent-bg)':'var(--surface2)'};cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px"
-              onclick="setFabStyle('${s}')">
-              <div style="font-size:1em;font-weight:700;color:${isActive?'var(--accent2)':'var(--text)'}">${labels[s]}</div>
-              <div style="font-size:0.714em;color:${isActive?'var(--accent2)':'var(--text3)'};">${descs[s]}</div>
+        <div class="settings-label" style="margin-bottom:8px">新增按鈕位置</div>
+        <div style="display:flex;gap:10px">
+          ${[['A','右下角','固定右側，不擋導覽列'],['B','中央懸浮','中央顯眼，雙手好按']].map(([s,lbl,desc])=>{
+            const on = fabStyle===s;
+            return `<button type="button" style="flex:1;padding:11px 8px;border:2px solid ${on?'var(--accent2)':'var(--border)'};border-radius:10px;background:${on?'var(--accent-bg)':'var(--surface2)'};cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="setFabStyle('${s}')">
+              <span style="font-size:1em;font-weight:700;color:${on?'var(--accent2)':'var(--text)'}">${lbl}</span>
+              <span style="font-size:0.714em;color:${on?'var(--accent2)':'var(--text3)'}">${desc}</span>
             </button>`;
           }).join('')}
         </div>
-        <div style="font-size:0.786em;color:var(--text3)">${fabDescs[fabStyle]}</div>
       </div>
       <div class="settings-row">
-        <div class="settings-label">導覽列大小</div>
-        <div style="display:flex;gap:8px;margin-bottom:10px">
-          ${['sm','md','lg'].map(s=>{
-            const labels={sm:'緊湊',md:'預設',lg:'寬敞'};
-            const px={sm:48,md:62,lg:78};
-            const iconSz={sm:'10px',md:'13px',lg:'16px'};
-            const isActive = navSize===s;
-            return `<div style="flex:1;border:2px solid ${isActive?'var(--accent2)':'var(--border)'};border-radius:10px;background:${isActive?'var(--accent-bg)':'var(--surface2)'};cursor:pointer;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:6px"
-              onclick="setNavSize('${s}')">
-              <div style="width:100%;height:26px;background:#111;border-radius:5px;overflow:hidden;border:1px solid #2a2a2a;display:flex;align-items:flex-end">
-                <div style="width:100%;background:#1a1a1a;border-top:1px solid #2a2a2a;display:flex;align-items:center;justify-content:space-around;padding:2px 0">
-                  ${'⊞✓🔧☰'.split('').map(ic=>`<span style="font-size:${iconSz[s]};opacity:.5">${ic}</span>`).join('')}
-                </div>
-              </div>
-              <div style="font-size:0.786em;font-weight:700;color:${isActive?'var(--accent2)':'var(--text)'}">${labels[s]}</div>
-              <div style="font-size:0.714em;color:var(--text3)">${px[s]}px</div>
-            </div>`;
+        <div class="settings-label" style="margin-bottom:8px">導覽列大小</div>
+        <div style="display:flex;gap:8px">
+          ${[['sm','緊湊','48px'],['md','預設','62px'],['lg','寬敞','78px']].map(([s,lbl,px])=>{
+            const on = navSize===s;
+            return `<button type="button" style="flex:1;padding:11px 6px;border:2px solid ${on?'var(--accent2)':'var(--border)'};border-radius:10px;background:${on?'var(--accent-bg)':'var(--surface2)'};cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:4px" onclick="setNavSize('${s}')">
+              <span style="font-size:1em;font-weight:700;color:${on?'var(--accent2)':'var(--text)'}">${lbl}</span>
+              <span style="font-size:0.714em;color:${on?'var(--accent2)':'var(--text3)'}">${px}</span>
+            </button>`;
           }).join('')}
         </div>
-        <div style="font-size:0.786em;color:var(--text3)">${navDescs[navSize]}</div>
       </div>
     </div>
     <div class="info-card"><b>📋 設定步驟</b><br><ol>
@@ -6520,23 +6515,6 @@ function showToast(msg, duration) {
 // ============================================================
 // INIT
 // ============================================================
-// iOS standalone PWA 鍵盤修正：input touch 時強制 focus（鍵盤才會出現）
-if (navigator.standalone) {
-  document.body.addEventListener('touchend', function(e) {
-    const t = e.target;
-    if (t.matches('input,textarea,select') && document.activeElement !== t) {
-      e.preventDefault();
-      t.focus();
-    }
-  }, { passive: false });
-}
-// 通用：input focus 後滾動到可見範圍
-document.addEventListener('focusin', e => {
-  const el = e.target;
-  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
-  }
-});
 updateOfflineBanner();
 updatePendingBadge();
 initAppearance();
