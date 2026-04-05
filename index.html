@@ -6313,8 +6313,6 @@ function showStaffDetail(idx) {
     {k:'Email',     v: email},
     {k:'地址',      v: item['地址']||''},
     {k:'備註',      v: item['備註']||''},
-    {k:'身分證號',  v: item['身分證號']||'', mask:true},
-    {k:'PIN',       v: item['PIN']||'',       mask:true},
   ].filter(r=>r.v);
   body.innerHTML = '<div class="det-section">'
     + rows.map(r=>'<div class="det-row"><span class="det-key">'+r.k+'</span><span class="det-val">'
@@ -6353,8 +6351,6 @@ function staffEditInPlace(idx) {
     +'<div class="ff"><label>E-mail</label><input class="fi" id="se-email" type="email" value="'+esc(item['E-mail']||item['Email'])+'"></div>'
     +'<div class="ff"><label>地址</label><input class="fi" id="se-addr" value="'+esc(item['地址'])+'"></div>'
     +'<div class="ff"><label>備註</label><input class="fi" id="se-note" value="'+esc(item['備註'])+'"></div>'
-    +'<div class="ff"><label>身分證號</label><input class="fi" id="se-id" value="'+esc(item['身分證號'])+'"></div>'
-    +'<div class="ff"><label>PIN</label><input class="fi" id="se-pin" type="text" inputmode="numeric" maxlength="8" value="'+esc(item['PIN'])+'"></div>'
     +'</div>'
     +'<div class="form-actions">'
     +'<button class="btn-cancel" onclick="showStaffDetail('+idx+')">取消</button>'
@@ -6375,8 +6371,6 @@ async function saveStaffEdit(idx) {
       'E-mail': (document.getElementById('se-email')?.value||'').trim(),
       '地址':   (document.getElementById('se-addr')?.value||'').trim(),
       '備註':   (document.getElementById('se-note')?.value||'').trim(),
-      '身分證號':(document.getElementById('se-id')?.value||'').trim(),
-      'PIN':    (document.getElementById('se-pin')?.value||'').trim(),
     };
     if (!cache.staff) cache.staff=[];
     const fi = cache.staff.findIndex(r=>String(r['姓名']||'')===String(editId));
@@ -6428,11 +6422,6 @@ function staffForm(d) {
       <input class="fi" id="f-staff-addr" value="${(d?.['地址']||'').replace(/"/g,'&quot;')}"></div>
     <div class="ff"><label>備註</label>
       <input class="fi" id="f-staff-note" value="${(d?.['備註']||'').replace(/"/g,'&quot;')}"></div>
-    <div class="ff"><label>身分證號（登入用）</label>
-      <input class="fi" id="f-staff-id" value="${(d?.['身分證號']||'').replace(/"/g,'&quot;')}"></div>
-    <div class="ff"><label>PIN（切換管理員用）</label>
-      <input class="fi" id="f-staff-pin" type="text" inputmode="numeric" maxlength="8"
-        value="${(d?.['PIN']||'').replace(/"/g,'&quot;')}" placeholder="選填，4-8 位數字"></div>
   </div>
   <div class="form-actions">
     <button class="btn-cancel" onclick="closeModal('form-modal')">取消</button>
@@ -6450,9 +6439,7 @@ async function saveStaff() {
     const email = document.getElementById('f-staff-email')?.value.trim()||'';
     const addr  = document.getElementById('f-staff-addr')?.value.trim()||'';
     const note  = document.getElementById('f-staff-note')?.value.trim()||'';
-    const idNo  = document.getElementById('f-staff-id')?.value.trim()||'';
-    const pin   = document.getElementById('f-staff-pin')?.value.trim()||'';
-    const data  = { '姓名':name, '角色':role, '電話':phone, 'E-mail':email, '地址':addr, '備註':note, '身分證號':idNo, 'PIN':pin };
+    const data  = { '姓名':name, '角色':role, '電話':phone, 'E-mail':email, '地址':addr, '備註':note };
 
     if (!cache.staff) cache.staff=[];
     if (editMode) {
