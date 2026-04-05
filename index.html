@@ -48,8 +48,9 @@ body.theme-light{
 /* 字體縮放 */
 html{ font-size: calc(14px * var(--font-scale)); }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;overscroll-behavior:none}
-#app{display:flex;flex-direction:column;position:fixed;inset:0;max-width:480px;margin:0 auto;overflow:hidden}
+html{height:-webkit-fill-available}
+html,body{min-height:-webkit-fill-available;background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;overscroll-behavior:none;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:480px;margin:0 auto;position:relative;overflow:hidden}
 
 /* Header */
 .header{height:var(--header-h);min-height:var(--header-h);background:var(--surface);display:flex;align-items:center;padding:0 14px;gap:10px;border-bottom:1px solid var(--border);z-index:10;position:relative}
@@ -143,7 +144,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto S
 /* Modal */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;flex-direction:column;justify-content:flex-end;opacity:0;pointer-events:none;transition:opacity .2s}
 .modal-overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--surface);border-radius:18px 18px 0 0;max-height:93vh;overflow-y:auto;transform:translateY(50px);transition:transform .25s cubic-bezier(.25,.8,.25,1)}
+.modal{background:var(--surface);border-radius:18px 18px 0 0;max-height:93vh;max-height:93dvh;overflow-y:auto;transform:translateY(50px);transition:transform .25s cubic-bezier(.25,.8,.25,1);-webkit-overflow-scrolling:touch}
 .modal-overlay.open .modal{transform:translateY(0)}
 .modal-header{display:flex;align-items:center;padding:15px 15px 11px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:5}
 .modal-title{font-size:1.071em;font-weight:700;flex:1}
@@ -154,7 +155,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Noto S
 .form-body{padding:15px;display:flex;flex-direction:column;gap:14px}
 .ff label{display:block;font-size:0.786em;color:var(--text2);margin-bottom:5px}
 .ff label .req{color:var(--red);margin-left:2px}
-.fi{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-size:0.929em;font-family:inherit;outline:none;transition:border-color .15s}
+.fi{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-size:0.929em;font-family:inherit;outline:none;transition:border-color .15s;-webkit-user-select:text;user-select:text;touch-action:manipulation}
 .fi:focus{border-color:var(--red)}
 .fi::placeholder{color:var(--text3)}
 .fi-sel{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
@@ -6519,10 +6520,20 @@ function showToast(msg, duration) {
 // ============================================================
 // INIT
 // ============================================================
-// iOS 鍵盤修正：input focus 時確保滾動到可見範圍
+// iOS standalone PWA 鍵盤修正：input touch 時強制 focus（鍵盤才會出現）
+if (navigator.standalone) {
+  document.body.addEventListener('touchend', function(e) {
+    const t = e.target;
+    if (t.matches('input,textarea,select') && document.activeElement !== t) {
+      e.preventDefault();
+      t.focus();
+    }
+  }, { passive: false });
+}
+// 通用：input focus 後滾動到可見範圍
 document.addEventListener('focusin', e => {
   const el = e.target;
-  if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && 'scrollIntoView' in el) {
+  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
     setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
   }
 });
