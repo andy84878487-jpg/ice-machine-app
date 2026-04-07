@@ -1100,9 +1100,11 @@ function jsonp(url, params, timeout) {
 // 寫入用 JSONP GET
 async function apiWrite(url, action, sheet, data, id) {
   const params = { action, sheet };
-  // 注意：data 直接傳 JSON 字串，jsonp 函式的 qs 會做一次 encodeURIComponent
-  if (data) params.data = JSON.stringify(data);
-  if (id)   params.id   = String(id);
+  // data 可能已是字串（saveTaskRows/updateTaskMeta 會直接傳 JSON 字串）
+  if (data !== null && data !== undefined) {
+    params.data = typeof data === 'string' ? data : JSON.stringify(data);
+  }
+  if (id) params.id = String(id);
   return await jsonp(url, params);
 }
 
@@ -1113,7 +1115,22 @@ const MAX_FLUSH_RETRY = 5;
 
 function enqueue(op) {
   // ── 去重邏輯 ──
-  // 同 sheet 同 id 的 update：後者覆蓋前者，避免重複
+  // addTaskRow：同 taskId_seq 後者覆蓋前者
+  if (op.action === 'addTaskRow' && op.id) {
+    const existing = pendingQueue.findIndex(q => q.action === 'addTaskRow' && q.id === op.id);
+    if (existing >= 0) { pendingQueue[existing] = { ...op, ts: Date.now() }; saveQueue(); flushQueue(); return; }
+  }
+  // saveTaskRows：同 taskId 的後者覆蓋前者（保留以防舊版 queue）
+  if (op.action === 'saveTaskRows' && op.id) {
+    const existing = pendingQueue.findIndex(q => q.action === 'saveTaskRows' && q.id === op.id);
+    if (existing >= 0) { pendingQueue[existing] = { ...op, ts: Date.now() }; saveQueue(); flushQueue(); return; }
+  }
+  // updateTaskMeta：同 taskId 的後者覆蓋前者
+  if (op.action === 'updateTaskMeta' && op.id) {
+    const existing = pendingQueue.findIndex(q => q.action === 'updateTaskMeta' && q.id === op.id);
+    if (existing >= 0) { pendingQueue[existing] = { ...op, ts: Date.now() }; saveQueue(); flushQueue(); return; }
+  }
+  // 同 sheet 同 id 的 update：後者覆蓋前者
   if (op.action === 'update' && op.id) {
     const existing = pendingQueue.findIndex(q => q.action === 'update' && q.sheet === op.sheet && q.id === op.id);
     if (existing >= 0) { pendingQueue[existing] = { ...op, ts: Date.now() }; saveQueue(); flushQueue(); return; }
@@ -1199,6 +1216,40 @@ async function syncAllExcept(skip) {
       if (skip === key) continue;
       let rows = await jsonp(cfg.url, {action:'getAll', sheet}) || [];
       // 職員名單：移除敏感欄位，不存入 localStorage
+      if (key === 'tasks') {
+        // 施工紀錄：多行同 taskId → 合併成一筆，items[] 存工作明細
+        const taskMap = {};
+        rows.forEach(row => {
+          const id = String(row['任務ID']||'').trim();
+          if (!id) return;
+          if (!taskMap[id]) {
+            taskMap[id] = { '任務ID': id, items: [] };
+          }
+          const seq = Number(row['序號'])||1;
+          // seq=1 的行帶 header 欄位
+          if (seq === 1) {
+            ['紀錄日期','客戶名稱','備註','希望施工時間','完成狀態','完成日期','指派人員'].forEach(f => {
+              if (row[f] !== undefined && row[f] !== '') taskMap[id][f] = row[f];
+            });
+          }
+          // 每行都帶工作明細
+          if (row['工作內容']) {
+            taskMap[id].items.push({
+              '序號':    seq,
+              '工作內容': String(row['工作內容']||''),
+              '機型':    String(row['機型']||''),
+              '機號':    String(row['機號']||''),
+              '舊機型':  String(row['舊機型']||''),
+              '舊機號':  String(row['舊機號']||''),
+            });
+          }
+        });
+        // 排序 items by 序號
+        rows = Object.values(taskMap).map(t => {
+          t.items.sort((a,b)=>a['序號']-b['序號']);
+          return t;
+        });
+      }
       if (key === 'staff') {
         rows = rows.map(s => {
           const clean = {...s};
@@ -1571,17 +1622,22 @@ function renderTasks() {
     const realIdx = cache.tasks.indexOf(t);
     const isDone = isTaskDone(t);
     const date = String(t['紀錄日期']||'').substring(0,10).replace(/-/g,'/');
-    const doneTime = t['完成時間'] ? String(t['完成時間']).substring(0,10).replace(/-/g,'/') : '';
+    const doneTime = (t['完成日期']||t['完成時間']) ? String(t['完成日期']||t['完成時間']).substring(0,10).replace(/-/g,'/') : '';
     const assignedPeople = getTaskAssign(t);
     const assigned = assignedPeople.length ? `<div class="li-sub" style="color:var(--accent2);font-size:0.786em">👤 ${assignedPeople.join('、')}</div>` : '';
     const dispatchBtn = role==='admin'
       ? `<button class="task-check-btn undone" onclick="event.stopPropagation();openDispatch('task',${realIdx})" style="background:rgba(66,165,245,.1);color:var(--accent2);border:1px solid rgba(66,165,245,.3)">派單</button>`
       : '';
+    const itemColors = {裝機:'#81c784',換機:'#ffcc02',拆回:'#e57373',代裝:'#90caf9',借用機:'#ce93d8'};
+    const itemChips = (t.items||[]).map(it => {
+      const c = itemColors[it['工作內容']] || '#999';
+      const lbl = it['工作內容'] + (it['機型']||it['機號'] ? ' '+[it['機型'],it['機號']].filter(Boolean).join('/') : '');
+      return `<span style="font-size:0.75em;padding:2px 8px;border-radius:99px;background:rgba(0,0,0,.3);border:1px solid ${c}40;color:${c}">${lbl}</span>`;
+    }).join('');
     return `<div class="list-item${isDone?' task-done':''}" onclick="showDetail('task',${realIdx})">
       <div class="li-body">
         <div class="li-title">${t['客戶名稱']||'—'}</div>
-        <div class="li-sub" style="margin-top:3px">${t['工作內容']||''}</div>
-        ${(t['機型']||t['機號'])?`<div class="li-sub" style="color:var(--text2);font-size:0.857em">🔧 ${[t['機型'],t['機號']].filter(Boolean).join(' ')}</div>`:''}
+        <div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:4px">${itemChips}</div>
         ${t['備註']?`<div class="li-sub" style="color:var(--yellow)">${t['備註']}</div>`:''}
         ${assigned}
         ${doneTime?`<div class="li-sub" style="color:var(--green2);font-size:0.786em">✓ 完成於 ${doneTime}</div>`:''}
@@ -1664,7 +1720,7 @@ async function saveDispatch(type, idx) {
   if (type === 'task') {
     setTaskAssign(item, selected);
     // 同步到試算表
-    if (cfg.url) enqueue({action:'update', sheet:'施工紀錄', data:item, id:item['任務ID']||item['紀錄日期']});
+    if (cfg.url) enqueue({ action:'updateTaskMeta', sheet:'施工紀錄', data: JSON.stringify({'指派人員': item['指派人員']||''}), id: item['任務ID'] });
   } else {
     // 合約（收租清單）：存到「經手人」欄位並同步試算表
     item['經手人'] = selected.join('、');
@@ -1680,26 +1736,83 @@ async function saveDispatch(type, idx) {
 function toggleTaskDone(idx) {
   const t = cache.tasks[idx];
   if (!t) return;
-  // 取消完成：直接取消
-  if (isTaskDone(t)) {
-    t['完成狀態'] = '未完成';
-    delete t['完成時間'];
-    saveCache();
-    if (cfg.url) enqueue({action:'update', sheet:'施工紀錄', data:t, id:t['任務ID']||t['紀錄日期']});
-    renderPage();
-    showToast('已取消完成');
-    return;
-  }
-  // 標記完成：先詢問跳轉，完成後再標記
-  const items = String(t['工作內容']||'');
-  const model  = String(t['機型']||'');
-  const serial = String(t['機號']||'');
-  const customer = String(t['客戶名稱']||'');
   const now = new Date();
   const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
-  // 先暫存完成資料，等跳轉確認後再寫入
+  // 取消完成
+  if (isTaskDone(t)) {
+    t['完成狀態'] = '未完成';
+    delete t['完成日期'];
+    saveCache();
+    if (cfg.url) enqueue({ action:'updateTaskMeta', sheet:'施工紀錄',
+      data: JSON.stringify({'完成狀態':'未完成','完成日期':''}), id: t['任務ID'] });
+    renderPage(); showToast('已取消完成'); return;
+  }
+  // 完成前：檢查所有工作明細的機型機號不能為空
+  const emptyItems = (t.items||[]).filter(it => !it['機型'] || !it['機號']);
+  if (emptyItems.length) {
+    const types = emptyItems.map(it=>it['工作內容']||'未知').join('、');
+    showToast(`⚠️ 請先填寫機型機號：${types}`);
+    return;
+  }
+  const customer = String(t['客戶名稱']||'');
   window._pendingDoneTask = { idx, t, dateStr };
-  afterTaskSave(customer, items, model, serial, t);
+  // 逐筆處理 line items，遇到需要互動的先暫停
+  _processNextLineItem(customer, t.items||[], 0, t);
+}
+
+// 逐筆處理施工明細，遇到需要互動的工作類型就暫停，等 confirmTaskDone 後繼續
+function _processNextLineItem(customer, items, startIdx, taskData) {
+  for (let i = startIdx; i < items.length; i++) {
+    const li = items[i];
+    const type = li.type;
+    const model  = li.model  || '';
+    const serial = li.serial || '';
+    const dn = taskData['紀錄日期'];
+
+    if (type === '裝機' || type === '代裝') {
+      setTimeout(()=>openContractTypeChooser(customer, model, serial, dn, ()=>_processNextLineItem(customer, items, i+1, taskData)), 200);
+      return; // 暫停，等合約處理完
+    }
+    if (type === '換機') {
+      const oldModel  = li.oldModel  || '';
+      const oldSerial = li.oldSerial || '';
+      openReplaceModalFull(customer, model, serial, oldModel, oldSerial, dn, ()=>_processNextLineItem(customer, items, i+1, taskData));
+      return;
+    }
+    if (type === '拆回') {
+      _handleTeardown(customer, model, serial, taskData, ()=>_processNextLineItem(customer, items, i+1, taskData));
+      return;
+    }
+    if (type === '搬回修理') {
+      const borrowLine = items.find((l,j)=> j>i && l.type==='借用機');
+      _handleRepairReturn(customer, model, serial, taskData, borrowLine, ()=>_processNextLineItem(customer, items, i+1+(borrowLine?1:0), taskData));
+      return;
+    }
+    if (type === '借用機') {
+      // 獨立的借用機（非搬回修理配對）
+      window._borrowCustomer = customer;
+      if (model || serial) {
+        onBorrowMachineSelect(serial, model);
+        // 繼續下一筆
+      } else {
+        // 未填機型機號：開選擇器
+        openBorrowMachinePicker(()=>_processNextLineItem(customer, items, i+1, taskData));
+        return;
+      }
+    }
+    if (type === '修好送回') {
+      const borrowLine = items.find((l,j)=> j>i && l.type==='借用機');
+      _handleRepairReturn2(customer, model, serial, taskData, borrowLine, ()=>_processNextLineItem(customer, items, i+1+(borrowLine?1:0), taskData));
+      return;
+    }
+    if (type === '移機') {
+      _handleRelocation(customer, taskData, ()=>_processNextLineItem(customer, items, i+1, taskData));
+      return;
+    }
+    // 其他：直接繼續
+  }
+  // 全部處理完 → 標記完成
+  confirmTaskDone();
 }
 
 function confirmTaskDone() {
@@ -1707,10 +1820,11 @@ function confirmTaskDone() {
   const { idx, t, dateStr } = window._pendingDoneTask;
   window._pendingDoneTask = null;
   t['完成狀態'] = '已完成';
-  t['完成時間'] = dateStr;
+  t['完成日期'] = dateStr;
   saveCache();
   if (cfg.url) {
-    enqueue({action:'update', sheet:'施工紀錄', data:t, id:t['任務ID']||t['紀錄日期']});
+    enqueue({ action:'updateTaskMeta', sheet:'施工紀錄',
+      data: JSON.stringify({'完成狀態':'已完成','完成日期':dateStr}), id: t['任務ID'] });
   }
   renderPage();
   showToast('✓ 已標記完成');
@@ -1729,26 +1843,41 @@ function getAllTaskItems() {
   const hidden = JSON.parse(localStorage.getItem('hidden_task_items')||'["維修","保養","搬回"]');
   const fromValidation = (cache.taskOptions||[]).filter(i=>!hidden.includes(i));
   const fromHistory = [...new Set(
-    cache.tasks.flatMap(t => (t['工作內容']||'').split(/[,、，]/).map(s=>s.trim()).filter(Boolean))
+    cache.tasks.flatMap(t => (t.items||[]).map(it => it['工作內容']).filter(Boolean))
   )].filter(i=>!hidden.includes(i));
   const custom = JSON.parse(localStorage.getItem('custom_task_items')||'[]').filter(i=>!hidden.includes(i));
   const arr = [...new Set([...TASK_FALLBACK, ...fromValidation, ...fromHistory, ...custom])];
   return applyOrder(arr, 'order_task_items');
 }
-let selectedTaskItems = [];
+// taskLineItems: [{ type, model, serial, oldModel, oldSerial }]
+let taskLineItems = [];
+let selectedTaskItems = []; // 保留避免死碼報錯（新版已改用 taskLineItems）
+const TASK_NEEDS_OLD = ['換機']; // 只有換機需要舊機型機號
 
 function taskForm(d) {
   const preCustomer = d?.['客戶名稱']||'';
-  const allTaskItems = getAllTaskItems();
-  if (selectedTaskItems.length===0 && d?.['工作內容']) {
-    selectedTaskItems = d['工作內容'].split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
+  const today = new Date().toISOString().split('T')[0];
+  const preDate = d?.['紀錄日期'] ? String(d['紀錄日期']).replace(/\//g,'-').substring(0,10) : today;
+  // 初始化 line items
+  if (taskLineItems.length === 0) {
+    if (d?.items?.length) {
+      taskLineItems = d.items.map(it => ({
+        type:      it['工作內容']||'',
+        model:     it['機型']||'',
+        serial:    it['機號']||'',
+        oldModel:  it['舊機型']||'',
+        oldSerial: it['舊機號']||'',
+      }));
+    } else {
+      taskLineItems = [{ type: getAllTaskItems()[0]||'裝機', model:'', serial:'', oldModel:'', oldSerial:'' }];
+    }
   }
   if (preCustomer) setTimeout(()=>{
     const inp = document.getElementById('f-task-customer-inp');
     if (inp) { inp.value = preCustomer; onTaskCustomerChange(preCustomer); }
   }, 0);
   return `<div class="form-body">
-    <div class="ff"><label>客戶名稱</label>
+    <div class="ff"><label>客戶名稱 <span class="req">*</span></label>
       <div style="display:flex;gap:8px;align-items:flex-start">
         <div class="autocomplete-wrap" style="flex:1">
           <input class="fi" id="f-task-customer-inp" placeholder="輸入客戶名稱搜尋..."
@@ -1762,37 +1891,13 @@ function taskForm(d) {
       </div>
       <div id="f-task-customer-hint" style="font-size:0.786em;color:var(--text2);margin-top:5px;padding:0 2px"></div>
     </div>
+    <div class="ff"><label>紀錄日期 <span class="req">*</span></label>
+      <input class="fi" type="date" id="f-task-date" value="${preDate}">
+    </div>
     <div class="ff">
-      <button type="button" onclick="openAssignMachinePicker()" style="width:100%;padding:10px;background:rgba(66,165,245,.08);border:1px solid rgba(66,165,245,.3);border-radius:8px;color:var(--accent2);cursor:pointer;font-size:0.929em;font-family:inherit;margin-bottom:4px">🔧 可指派機器（待出租/全新機）</button>
-    </div>
-    <div class="ff"><label>機型</label>
-      <div class="autocomplete-wrap">
-        <input class="fi" id="f-task-model" placeholder="選填，選客戶後自動推薦..."
-          oninput="showTaskModelSuggestions(this.value)"
-          onfocus="showTaskModelSuggestions(this.value)"
-          onblur="setTimeout(()=>hideTaskModelSuggestions(),200)"
-          value="${d?.['機型']||''}" autocomplete="off">
-        <div class="autocomplete-list" id="task-model-suggestions" style="display:none"></div>
-      </div>
-    </div>
-    <div class="ff"><label>機號</label>
-      <div class="autocomplete-wrap">
-        <input class="fi" id="f-task-serial" placeholder="選填，選機型後自動推薦..."
-          oninput="showTaskSerialSuggestions(this.value)"
-          onfocus="showTaskSerialSuggestions(this.value)"
-          onblur="setTimeout(()=>hideTaskSerialSuggestions(),200)"
-          value="${d?.['機號']||''}" autocomplete="off">
-        <div class="autocomplete-list" id="task-serial-suggestions" style="display:none"></div>
-      </div>
-    </div>
-    <div class="ff"><label>工作內容（可複選）</label>
-      <div style="display:flex;align-items:flex-start;gap:8px">
-        <div id="task-items-wrap" style="display:flex;flex-wrap:wrap;gap:7px;flex:1">
-          ${allTaskItems.map(item=>`<button type="button" class="pay-item-chip${selectedTaskItems.includes(item)?' selected':''}" onclick="toggleTaskItem('${item}')" oncontextmenu="event.preventDefault();confirmDeleteTaskItem('${item}')" ontouchstart="startTaskLongPress('${item}')" ontouchend="cancelTaskLongPress()" ontouchmove="cancelTaskLongPress()">${item}</button>`).join('')}
-        </div>
-        <button type="button" onclick="openTaskItemEditor()"
-          style="flex-shrink:0;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:0.857em;cursor:pointer;white-space:nowrap">✏️ 編輯</button>
-      </div>
+      <label>工作明細 <span class="req">*</span></label>
+      <div id="task-line-items-wrap"></div>
+      <button type="button" onclick="taskLineItemAdd()" style="width:100%;margin-top:8px;padding:9px;background:transparent;border:1px dashed var(--border);border-radius:9px;color:var(--text3);font-size:0.857em;font-family:inherit;cursor:pointer">＋ 新增工作項目</button>
     </div>
     <div class="ff"><label>備註</label><input class="fi" id="f-task-note" placeholder="選填" value="${d?.['備註']||''}"></div>
     <div class="ff"><label>希望施工時間</label><input class="fi" id="f-task-time" placeholder="如：下午2點、盡快..." value="${d?.['希望施工時間']||''}"></div>
@@ -1802,6 +1907,135 @@ function taskForm(d) {
     <button class="btn-save" onclick="if(!isSaving)saveTask()">儲存</button>
   </div>`;
 }
+
+function _taskLineItemHtml(item, idx) {
+  const allItems = getAllTaskItems();
+  const customer = document.getElementById('f-task-customer-inp')?.value.trim()||'';
+  const opts = allItems.map(o => '<option value="'+o+'"'+(item.type===o?' selected':'')+'>'+o+'</option>').join('');
+  const needsOld = TASK_NEEDS_OLD.includes(item.type);
+  const sugg = getLineSuggestions(item.type, customer);
+
+  // autocomplete 機型+機號 欄位
+  function machineAutoField(lbM, lbS, valM, valS, fM, fS, machines, listId) {
+    const listHtml = machines.map(m => {
+      const escM = (m['機型']||'').replace(/'/g,"\\'");
+      const escS = (m['機號']||'').replace(/'/g,"\\'");
+      return '<div class="autocomplete-item" onmousedown="taskLineFillClose('+idx+',\''+fM+'\',\''+escM+'\',\''+fS+'\',\''+escS+'\',\''+listId+'\')">'
+        + '<b>'+(m['機型']||'')+'</b><span style="color:var(--text2);margin-left:6px">'+(m['機號']||'')+'</span>'
+        + '<span style="color:var(--text3);font-size:0.8em;margin-left:6px">'+(m['類型']||'')+'</span></div>';
+    }).join('');
+    return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;position:relative;margin-top:7px">'
+      + '<div><div style="font-size:0.75em;color:var(--text3);margin-bottom:3px">'+lbM+'</div>'
+      + '<input class="fi" style="font-size:0.86em;padding:7px 10px" placeholder="如 LD880" value="'+valM+'"'
+      + ' oninput="taskLineItemField('+idx+',\''+fM+'\',this.value);_tlFilter(\''+listId+'\')"'
+      + ' onfocus="document.getElementById(\''+listId+'\')&&(document.getElementById(\''+listId+'\').style.display=\'block\')"'
+      + ' onblur="setTimeout(()=>_tlHideList(\''+listId+'\'),200)">'
+      + '</div>'
+      + '<div><div style="font-size:0.75em;color:var(--text3);margin-bottom:3px">'+lbS+'</div>'
+      + '<input class="fi" style="font-size:0.86em;padding:7px 10px" placeholder="如 00123" value="'+valS+'"'
+      + ' oninput="taskLineItemField('+idx+',\''+fS+'\',this.value)">'
+      + '</div>'
+      + (machines.length ? '<div id="'+listId+'" class="autocomplete-list" style="display:none;position:absolute;top:calc(100% - 2px);left:0;right:0;z-index:50;max-height:180px;overflow-y:auto">'+listHtml+'</div>' : '')
+      + '</div>';
+  }
+
+  const addBtn = sugg.showAdd
+    ? '<button type="button" style="margin-top:6px;padding:3px 10px;background:transparent;border:1px dashed var(--border);border-radius:7px;color:var(--text3);font-size:0.75em;cursor:pointer;font-family:inherit" onclick="taskLineAddClientMachine('+idx+')">＋ 新增客人機</button>'
+    : '';
+
+  return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px">'
+    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+    + '<span style="width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;font-size:0.75em;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(idx+1)+'</span>'
+    + '<select style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-size:0.86em;font-family:inherit;outline:none" onchange="taskLineItemType('+idx+',this.value)">'+opts+'</select>'
+    + '<button type="button" style="width:28px;height:28px;border-radius:7px;background:var(--surface3);border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:14px" onclick="taskLineItemRemove('+idx+')">✕</button>'
+    + '</div>'
+    + machineAutoField('機型','機號', item.model, item.serial, 'model','serial', sugg.new, 'tl-n-'+idx)
+    + addBtn
+    + (needsOld ? '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">'
+      + '<div style="font-size:0.75em;color:var(--yellow);font-weight:600;margin-bottom:3px">⚠️ 換回（舊機）</div>'
+      + machineAutoField('舊機型','舊機號', item.oldModel||'', item.oldSerial||'', 'oldModel','oldSerial', sugg.old||[], 'tl-o-'+idx)
+      + '</div>' : '')
+    + '</div>';
+}
+
+// autocomplete 輔助函式
+function _tlFilter(listId) {
+  const el = document.getElementById(listId);
+  if (!el) return;
+  // find associated input (previous sibling grid -> first input)
+  const grid = el.parentElement;
+  const inp = grid?.querySelector('input');
+  const q = (inp?.value||'').trim().toLowerCase();
+  let shown = 0;
+  el.querySelectorAll('.autocomplete-item').forEach(it => {
+    const match = !q || it.textContent.toLowerCase().includes(q);
+    it.style.display = match ? '' : 'none';
+    if (match) shown++;
+  });
+  el.style.display = shown ? 'block' : 'none';
+}
+function _tlHideList(listId) {
+  const el = document.getElementById(listId);
+  if (el) el.style.display = 'none';
+}
+function taskLineFill(idx, modelField, model, serialField, serial) {
+  if (taskLineItems[idx]) {
+    taskLineItems[idx][modelField] = model;
+    taskLineItems[idx][serialField] = serial;
+  }
+  _renderTaskLineItems();
+}
+function taskLineFillClose(idx, modelField, model, serialField, serial, listId) {
+  taskLineFill(idx, modelField, model, serialField, serial);
+  _tlHideList(listId);
+}
+
+// 新增客人機（裝機/代裝）：開啟機器表單預填客人機
+function taskLineAddClientMachine(idx) {
+  const customer = document.getElementById('f-task-customer-inp')?.value.trim()||'';
+  // 備份目前表單狀態
+  window._taskFormBackup = {
+    customer,
+    note:  document.getElementById('f-task-note')?.value||'',
+    time:  document.getElementById('f-task-time')?.value||'',
+    date:  document.getElementById('f-task-date')?.value||'',
+    items: [...taskLineItems],
+  };
+  window._addMachineForTaskLineIdx = idx; // 儲存後回填到哪一行
+  window._returnToTask = true;
+  editMode=false; editId='';
+  document.getElementById('form-modal-title').textContent='新增機器（客人機）';
+  document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer, '類型':'客人機'});
+}
+
+function _renderTaskLineItems() {
+  const wrap = document.getElementById('task-line-items-wrap');
+  if (wrap) wrap.innerHTML = taskLineItems.map((item,i)=>_taskLineItemHtml(item,i)).join('');
+}
+
+function taskLineItemAdd() {
+  taskLineItems.push({ type: getAllTaskItems()[0]||'裝機', model:'', serial:'', oldModel:'', oldSerial:'' });
+  _renderTaskLineItems();
+}
+
+function taskLineItemRemove(idx) {
+  if (taskLineItems.length <= 1) { showToast('至少保留一項工作內容'); return; }
+  taskLineItems.splice(idx, 1);
+  _renderTaskLineItems();
+}
+
+function taskLineItemType(idx, val) {
+  if (taskLineItems[idx]) taskLineItems[idx].type = val;
+  _renderTaskLineItems();
+}
+
+function taskLineItemField(idx, field, val) {
+  if (taskLineItems[idx]) taskLineItems[idx][field] = val;
+}
+
+// 機型機號推薦 (保留不動，但觸發來源改由 line item input)
+
+
 
 // 機型機號推薦
 function getTaskCustomerMachines() {
@@ -1883,15 +2117,89 @@ function onTaskCustomerChange(name) {
   const hint = document.getElementById('f-task-customer-hint');
   if (hint && c) hint.textContent = (c['地址']?'📍 '+c['地址']:'') + (c['電話']?' · 📞 '+c['電話']:'');
   else if (hint) hint.textContent = '';
+  // 重繪 line items 以更新建議
+  _renderTaskLineItems();
+}
+
+// 依工作類型取推薦機器清單
+function getLineSuggestions(type, customer) {
+  const norm = s => String(s||'').trim().replace(/\s+/g,'');
+  const custMachines = m => String(m['目前客戶']||'').trim() === customer;
+  const byType = (...types) => cache.machines.filter(m => types.some(t => norm(m['類型']||'')===norm(t)));
+  // 判斷目前 taskLineItems 的上下文（在修好送回的單子裡，借用機要推薦借用中的機器）
+  const siblingTypes = taskLineItems.map(li=>li.type);
+  const isReturnContext = siblingTypes.includes('修好送回');
+
+  switch(type) {
+    case '裝機':
+    case '代裝':
+      return { new: byType('待出租','全新機'), old: [], showAdd: true };
+    case '換機':
+      return {
+        new: byType('待出租','全新機'),
+        old: cache.machines.filter(m => custMachines(m) && ['出租中','借用機'].some(t=>norm(t)===norm(m['類型']||''))),
+      };
+    case '拆回':
+      return { new: cache.machines.filter(custMachines), old: [] };
+    case '搬回修理':
+      // 修理的機器：客戶名下（排除出租中）
+      return { new: cache.machines.filter(m => custMachines(m) && norm(m['類型']||'')!=='出租中'), old: [] };
+    case '修好送回':
+      // 送回的機器：目前在◎進廠狀態（搬回修理後狀態），或客戶名下的客人機
+      return { new: [...byType('◎進廠'), ...cache.machines.filter(m => custMachines(m) && norm(m['類型']||'')==='客人機')], old: [] };
+    case '借用機':
+      if (isReturnContext) {
+        // 修好送回情境：借用機要還，推薦狀態為"借用機"的機器
+        return { new: byType('借用機'), old: [] };
+      }
+      // 搬回修理情境：借出機器，推薦待出租
+      return { new: byType('待出租'), old: [] };
+    default:
+      return { new: [], old: [] };
+  }
 }
 
 // Task item multi-select
 function toggleTaskItem(item) {
+  // 支援複選同一項目（例如：裝機×2）
+  // 第一次點擊：選取；已選取時點擊：再加一個（顯示數量）；長按可刪除
   const idx = selectedTaskItems.indexOf(item);
-  if (idx>=0) selectedTaskItems.splice(idx,1); else selectedTaskItems.push(item);
-  document.querySelectorAll('#task-items-wrap .pay-item-chip').forEach(btn=>{
-    btn.classList.toggle('selected', selectedTaskItems.includes(btn.textContent));
+  if (idx >= 0) {
+    // 已選取：再點一次 → 再加一個（複選）
+    selectedTaskItems.push(item);
+  } else {
+    selectedTaskItems.push(item);
+  }
+  _refreshTaskChips();
+}
+
+function _refreshTaskChips() {
+  const wrap = document.getElementById('task-items-wrap');
+  if (!wrap) return;
+  // 計算每個選項的數量
+  const counts = {};
+  selectedTaskItems.forEach(i => { counts[i] = (counts[i]||0) + 1; });
+  wrap.querySelectorAll('.pay-item-chip').forEach(btn => {
+    const item = btn.dataset.item;
+    const count = counts[item] || 0;
+    btn.classList.toggle('selected', count > 0);
+    // 顯示數量 badge（>1 時才顯示）
+    const badge = btn.querySelector('.item-count');
+    if (count > 1) {
+      if (badge) { badge.textContent = '×'+count; }
+      else { const b=document.createElement('span'); b.className='item-count'; b.style.cssText='margin-left:3px;font-size:0.857em;opacity:.8'; b.textContent='×'+count; btn.appendChild(b); }
+    } else {
+      if (badge) badge.remove();
+    }
   });
+}
+
+function removeOneTaskItem(item) {
+  // 長按：每次移除一個
+  const idx = selectedTaskItems.lastIndexOf(item);
+  if (idx >= 0) selectedTaskItems.splice(idx, 1);
+  _refreshTaskChips();
+  // 若全部移除，更新 selected 狀態
 }
 
 function openTaskItemEditor() {
@@ -1939,7 +2247,7 @@ function moveTaskItem(idx, dir) {
   const wrap = document.getElementById('task-items-wrap');
   if (wrap) {
     const newAll = getAllTaskItems();
-    wrap.innerHTML = newAll.map(i=>`<button type="button" class="pay-item-chip${selectedTaskItems.includes(i)?' selected':''}" onclick="toggleTaskItem('${i}')" oncontextmenu="event.preventDefault();confirmDeleteTaskItem('${i}')" ontouchstart="startTaskLongPress('${i}')" ontouchend="cancelTaskLongPress()" ontouchmove="cancelTaskLongPress()">${i}</button>`).join('');
+    wrap.innerHTML = newAll.map(i=>taskChip(i)).join('');
   }
 }
 
@@ -1959,7 +2267,7 @@ function addTaskEditorItem() {
   // 更新表單 chip
   const allItems = getAllTaskItems();
   const wrap = document.getElementById('task-items-wrap');
-  if (wrap) wrap.innerHTML = allItems.map(i=>`<button type="button" class="pay-item-chip${selectedTaskItems.includes(i)?' selected':''}" onclick="toggleTaskItem('${i}')" oncontextmenu="event.preventDefault();confirmDeleteTaskItem('${i}')" ontouchstart="startTaskLongPress('${i}')" ontouchend="cancelTaskLongPress()" ontouchmove="cancelTaskLongPress()">${i}</button>`).join('');
+  if (wrap) wrap.innerHTML = allItems.map(i=>taskChip(i)).join('');
   openTaskItemEditor();
   showToast(`已新增「${val}」`);
 }
@@ -1981,13 +2289,31 @@ function addCustomTaskItem() {
   if (!selectedTaskItems.includes(val)) selectedTaskItems.push(val);
   const allItems = getAllTaskItems();
   const wrap = document.getElementById('task-items-wrap');
-  if (wrap) wrap.innerHTML = allItems.map(item=>`<button type="button" class="pay-item-chip${selectedTaskItems.includes(item)?' selected':''}" onclick="toggleTaskItem('${item}')" oncontextmenu="event.preventDefault();confirmDeleteTaskItem('${item}')" ontouchstart="startTaskLongPress('${item}')" ontouchend="cancelTaskLongPress()" ontouchmove="cancelTaskLongPress()">${item}</button>`).join('');
+  if (wrap) wrap.innerHTML = allItems.map(item=>taskChip(item)).join('');
   if (inp) inp.value='';
 }
 
 let taskLongPressTimer = null;
-function startTaskLongPress(item) { taskLongPressTimer = setTimeout(()=>confirmDeleteTaskItem(item), 600); }
+function startTaskLongPress(item) { taskLongPressTimer = setTimeout(()=>{ cancelTaskLongPress(); removeOneTaskItem(item); }, 600); }
 function cancelTaskLongPress() { if(taskLongPressTimer){clearTimeout(taskLongPressTimer);taskLongPressTimer=null;} }
+
+// 生成工作內容 chip HTML
+function taskChip(item, counts) {
+  const n = counts ? (counts[item]||0) : (selectedTaskItems.includes(item) ? 1 : 0);
+  const sel = n > 0 ? ' selected' : '';
+  const badge = n > 1 ? '<span class="item-count" style="margin-left:3px;font-size:0.857em;opacity:.8">\xd7' + n + '</span>' : '';
+  const esc = (item||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  return '<button type="button" class="pay-item-chip' + sel + '" data-item="' + esc + '"'
+    + ' onclick="taskChipClick(this)"'
+    + ' oncontextmenu="event.preventDefault();taskChipRemove(this);return false"'
+    + ' ontouchstart="taskChipLongPress(this)"'
+    + ' ontouchend="cancelTaskLongPress()"'
+    + ' ontouchmove="cancelTaskLongPress()">' + item + badge + '</button>';
+}
+function taskChipClick(btn){ toggleTaskItem(btn.dataset.item); }
+function taskChipRemove(btn){ removeOneTaskItem(btn.dataset.item); }
+let taskChipLPTimer=null;
+function taskChipLongPress(btn){ taskChipLPTimer=setTimeout(()=>{taskChipLPTimer=null;removeOneTaskItem(btn.dataset.item);},600); }
 
 function confirmDeleteTaskItem(item) {
   if (!confirm(`刪除「${item}」嗎？`)) return;
@@ -2000,66 +2326,96 @@ function confirmDeleteTaskItem(item) {
   selectedTaskItems = selectedTaskItems.filter(x=>x!==item);
   const allItems = getAllTaskItems();
   const wrap = document.getElementById('task-items-wrap');
-  if (wrap) wrap.innerHTML = allItems.map(i=>`<button type="button" class="pay-item-chip${selectedTaskItems.includes(i)?' selected':''}" onclick="toggleTaskItem('${i}')" oncontextmenu="event.preventDefault();confirmDeleteTaskItem('${i}')" ontouchstart="startTaskLongPress('${i}')" ontouchend="cancelTaskLongPress()" ontouchmove="cancelTaskLongPress()">${i}</button>`).join('');
+  if (wrap) wrap.innerHTML = allItems.map(i=>taskChip(i)).join('');
   showToast(`已刪除「${item}」`);
 }
 
 async function saveTask() {
   const customer = document.getElementById('f-task-customer-inp')?.value.trim();
   if (!customer) { showToast('請填寫客戶名稱'); return; }
-  const items = selectedTaskItems.join('、');
-  if (!items) { showToast('請選擇工作內容'); return; }
-  const c = cache.customers.find(x=>x['客戶名稱']===customer);
-  const today = new Date();
-  const dateStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
-  const taskModel  = document.getElementById('f-task-model')?.value.trim()||'';
-  const taskSerial = document.getElementById('f-task-serial')?.value.trim()||'';
-
-  if (editMode) {
-    // 編輯模式：保留原有任務ID和紀錄日期
-    const orig = cache.tasks.find(t=>String(t['任務ID']||t['紀錄日期'])===String(editId));
-    const data = {
-      ...(orig||{}),
-      '客戶名稱': customer, '電話': c?.['電話']||orig?.['電話']||'', '地址': c?.['地址']||orig?.['地址']||'',
-      '工作內容': items, '備註': document.getElementById('f-task-note')?.value.trim()||'',
-      '希望施工時間': document.getElementById('f-task-time')?.value.trim()||'',
-      '機型': taskModel, '機號': taskSerial,
-    };
-    if (!cfg.url) { showToast('請先設定試算表連結'); return; }
-    isSaving = true;
-    const idx = cache.tasks.findIndex(t=>String(t['任務ID']||t['紀錄日期'])===String(editId));
-    if (idx>=0) Object.assign(cache.tasks[idx], data);
-    saveCache();
-    enqueue({action:'update', sheet:'施工紀錄', data, id:data['任務ID']||data['紀錄日期']});
-    closeModal('form-modal');
-    renderPage();
-    showToast('已更新施工紀錄');
-    setTimeout(()=>{ isSaving=false; }, 500);
-    return;
-  }
-
-  // 新增模式
-  const taskId = 'T' + Date.now().toString(36).toUpperCase();
-  const data = {
-    '任務ID': taskId,
-    '客戶名稱': customer, '電話': c?.['電話']||'', '地址': c?.['地址']||'',
-    '工作內容': items, '備註': document.getElementById('f-task-note')?.value.trim()||'',
-    '希望施工時間': document.getElementById('f-task-time')?.value.trim()||'',
-    '機型': taskModel, '機號': taskSerial, '紀錄日期': dateStr, '完成狀態': '未完成',
-  };
+  if (!taskLineItems.length || !taskLineItems[0].type) { showToast('請至少填寫一項工作內容'); return; }
   if (!cfg.url) { showToast('請先設定試算表連結'); return; }
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+  const rawDate = document.getElementById('f-task-date')?.value || todayStr;
+  const dateStr = rawDate.replace(/-/g, '/');
+  const note     = document.getElementById('f-task-note')?.value.trim()||'';
+  const wantTime = document.getElementById('f-task-time')?.value.trim()||'';
+
+  const taskId = editMode
+    ? String(editId)
+    : 'T' + Date.now().toString(36).toUpperCase();
+
+  // 原有 task header 資料（編輯時保留完成狀態等）
+  const orig = editMode ? cache.tasks.find(t=>String(t['任務ID'])===String(editId)) : null;
+
+  // 建立 items 陣列給 API
+  const apiItems = taskLineItems.map((li, i) => ({
+    taskId,
+    seq:      i + 1,
+    date:     orig?.['紀錄日期'] || dateStr,
+    customer,
+    worker:   '',
+    note,
+    wantTime,
+    done:     orig?.['完成狀態'] || '未完成',
+    doneDate: orig?.['完成日期'] || '',
+    assignees: orig?.['指派人員'] || '',
+    type:     li.type,
+    model:    li.model,
+    serial:   li.serial,
+    oldModel: TASK_NEEDS_OLD.includes(li.type) ? li.oldModel : '',
+    oldSerial: TASK_NEEDS_OLD.includes(li.type) ? li.oldSerial : '',
+  }));
+
+  // 更新 cache：把 task 存成 grouped 格式
+  const taskObj = {
+    '任務ID':     taskId,
+    '紀錄日期':   orig?.['紀錄日期'] || dateStr,
+    '客戶名稱':   customer,
+    '備註':       note,
+    '希望施工時間': wantTime,
+    '完成狀態':   orig?.['完成狀態'] || '未完成',
+    '完成日期':   orig?.['完成日期'] || '',
+    '指派人員':   orig?.['指派人員'] || '',
+    items: taskLineItems.map((li, i) => ({
+      '序號':    i + 1,
+      '工作內容': li.type,
+      '機型':    li.model,
+      '機號':    li.serial,
+      '舊機型':  TASK_NEEDS_OLD.includes(li.type) ? li.oldModel : '',
+      '舊機號':  TASK_NEEDS_OLD.includes(li.type) ? li.oldSerial : '',
+    })),
+  };
+
   isSaving = true;
-  cache.tasks.push(data);
+  if (editMode) {
+    const idx = cache.tasks.findIndex(t=>String(t['任務ID'])===String(editId));
+    if (idx >= 0) cache.tasks[idx] = taskObj; else cache.tasks.push(taskObj);
+  } else {
+    cache.tasks.push(taskObj);
+  }
   saveCache();
-  enqueue({ action:'add', sheet:'施工紀錄', data, id: data['任務ID'] });
+
+  // 先刪除舊行，再逐行新增（避免超長 URL）
+  if (editMode) {
+    enqueue({ action:'deleteTaskRows', sheet:'施工紀錄', data: null, id: taskId });
+  }
+  // 每行獨立 enqueue（使用 addTaskRow action）
+  apiItems.forEach((row, i) => {
+    enqueue({ action:'addTaskRow', sheet:'施工紀錄', data: JSON.stringify(row), id: taskId + '_' + i });
+  });
+
   closeModal('form-modal');
   renderPage();
-  showToast('已新增施工紀錄');
+  showToast(editMode ? '已更新施工紀錄' : '已新增施工紀錄');
   setTimeout(()=>{ isSaving=false; }, 500);
 }
 
 // 裝機選擇合約類型：租機 or 租送
-function openContractTypeChooser(customer, model, serial, taskDateStr) {
+function openContractTypeChooser(customer, model, serial, taskDateStr, onDone) {
+  if (onDone) window._afterContractDone = onDone;
   const mm = getMachineByTaskInfo(model, serial);
   const priceRow = cache.pricelist.find(p=>p['廠牌']===mm?.['廠牌'] && p['機型']===mm?.['機型']);
   const body = document.getElementById('detail-modal-body');
@@ -2103,9 +2459,12 @@ function openContractTypeChooser(customer, model, serial, taskDateStr) {
 
 function openPaymentFromInstall(customer, model, serial, taskDateStr) {
   closeModal('detail-modal');
-  const taskData = cache.tasks.find(t=>t['紀錄日期']===taskDateStr) || {'客戶名稱':customer,'機型':model,'機號':serial};
+  const taskData = cache.tasks.find(t=>t['任務ID']===taskDateStr||t['紀錄日期']===taskDateStr) || {'客戶名稱':customer};
   openQuickPayment(customer, taskData, ['裝機費']);
-  confirmTaskDone();
+  // 若有下一筆待處理，繼續；否則標記完成
+  const next = window._afterContractDone;
+  window._afterContractDone = null;
+  if (next) next(); else confirmTaskDone();
 }
 
 function openContractFromTask(type, customer, model, serial, taskDateStr) {
@@ -2131,7 +2490,10 @@ function openContractFromTask(type, customer, model, serial, taskDateStr) {
   document.getElementById('form-modal-title').textContent='新增合約';
   document.getElementById('form-modal-body').innerHTML = contractFormAssign(mm, customer, custObj, contractType, rent, deposit, endStr);
   document.getElementById('form-modal').classList.add('open');
-  confirmTaskDone();
+  // 若有下一筆待處理，繼續；否則標記完成
+  const next = window._afterContractDone;
+  window._afterContractDone = null;
+  if (next) next(); else confirmTaskDone();
 }
 
 function getMachineByTaskInfo(model, serial) {
@@ -2159,7 +2521,7 @@ function markTaskDoneById(dateStr) {
   if (!t) return;
   t['完成狀態'] = '已完成'; t['完成時間'] = dateStr;
   saveCache();
-  enqueue({action:'update', sheet:'施工紀錄', data:t, id:t['任務ID']||t['紀錄日期']});
+  enqueue({action:'updateTaskMeta', sheet:'施工紀錄', data: JSON.stringify(t), id: t['任務ID']});
 }
 function openQuickPayment(customer, taskData, preItems) {
   selectedPayItems = preItems||[]; selectedHandlers=[]; payLineItems=[]; payMethod=''; editMode=false; editId='';
@@ -2189,8 +2551,9 @@ function appConfirm(msg, onYes, onNo, title) {
   deck.classList.add('open');
 }
 
-function afterTaskSave(customer, items, model, serial, taskData) {
-  const itemList = items.split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
+function afterTaskSave(customer, lineItems, model, serial, taskData) {
+  // lineItems 是 [{type, model, serial, oldModel, oldSerial}] 陣列
+  const itemList = lineItems.map(li => li.type).filter(Boolean);
   const hasMachine = !!(model||serial);
   const hasBorrowItem = itemList.includes('借用機');
   const dn = taskData['紀錄日期'];
@@ -2331,8 +2694,26 @@ function afterTaskSave(customer, items, model, serial, taskData) {
       );
     } else {
       // 有機號：直接新增維修
+      // 搬回修理的機器→◎進廠
+      const repairM = getMachineByTaskInfo(model, serial);
+      if (repairM) {
+        repairM['類型'] = '◎進廠';
+        saveCache();
+        enqueue({action:'update', sheet:'machines', data:repairM, id:repairM['機號']});
+      }
       if (hasBorrowItem) {
-        openBorrowMachinePicker(()=>openQuickRepairFromTask(customer, model, serial, taskData));
+        // 找借用機 line item（已填機型機號）
+        const borrowLine = lineItems.find(li => li.type === '借用機' && (li.model || li.serial));
+        if (borrowLine) {
+          // 借用機已填：直接更新狀態，不需開選擇器
+          window._borrowCustomer = customer;
+          onBorrowMachineSelect(borrowLine.serial, borrowLine.model);
+          openQuickRepairFromTask(customer, model, serial, taskData);
+        } else {
+          // 借用機未填：開選擇器讓使用者挑
+          window._borrowCustomer = customer;
+          openBorrowMachinePicker(()=>openQuickRepairFromTask(customer, model, serial, taskData));
+        }
       } else {
         openQuickRepairFromTask(customer, model, serial, taskData);
       }
@@ -2429,6 +2810,183 @@ function afterTaskSave(customer, items, model, serial, taskData) {
   }
 }
 
+// ── 工作類型處理 helpers ──
+function _handleTeardown(customer, model, serial, taskData, onDone) {
+  const dn = taskData['紀錄日期'];
+  const deck = document.getElementById('confirm-deck');
+  document.getElementById('confirm-deck-title').textContent = '拆回處理';
+  document.getElementById('confirm-deck-msg').textContent = (model||serial) ? `機器：${model} ${serial}\n請選擇拆回方式：` : '請選擇拆回方式：';
+  const btns = deck.querySelector('div[style*="display:flex"]');
+  const nb = btns.cloneNode(false);
+  nb.innerHTML = `
+    <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_td_btn1">退租</button>
+    <button style="flex:1;padding:12px;background:var(--accent-bg);border:1px solid var(--accent-glow);border-radius:10px;color:var(--accent2);font-size:0.929em;font-weight:700;font-family:inherit;cursor:pointer" id="_td_btn2">估回</button>
+    <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_td_btn3">取消</button>`;
+  btns.parentNode.replaceChild(nb, btns);
+  nb.querySelector('#_td_btn1').onclick = ()=>{
+    deck.classList.remove('open');
+    if (!model && !serial) { showToast('⚠️ 請填入機型機號後再完成'); window._pendingDoneTask=null; return; }
+    // 詢問退租後機器狀態
+    const d2 = document.getElementById('confirm-deck');
+    document.getElementById('confirm-deck-title').textContent = '退租後機器狀態';
+    document.getElementById('confirm-deck-msg').textContent = '請選擇退租後機器的處置方式：';
+    const b2 = d2.querySelector('div[style*="display:flex"]');
+    const nb2 = b2.cloneNode(false);
+    nb2.innerHTML = `
+      <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:0.929em;font-family:inherit;cursor:pointer" id="_td2_1">待出租</button>
+      <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:0.929em;font-family:inherit;cursor:pointer" id="_td2_2">◎進廠</button>
+      <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_td2_3">取消</button>`;
+    b2.parentNode.replaceChild(nb2, b2);
+    const doStatus = st => {
+      d2.classList.remove('open');
+      const m = getMachineByTaskInfo(model, serial);
+      if (m) { m['類型']=st; m['目前客戶']=''; saveCache(); enqueue({action:'update',sheet:'machines',data:m,id:m['機號']}); }
+      const todayStr = new Date().toISOString().split('T')[0].replace(/-/g,'/');
+      const ct = cache.contracts.filter(c=>c['機號']===serial&&String(c['客戶名稱']||'').includes(customer))
+        .sort((a,b)=>String(b['租借日期']||'').localeCompare(String(a['租借日期']||'')))[0];
+      if (ct) { ct['到期日期']=todayStr; ct['類型']='已終止'; saveCache(); enqueue({action:'update',sheet:'contracts',data:ct,id:ct['合約ID']}); }
+      if (onDone) onDone(); else confirmTaskDone();
+    };
+    nb2.querySelector('#_td2_1').onclick = ()=>doStatus('待出租');
+    nb2.querySelector('#_td2_2').onclick = ()=>doStatus('◎進廠');
+    nb2.querySelector('#_td2_3').onclick = ()=>{ d2.classList.remove('open'); window._pendingDoneTask=null; };
+    d2.classList.add('open');
+  };
+  nb.querySelector('#_td_btn2').onclick = ()=>{
+    deck.classList.remove('open');
+    if (!model && !serial) {
+      window._addMachineForTask = { customer, taskData, goContract:false, isEstimateReturn:true };
+      editMode=false; editId='';
+      document.getElementById('form-modal-title').textContent='新增機器（估回）';
+      document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶':customer,'類型':'◎進廠'});
+      document.getElementById('form-modal').classList.add('open');
+    } else {
+      const m = getMachineByTaskInfo(model, serial);
+      if (m) { m['類型']='◎進廠'; m['目前客戶']=''; saveCache(); enqueue({action:'update',sheet:'machines',data:m,id:m['機號']}); }
+      openQuickPayment(customer, taskData, ['估回']);
+      if (onDone) onDone(); else confirmTaskDone();
+    }
+  };
+  nb.querySelector('#_td_btn3').onclick = ()=>{ deck.classList.remove('open'); window._pendingDoneTask=null; };
+  deck.classList.add('open');
+}
+
+function _handleRepairReturn(customer, model, serial, taskData, borrowLine, onDone) {
+  // 搬回修理：機器→◎進廠，然後處理借用機
+  const repairM = getMachineByTaskInfo(model, serial);
+  if (repairM) { repairM['類型']='◎進廠'; saveCache(); enqueue({action:'update',sheet:'machines',data:repairM,id:repairM['機號']}); }
+  if (borrowLine) {
+    if (borrowLine.model || borrowLine.serial) {
+      window._borrowCustomer = customer;
+      onBorrowMachineSelect(borrowLine.serial, borrowLine.model);
+      openQuickRepairFromTask(customer, model, serial, taskData);
+      if (onDone) setTimeout(onDone, 100);
+    } else {
+      window._borrowCustomer = customer;
+      openBorrowMachinePicker(()=>{ openQuickRepairFromTask(customer, model, serial, taskData); if(onDone) setTimeout(onDone,100); });
+    }
+  } else {
+    openQuickRepairFromTask(customer, model, serial, taskData);
+    if (onDone) setTimeout(onDone, 100);
+  }
+}
+
+function _handleRepairReturn2(customer, model, serial, taskData, borrowLine, onDone) {
+  // 修好送回：
+  // 1. 被修好的機器 → 改回客人機，目前客戶 = customer
+  // 2. 借用機 → 詢問待出租 or ◎進廠，清空目前客戶
+
+  // 先處理修好送回的機器
+  const repairedM = getMachineByTaskInfo(model, serial);
+  if (repairedM) {
+    repairedM['類型'] = '客人機';
+    repairedM['目前客戶'] = customer;
+    saveCache();
+    enqueue({action:'update', sheet:'machines', data:repairedM, id:repairedM['機號']});
+    showToast('✓ 已修好送回 → 客人機');
+  }
+
+  if (borrowLine && (borrowLine.model || borrowLine.serial)) {
+    // 借用機已填：詢問歸還後狀態
+    const bm = getMachineByTaskInfo(borrowLine.model, borrowLine.serial);
+    if (bm) {
+      const deck = document.getElementById('confirm-deck');
+      document.getElementById('confirm-deck-title').textContent = '借用機歸還後狀態';
+      document.getElementById('confirm-deck-msg').textContent = `${borrowLine.model||''} ${borrowLine.serial||''} 歸還後改為：`;
+      const btns = deck.querySelector('div[style*="display:flex"]');
+      const nb = btns.cloneNode(false);
+      nb.innerHTML = `
+        <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:0.929em;font-family:inherit;cursor:pointer" id="_rr_1">待出租</button>
+        <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:0.929em;font-family:inherit;cursor:pointer" id="_rr_2">◎進廠</button>
+        <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_rr_3">取消</button>`;
+      btns.parentNode.replaceChild(nb, btns);
+      const finish = st=>{
+        deck.classList.remove('open');
+        bm['類型'] = st;
+        bm['目前客戶'] = '';
+        saveCache();
+        enqueue({action:'update', sheet:'machines', data:bm, id:bm['機號']});
+        showToast('✓ 借用機歸還 → '+st);
+        openQuickPayment(customer, taskData, ['維修費']);
+        if (onDone) onDone(); else confirmTaskDone();
+      };
+      nb.querySelector('#_rr_1').onclick = ()=>finish('待出租');
+      nb.querySelector('#_rr_2').onclick = ()=>finish('◎進廠');
+      nb.querySelector('#_rr_3').onclick = ()=>{ deck.classList.remove('open'); window._pendingDoneTask=null; };
+      deck.classList.add('open');
+      return;
+    }
+  }
+
+  if (borrowLine && !(borrowLine.model || borrowLine.serial)) {
+    // 借用機有 line 但未填機型機號：開選擇器
+    openBorrowMachineReturn(model, serial, customer, taskData);
+    if (onDone) window._afterBorrowReturn = onDone;
+    return;
+  }
+
+  // 沒有借用機：直接完成
+  openQuickPayment(customer, taskData, ['維修費']);
+  if (onDone) onDone(); else confirmTaskDone();
+}
+
+function _handleRelocation(customer, taskData, onDone) {
+  const custIdx = cache.customers.findIndex(x=>x['客戶名稱']===customer);
+  appConfirm(`移機完成！是否要更新客戶「${customer}」的地址？`,
+    ()=>{
+      if (custIdx >= 0) {
+        setTimeout(()=>{
+          openEditItem('customer', custIdx);
+          window._afterCustomerEdit = ()=>{
+            appConfirm('是否要新增移機相關收款？', ()=>openQuickPayment(customer, taskData, []), ()=>{});
+            if (onDone) onDone(); else confirmTaskDone();
+          };
+        }, 300);
+      }
+    },
+    ()=>{
+      appConfirm('是否要新增移機相關收款？', ()=>openQuickPayment(customer, taskData, []), ()=>{});
+      if (onDone) onDone(); else confirmTaskDone();
+    },
+    '移機完成'
+  );
+}
+
+function openReplaceModalFull(customer, model, serial, oldModel, oldSerial, taskDateStr, onDone) {
+  if (onDone) window._afterReplaceDone = onDone;
+  // model/serial = 新機（要裝上的）；oldModel/oldSerial = 舊機（要換回的）
+  openReplaceModal(customer, oldModel, oldSerial, taskDateStr);
+  // 若新機已填，自動預填 rep-model / rep-serial
+  if (model || serial) {
+    setTimeout(()=>{
+      const rm = document.getElementById('rep-model');
+      const rs = document.getElementById('rep-serial');
+      if (rm && !rm.value) rm.value = model;
+      if (rs && !rs.value) rs.value = serial;
+    }, 100);
+  }
+}
+
 // ── 借用機選擇器（搬回修理用）──
 function openBorrowMachinePicker(afterCb) {
   window._borrowCallback = afterCb;
@@ -2470,21 +3028,33 @@ function renderBorrowMachineList(q) {
 function onBorrowMachineSelect(serial, model) {
   window._borrowMachineSerial = serial;
   window._borrowMachineModel  = model;
-  updateMachineStatus(model, serial, '借用機');
+  // customer 優先順序：_borrowCustomer（最可靠）> 表單輸入 > pendingDoneTask
+  const customer = window._borrowCustomer
+    || document.getElementById('f-task-customer-inp')?.value.trim()
+    || window._pendingDoneTask?.t?.['客戶名稱'] || '';
+  window._borrowCustomer = ''; // 用完清除
+  const m = getMachineByTaskInfo(model, serial);
+  if (m) {
+    m['類型'] = '借用機';
+    if (customer) m['目前客戶'] = customer;
+    saveCache();
+    enqueue({action:'update', sheet:'machines', data:m, id:m['機號']});
+    showToast('✓ 借用機 → 目前客戶：' + (customer||'（未設定）'));
+  } else {
+    updateMachineStatus(model, serial, '借用機');
+  }
 }
 
 function openQuickRepairFromTask(customer, model, serial, taskData) {
-  // 維修紀錄填客人機（搬回修理的機器），借用機資訊不帶入
-  const m = getMachineByTaskInfo(model, serial);
-  const kind = inferRepairKind(m?.['類型']||'');
+  // 搬回修理：維修種類預設為「客人機」
   closeModal('detail-modal');
   selectedRepairItems = [];
-  _repairStatus = '待維修'; _repairKind = kind;
+  _repairStatus = '待維修'; _repairKind = '客人機';
   editMode=false; editId='';
   document.getElementById('form-modal-title').textContent='新增維修紀錄';
   document.getElementById('form-modal-body').innerHTML = repairForm({
     '客戶名稱': customer, '機型': model, '機號': serial,
-    '狀態': '待維修', '種類': kind,
+    '狀態': '待維修', '種類': '客人機',
     '紀錄日期': taskData?.['紀錄日期']||'',
   });
   document.getElementById('form-modal').classList.add('open');
@@ -2511,6 +3081,14 @@ function openBorrowMachineReturn(repairModel, repairSerial, customer, taskData) 
 
 function skipBorrowReturn() {
   const d = window._borrowReturnTaskData||{};
+  // 修好送回的機器 → 客人機
+  const rm = getMachineByTaskInfo(d.repairModel, d.repairSerial);
+  if (rm) {
+    rm['類型'] = '客人機';
+    rm['目前客戶'] = d.customer||'';
+    saveCache();
+    enqueue({action:'update', sheet:'machines', data:rm, id:rm['機號']});
+  }
   openQuickPayment(d.customer, d.taskData, ['維修費']);
   confirmTaskDone();
 }
@@ -2530,7 +3108,25 @@ function onBorrowReturnSelect(borrowSerial, borrowModel, repairModel, repairSeri
   const d = window._borrowReturnTaskData||{};
   const finish = (st)=>{
     deck.classList.remove('open');
-    updateMachineStatus(borrowModel, borrowSerial, st);
+    // 修好送回的機器 → 客人機，設定目前客戶
+    const rm = getMachineByTaskInfo(repairModel, repairSerial);
+    if (rm) {
+      rm['類型'] = '客人機';
+      rm['目前客戶'] = customer;
+      saveCache();
+      enqueue({action:'update', sheet:'machines', data:rm, id:rm['機號']});
+    }
+    // 歸還借用機：清除目前客戶，更新狀態
+    const bm = getMachineByTaskInfo(borrowModel, borrowSerial);
+    if (bm) {
+      bm['類型'] = st;
+      bm['目前客戶'] = '';
+      saveCache();
+      enqueue({action:'update', sheet:'machines', data:bm, id:bm['機號']});
+      showToast('✓ 借用機歸還 → ' + st);
+    } else {
+      updateMachineStatus(borrowModel, borrowSerial, st);
+    }
     openQuickPayment(customer, d.taskData, ['維修費']);
     confirmTaskDone();
   };
@@ -2574,8 +3170,30 @@ function confirmReplace(customer, oldModel, oldSerial, taskDateStr) {
   const newModel=document.getElementById('rep-model')?.value.trim();
   const newSerial=document.getElementById('rep-serial')?.value.trim();
   if (!newModel||!newSerial) { showToast('請填寫新機型和機號'); return; }
-  updateMachineStatus(oldModel, oldSerial, '◎進廠');
-  updateMachineStatus(newModel, newSerial, '出租中');
+
+  // 舊機：◎進廠，清除目前客戶
+  const oldM = getMachineByTaskInfo(oldModel, oldSerial);
+  if (oldM) {
+    oldM['類型'] = '◎進廠';
+    oldM['目前客戶'] = '';
+    saveCache();
+    enqueue({action:'update', sheet:'machines', data:oldM, id:oldM['機號']});
+  } else {
+    updateMachineStatus(oldModel, oldSerial, '◎進廠');
+  }
+
+  // 新機：出租中，設定目前客戶
+  const newM = getMachineByTaskInfo(newModel, newSerial);
+  if (newM) {
+    newM['類型'] = '出租中';
+    newM['目前客戶'] = customer;
+    saveCache();
+    enqueue({action:'update', sheet:'machines', data:newM, id:newM['機號']});
+  } else {
+    updateMachineStatus(newModel, newSerial, '出租中');
+  }
+
+  // 合約更新機型機號
   cache.contracts.filter(c=>c['客戶名稱']===customer&&(c['機型']===oldModel||c['機號']===oldSerial)).forEach(ct=>{
     ct['機型']=newModel; ct['機號']=newSerial; saveCache();
     enqueue({action:'update',sheet:'contracts',data:ct,id:ct['合約ID']});
@@ -2583,6 +3201,7 @@ function confirmReplace(customer, oldModel, oldSerial, taskDateStr) {
   if (taskDateStr) confirmTaskDone();
   closeModal('detail-modal');
   showToast(`✓ 換機完成：${oldModel||oldSerial} → ${newModel}`);
+  if (window._afterReplaceDone) { const cb=window._afterReplaceDone; window._afterReplaceDone=null; setTimeout(cb,100); }
   renderPage();
 }
 
@@ -4283,16 +4902,26 @@ function showDetail(type, idx) {
     document.getElementById('detail-edit-btn').style.display = ''; // 顯示編輯按鈕
     title.textContent = item['客戶名稱']||'施工紀錄';
     const fields = [
-      {k:'客戶名稱', v: item['客戶名稱']||'—'},
-      {k:'電話',     v: item['電話']||'—'},
-      {k:'地址',     v: item['地址']||'—'},
-      {k:'工作內容', v: item['工作內容']||'—', big:true},
-      {k:'機型',     v: item['機型']||''},
-      {k:'機號',     v: item['機號']||''},
-      {k:'備註',     v: item['備註']||'—'},
-      {k:'希望施工時間', v: item['希望施工時間']||'—'},
-      {k:'紀錄日期', v: String(item['紀錄日期']||'').substring(0,10)},
-    ].filter(f=>f.v&&f.v!=='—'||f.big);
+      {k:'客戶名稱',    v: item['客戶名稱']||'—'},
+      {k:'紀錄日期',    v: String(item['紀錄日期']||'').substring(0,10)},
+      {k:'備註',        v: item['備註']||''},
+      {k:'希望施工時間', v: item['希望施工時間']||''},
+      {k:'指派人員',    v: item['指派人員']||''},
+    ].filter(f=>f.v);
+    // 工作明細
+    const itemColors = {裝機:'#81c784',換機:'#ffcc02',拆回:'#e57373',代裝:'#90caf9',借用機:'#ce93d8'};
+    const itemsBlock = (item.items||[]).map((it,i) => {
+      const c = itemColors[it['工作內容']] || '#999';
+      const hasOld = it['舊機型']||it['舊機號'];
+      return `<div style="background:var(--surface2);border-radius:8px;padding:9px 11px;margin-bottom:6px;border-left:3px solid ${c}">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:${it['機型']||it['機號']||hasOld?'5px':'0'}">
+          <span style="width:18px;height:18px;border-radius:50%;background:${c}22;border:1px solid ${c}44;color:${c};font-size:0.75em;font-weight:700;display:flex;align-items:center;justify-content:center">${i+1}</span>
+          <span style="font-size:0.929em;font-weight:700;color:${c}">${it['工作內容']||''}</span>
+        </div>
+        ${it['機型']||it['機號'] ? `<div style="font-size:0.857em;color:var(--text2)">🔧 ${[it['機型'],it['機號']].filter(Boolean).join(' / ')}</div>` : ''}
+        ${hasOld ? `<div style="font-size:0.857em;color:var(--yellow);margin-top:3px">↩ 換回：${[it['舊機型'],it['舊機號']].filter(Boolean).join(' / ')}</div>` : ''}
+      </div>`;
+    }).join('');
 
     // 找該客戶的機器
     const custName = item['客戶名稱']||'';
@@ -4324,10 +4953,11 @@ function showDetail(type, idx) {
 
     body.innerHTML = `
       <div class="det-section">
-        ${fields.map(f=>`<div class="det-row">
-          <span class="det-key">${f.k}</span>
-          <span class="det-val" style="${f.big?'font-size:15px;font-weight:700':''}">${f.v}</span>
-        </div>`).join('')}
+        ${fields.map(f=>`<div class="det-row"><span class="det-key">${f.k}</span><span class="det-val">${f.v}</span></div>`).join('')}
+      </div>
+      <div style="padding:12px 15px 4px">
+        <div style="font-size:0.75em;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">工作明細</div>
+        ${itemsBlock}
       </div>
       ${machineBlock}
       <div style="padding:14px 15px;display:flex;gap:8px">
@@ -5103,14 +5733,14 @@ function delMachineChip(groupId,field,val,customKey){
 
 
 function openAdd() {
-  editMode = false; editId = ''; payMethod = ''; selectedPayItems = []; tempPayItems = []; selectedTaskItems = []; selectedHandlers = []; payLineItems = [];
+  editMode = false; editId = ''; payMethod = ''; selectedPayItems = []; tempPayItems = []; taskLineItems = []; selectedHandlers = []; payLineItems = [];
   const titles = ['新增客戶','新增機器','新增施工紀錄','新增收款','新增合約','新增合約','','新增維修紀錄','新增報價','','','新增職員'];
   document.getElementById('form-modal-title').textContent = titles[currentTab]||'新增';
   const body = document.getElementById('form-modal-body');
   switch(currentTab) {
     case 0: body.innerHTML = customerForm(null); break;
     case 1: body.innerHTML = machineForm(null); break;
-    case 2: body.innerHTML = taskForm(null); break;
+    case 2: body.innerHTML = taskForm(null); setTimeout(_renderTaskLineItems,0); break;
     case 3: body.innerHTML = paymentForm(null); break;
     case 4: body.innerHTML = contractForm(null); break;
     case 5: body.innerHTML = contractForm(null); break;
@@ -5123,7 +5753,7 @@ function openAdd() {
 }
 
 function openEditItem(type, idx) {
-  editMode = true; isSaving = false; selectedPayItems = []; tempPayItems = []; selectedTaskItems = []; selectedHandlers = []; payLineItems = [];
+  editMode = true; isSaving = false; selectedPayItems = []; tempPayItems = []; taskLineItems = []; selectedHandlers = []; payLineItems = [];
   // staff 由 editCurrent 直接處理；這裡作為保底
   if (type === 'staff') {
     const item = (cache.staff||[])[idx];
@@ -5152,7 +5782,7 @@ function openEditItem(type, idx) {
   switch(type) {
     case 'customer': body.innerHTML = customerForm(item); break;
     case 'machine':  body.innerHTML = machineForm(item); break;
-    case 'task':     body.innerHTML = taskForm(item); break;
+    case 'task':     body.innerHTML = taskForm(item); setTimeout(_renderTaskLineItems,0); break;
     case 'payment':
       payMethod=item['結帳方式']||'';
       if (item['收款項目']) {
@@ -5703,7 +6333,7 @@ function openAddCustomerFromTask() {
     serial:   document.getElementById('f-task-serial')?.value||'',
     note:     document.getElementById('f-task-note')?.value||'',
     time:     document.getElementById('f-task-time')?.value||'',
-    items:    [...selectedTaskItems],
+    items:    [...taskLineItems],
   };
   window._returnToTask = true;
   editMode=false; editId='';
@@ -5739,15 +6369,16 @@ async function saveCustomerAndReturn() {
   } else if (window._returnToTask) {
     window._returnToTask = false;
     const bk = window._taskFormBackup||{};
-    selectedTaskItems = bk.items||[];
+    taskLineItems = bk.items||[];
     setTimeout(()=>{
       editMode=false; editId=''; payMethod='';
       document.getElementById('form-modal-title').textContent='新增施工紀錄';
       document.getElementById('form-modal-body').innerHTML=taskForm({
         '客戶名稱': name,
-        '機型': bk.model||'', '機號': bk.serial||'',
         '備註': bk.note||'', '希望施工時間': bk.time||'',
+        '紀錄日期': bk.date||'',
       });
+      setTimeout(_renderTaskLineItems, 50);
       document.getElementById('form-modal').classList.add('open');
     },200);
   }
@@ -6060,7 +6691,7 @@ async function saveCustomer() {
     cache.tasks.forEach(t => {
       if (t['客戶名稱'] === oldName || t['客戶名稱'] === name) {
         t['客戶名稱'] = name; t['電話'] = phone; t['地址'] = addr;
-        enqueue({action:'update', sheet:'施工紀錄', data:t, id:t['任務ID']||t['紀錄日期']});
+        enqueue({action:'updateTaskMeta', sheet:'施工紀錄', data: JSON.stringify(t), id: t['任務ID']});
       }
     });
     cache.contracts.forEach(c => {
@@ -6075,15 +6706,23 @@ async function saveCustomer() {
   if (window._returnToTask) {
     window._returnToTask = false;
     const bk = window._taskFormBackup||{};
-    selectedTaskItems = bk.items||[];
+    taskLineItems = bk.items||[];
+    // 若是從 +新增客人機 過來，把機型機號填入對應行
+    const lineIdx = window._addMachineForTaskLineIdx;
+    if (lineIdx !== undefined && lineIdx !== null && taskLineItems[lineIdx]) {
+      taskLineItems[lineIdx].model  = data['機型']||'';
+      taskLineItems[lineIdx].serial = data['機號']||'';
+      window._addMachineForTaskLineIdx = null;
+    }
     setTimeout(()=>{
       editMode=false; editId='';
       document.getElementById('form-modal-title').textContent='新增施工紀錄';
       document.getElementById('form-modal-body').innerHTML=taskForm({
-        '客戶名稱': name,
-        '機型': bk.model||'', '機號': bk.serial||'',
+        '客戶名稱': bk.customer||name,
         '備註': bk.note||'', '希望施工時間': bk.time||'',
+        '紀錄日期': bk.date||'',
       });
+      setTimeout(_renderTaskLineItems, 50);
       document.getElementById('form-modal').classList.add('open');
     },200);
   }
@@ -6138,7 +6777,7 @@ async function saveMachine() {
       taskToUpdate['機型'] = data['機型'];
       taskToUpdate['機號'] = data['機號'];
       saveCache();
-      enqueue({action:'update', sheet:'施工紀錄', data:taskToUpdate, id:taskToUpdate['任務ID']||taskToUpdate['紀錄日期']});
+      enqueue({action:'updateTaskMeta', sheet:'施工紀錄', data: JSON.stringify(taskToUpdate), id: taskToUpdate['任務ID']});
     }
     setTimeout(()=>{
       if (isDismantled) {
@@ -6168,6 +6807,7 @@ async function saveMachine() {
       } else if (isCustomerMachine) {
         // 搬回修理客人機：機器已建 → 若有借用機先選
         if (hasBorrow) {
+          window._borrowCustomer = taskCustomer;
           openBorrowMachinePicker(()=>{
             openQuickRepairFromTask(taskCustomer, data['機型'], data['機號'], taskData);
           });
@@ -6470,11 +7110,15 @@ function confirmDelete(type, idx) {
   const item = arr?.[idx];
   if (!item) return;
   const id = type === 'task'
-    ? (item['任務ID']||item['紀錄日期'])
+    ? (item['任務ID'])
     : item[ID_FIELD[type]];
   arr.splice(idx, 1);
   saveCache();
-  enqueue({action:'delete', sheet, data:null, id});
+  if (type === 'task') {
+    enqueue({ action:'deleteTaskRows', sheet:'施工紀錄', data: null, id });
+  } else {
+    enqueue({ action:'delete', sheet, data:null, id });
+  }
   closeModal('detail-modal');
   renderPage();
   showToast('已刪除');
