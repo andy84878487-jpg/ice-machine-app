@@ -340,8 +340,6 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
 .login-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#666;cursor:pointer;font-size:16px;padding:0;line-height:1}
 .login-btn{width:100%;padding:14px;background:linear-gradient(135deg,#e53935,#c62828);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:8px;box-shadow:0 4px 20px rgba(229,57,53,.4);transition:opacity .15s}
 .login-btn:active{opacity:.85}
-.login-guest-btn{width:100%;padding:11px;background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:12px;color:#888;font-size:13px;font-family:inherit;cursor:pointer;margin-top:10px;transition:all .15s}
-.login-guest-btn:active{background:rgba(255,255,255,.05);color:#ccc}
 .login-err{font-size:12px;color:#ff5252;text-align:center;margin-top:10px;min-height:18px}
 /* 生物辨識登入 */
 .biometric-section{margin-top:14px;border-top:1px solid rgba(255,255,255,.08);padding-top:14px}
@@ -405,7 +403,6 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
       <button class="login-eye" onclick="toggleIdVisible()" id="login-eye-btn">👁</button>
     </div>
     <button class="login-btn" onclick="doLogin()">登 入</button>
-    <button class="login-guest-btn" onclick="doGuestLogin()">訪客進入</button>
     <div class="login-err" id="login-err"></div>
     <!-- 生物辨識快速登入（有設定過的人才顯示）-->
     <div class="biometric-section" id="biometric-section" style="display:none">
@@ -488,6 +485,10 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
         維修紀錄
       </div>
+      <div class="sidemenu-item" onclick="closeSideMenu();switchTab(11)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+        工作紀錄
+      </div>
       <div class="sidemenu-item" onclick="closeSideMenu();switchTab(3)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
         收款紀錄
@@ -551,6 +552,14 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
     <button class="nav-item" data-tab="7" onclick="switchTab(7)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
       維修紀錄
+    </button>
+    <button class="nav-item" data-tab="11" onclick="switchTab(11)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+      工作紀錄
+    </button>
+    <button class="nav-item" data-tab="3" onclick="switchTab(3)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      收款紀錄
     </button>
     <button class="nav-item" data-tab="4" onclick="switchTab(4)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
@@ -647,14 +656,13 @@ const AUTH_KEY = 'iceapp_auth';
 // 0=客戶 1=機器 2=施工 3=收款 4=收租 5=租賃紀錄 6=設定 7=維修 8=報價 9=總覽
 const ROLE_TABS = {
   // 管理員：全開
-  admin:   [0,1,2,3,4,5,6,7,8,9,10],
-  // 工程師：無收款(3)、無職員(10)
-  engineer:[0,1,2,4,5,6,7,8,9],
-  // 帳款專員：無機器(1)、無施工(2)、無職員(10)
-  billing: [0,3,4,5,6,7,8,9],
-  guest:   [9],
+  admin:   [0,1,2,3,4,5,6,7,8,9,10,11],
+  // 工程師：無租賃紀錄(5)、無職員(10)
+  engineer:[0,1,2,3,4,6,7,8,9,11],
+  // 帳款專員：無機器(1)、無施工(2)、無租賃紀錄(5)、無職員(10)
+  billing: [0,3,4,6,7,8,9,11],
 };
-const ROLE_DEFAULT_TAB = { admin:9, engineer:9, billing:9, guest:9 };
+const ROLE_DEFAULT_TAB = { admin:9, engineer:9, billing:9 };
 
 let authState = JSON.parse(localStorage.getItem(AUTH_KEY)||'null');
 // authState: { name, role, ts }
@@ -898,14 +906,6 @@ function selectRole(el) {
   if (!isAdmin) { const p = document.getElementById('role-pin'); if(p) p.value=''; }
 }
 
-function doGuestLogin() {
-  // 訪客模式不記住登入狀態，關閉 App 後回到登入頁
-  authState = { name:'訪客', role:'guest', ts: Date.now() };
-  // 不存 localStorage，只存 sessionStorage（分頁/App 關閉後自動清除）
-  try { sessionStorage.setItem(AUTH_KEY, JSON.stringify(authState)); } catch(e) {}
-  document.getElementById('login-screen').classList.add('hidden');
-  applyRole('guest', '訪客', true);
-}
 
 async function enterApp() {
   const sel = document.querySelector('.role-item.selected');
@@ -982,6 +982,7 @@ function updateSideMenuForRole(role, allowedTabs) {
     {tab:5, selector:'[onclick*="switchTab(5)"]'},
     {tab:2, selector:'[onclick*="switchTab(2)"]'},
     {tab:7, selector:'[onclick*="switchTab(7)"]'},
+    {tab:11, selector:'[onclick*="switchTab(11)"]'},
     {tab:3, selector:'[onclick*="switchTab(3)"]'},
     {tab:4, selector:'[onclick*="switchTab(4)"]'},
     {tab:8, selector:'[onclick*="switchTab(8)"]'},
@@ -1115,6 +1116,21 @@ const MAX_FLUSH_RETRY = 5;
 
 function enqueue(op) {
   // ── 去重邏輯 ──
+  // addPaymentRow：同 pid_seq 後者覆蓋前者
+  if (op.action === 'addPaymentRow' && op.id) {
+    const existing = pendingQueue.findIndex(q => q.action === 'addPaymentRow' && q.id === op.id);
+    if (existing >= 0) { pendingQueue[existing] = { ...op, ts: Date.now() }; saveQueue(); flushQueue(); return; }
+  }
+  // addJobRow：同 jobId_seq 後者覆蓋前者
+  if (op.action === 'addJobRow' && op.id) {
+    const existing = pendingQueue.findIndex(q => q.action === 'addJobRow' && q.id === op.id);
+    if (existing >= 0) { pendingQueue[existing] = { ...op, ts: Date.now() }; saveQueue(); flushQueue(); return; }
+  }
+  // updateJobMeta：同 jobId 後者覆蓋前者
+  if (op.action === 'updateJobMeta' && op.id) {
+    const existing = pendingQueue.findIndex(q => q.action === 'updateJobMeta' && q.id === op.id);
+    if (existing >= 0) { pendingQueue[existing] = { ...op, ts: Date.now() }; saveQueue(); flushQueue(); return; }
+  }
   // addTaskRow：同 taskId_seq 後者覆蓋前者
   if (op.action === 'addTaskRow' && op.id) {
     const existing = pendingQueue.findIndex(q => q.action === 'addTaskRow' && q.id === op.id);
@@ -1172,6 +1188,7 @@ async function flushQueue() {
     try {
       const res = await apiWrite(cfg.url, op.action, op.sheet, op.data, op.id);
       if (res?.error) throw new Error(res.error);
+      // skipped = 正常情況（如 updateTaskMeta 找不到行），不算錯誤
     } catch(e) {
       console.error('sync error:', e.message, op.action, op.sheet);
       showToast('❌ 同步錯誤：' + e.message, 5000);
@@ -1206,6 +1223,7 @@ async function syncAllExcept(skip) {
     {key:'payments',  sheet:'payments'},
     {key:'staff',     sheet:'staff'},
     {key:'tasks', sheet:'施工紀錄'},
+    {key:'jobs',  sheet:'工作紀錄'},
     {key:'pricelist',       sheet:'pricelist'},
     {key:'repairs',         sheet:'repairs'},
     {key:'materials',       sheet:'materials'},
@@ -1222,17 +1240,13 @@ async function syncAllExcept(skip) {
         rows.forEach(row => {
           const id = String(row['任務ID']||'').trim();
           if (!id) return;
-          if (!taskMap[id]) {
-            taskMap[id] = { '任務ID': id, items: [] };
-          }
+          if (!taskMap[id]) { taskMap[id] = { '任務ID': id, items: [] }; }
           const seq = Number(row['序號'])||1;
-          // seq=1 的行帶 header 欄位
           if (seq === 1) {
             ['紀錄日期','客戶名稱','備註','希望施工時間','完成狀態','完成日期','指派人員'].forEach(f => {
               if (row[f] !== undefined && row[f] !== '') taskMap[id][f] = row[f];
             });
           }
-          // 每行都帶工作明細
           if (row['工作內容']) {
             taskMap[id].items.push({
               '序號':    seq,
@@ -1244,10 +1258,54 @@ async function syncAllExcept(skip) {
             });
           }
         });
-        // 排序 items by 序號
-        rows = Object.values(taskMap).map(t => {
-          t.items.sort((a,b)=>a['序號']-b['序號']);
-          return t;
+        rows = Object.values(taskMap).map(t => { t.items.sort((a,b)=>a['序號']-b['序號']); return t; });
+      }
+      if (key === 'jobs') {
+        // 工作紀錄：多行同 jobId → 合併成一筆，items[] 存工作明細
+        const jobMap = {};
+        rows.forEach(row => {
+          const id = String(row['工作ID']||'').trim();
+          if (!id) return;
+          if (!jobMap[id]) { jobMap[id] = { '工作ID': id, items: [] }; }
+          const seq = Number(row['序號'])||1;
+          if (seq === 1) {
+            ['紀錄日期','客戶名稱','備註','希望時間','完成狀態','完成日期','指派人員'].forEach(f => {
+              if (row[f] !== undefined && row[f] !== '') jobMap[id][f] = row[f];
+            });
+          }
+          if (row['工作內容']) {
+            jobMap[id].items.push({ '序號': seq, '工作內容': String(row['工作內容']||'') });
+          }
+        });
+        rows = Object.values(jobMap).map(j => { j.items.sort((a,b)=>a['序號']-b['序號']); return j; });
+      }
+      if (key === 'payments') {
+        // 收款紀錄：多行同收款ID → 合併成一筆，items[] 存收款項目明細
+        const payMap = {};
+        rows.forEach(row => {
+          const id = String(row['收款ID']||'').trim();
+          if (!id) return;
+          if (!payMap[id]) { payMap[id] = { '收款ID': id, items: [] }; }
+          const seq = Number(row['序號'])||1;
+          if (seq === 1) {
+            ['結帳日期','客戶名稱','合約ID','收款情況','結帳方式','發票','統一編號','詳細內容','經手人'].forEach(f => {
+              if (row[f] !== undefined && row[f] !== '') payMap[id][f] = row[f];
+            });
+          }
+          if (row['收款項目']) {
+            payMap[id].items.push({
+              '序號':    seq,
+              '收款項目': String(row['收款項目']||''),
+              '金額':    row['金額'] !== undefined ? row['金額'] : '',
+              '細項說明': String(row['細項說明']||''),
+            });
+          }
+        });
+        rows = Object.values(payMap).map(p => {
+          p.items.sort((a,b)=>a['序號']-b['序號']);
+          p['金額'] = p.items.reduce((s,it)=>s+(Number(it['金額'])||0),0);
+          p['收款項目'] = p.items.map(it=>it['收款項目']).join('、');
+          return p;
         });
       }
       if (key === 'staff') {
@@ -1421,7 +1479,7 @@ function switchTab(idx) {
   searchQuery = '';
   searchVisible = false;
   document.querySelectorAll('.nav-item').forEach(el => el.classList.toggle('active', parseInt(el.dataset.tab)===idx));
-  const titles = ['客戶資料','機器清單','施工紀錄','收款紀錄','收租清單','租賃紀錄','系統設定','維修紀錄','報價表','總覽','職員名單'];
+  const titles = ['客戶資料','機器清單','施工紀錄','收款紀錄','收租清單','租賃紀錄','系統設定','維修紀錄','報價表','總覽','職員名單','工作紀錄'];
   document.getElementById('header-title').textContent = titles[idx] || '';
   const isAdmin = authState?.role === 'admin';
   document.getElementById('fab-btn').style.display = (idx === 6 || idx === 9 || (idx === 8 && !isAdmin)) ? 'none' : 'flex';
@@ -1454,6 +1512,7 @@ function renderPage() {
     case 9: html += renderOverview(); break;
     case 6: html += renderSettings(); break;
     case 10: html += renderStaffList(); break;
+    case 11: html += renderJobs(); break;
   }
   c.innerHTML = html;
 }
@@ -1476,6 +1535,7 @@ function onSearch(v) {
     case 9: html = renderOverview(); break;
     default: html = renderSettings(); break;
     case 10: html = renderStaffList(); break;
+    case 11: html = renderJobs(); break;
   }
   // 只替換 search-bar 以下的內容
   const sb = c.querySelector('.search-bar');
@@ -1588,11 +1648,11 @@ function renderTasks() {
   let list = [...cache.tasks];
   if (searchQuery) list = list.filter(t => JSON.stringify(t).includes(searchQuery));
 
-  // 非管理員：只顯示指派給自己的工作（或未派單的）
+  // 非管理員：只顯示指派給自己的工作（未派單的不顯示）
   if (role !== 'admin') {
     list = list.filter(t => {
       const assigned = getTaskAssign(t);
-      if (!assigned.length) return true; // 未派單，顯示給所有人
+      if (!assigned.length) return false; // 未派單，不顯示給非管理員
       return assigned.includes(myName);
     });
   }
@@ -1676,15 +1736,17 @@ function setTaskAssign(task, people) {
 }
 
 function openDispatch(type, idx) {
-  const maps = {task: cache.tasks, contract: cache.contracts};
+  const maps = {task: cache.tasks, contract: cache.contracts, repair: cache.repairs, job: cache.jobs, payment: cache.payments};
   const item = maps[type]?.[idx];
   if (!item) return;
 
   let current = [];
   if (type === 'task') {
     current = getTaskAssign(item);
+  } else if (type === 'payment') {
+    current = String(item['收款人']||'').split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
   } else {
-    current = String(item['經手人']||'').split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
+    current = String(item['指派人員']||item['經手人']||'').split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
   }
 
   const staffList = cache.staff.map(s=>String(s['姓名']||'').trim()).filter(Boolean);
@@ -1693,7 +1755,8 @@ function openDispatch(type, idx) {
   const body = document.getElementById('detail-modal-body');
   const title = document.getElementById('detail-modal-title');
   document.getElementById('detail-edit-btn').style.display = 'none';
-  title.textContent = type==='task' ? '指派工程師' : '指派負責人';
+  const titleText = type==='task' ? '指派工程師' : type==='repair' ? '指派維修人員' : type==='payment' ? '收款人' : '指派負責人';
+  title.textContent = titleText;
   body.innerHTML = `
     <div class="form-body">
       <div class="ff"><label>選擇人員（可複選）</label>
@@ -1712,17 +1775,28 @@ function openDispatch(type, idx) {
 }
 
 async function saveDispatch(type, idx) {
-  const maps = {task: cache.tasks, contract: cache.contracts};
+  const maps = {task: cache.tasks, contract: cache.contracts, repair: cache.repairs, job: cache.jobs, payment: cache.payments};
   const item = maps[type]?.[idx];
   if (!item) return;
   const selected = [...document.querySelectorAll('#dispatch-wrap .pay-item-chip.selected')].map(b=>b.textContent.trim());
 
   if (type === 'task') {
     setTaskAssign(item, selected);
-    // 同步到試算表
     if (cfg.url) enqueue({ action:'updateTaskMeta', sheet:'施工紀錄', data: JSON.stringify({'指派人員': item['指派人員']||''}), id: item['任務ID'] });
+  } else if (type === 'repair') {
+    item['指派人員'] = selected.join('、');
+    saveCache();
+    if (cfg.url) enqueue({action:'update', sheet:'repairs', data:item, id:item['維修ID']});
+  } else if (type === 'job') {
+    item['指派人員'] = selected.join('、');
+    saveCache();
+    if (cfg.url) enqueue({action:'updateJobMeta', sheet:'工作紀錄', data:JSON.stringify({'指派人員':item['指派人員']}), id:item['工作ID']});
+  } else if (type === 'payment') {
+    item['收款人'] = selected.join('、');
+    saveCache();
+    if (cfg.url) enqueue({action:'updatePaymentCollector', sheet:'payments', data:JSON.stringify({'收款人':item['收款人']}), id:item['收款ID']});
   } else {
-    // 合約（收租清單）：存到「經手人」欄位並同步試算表
+    // 合約（收租清單）
     item['經手人'] = selected.join('、');
     saveCache();
     if (cfg.url) enqueue({action:'update', sheet:'contracts', data:item, id:item['合約ID']});
@@ -1732,6 +1806,7 @@ async function saveDispatch(type, idx) {
   renderPage();
   showToast(selected.length ? `✅ 已指派：${selected.join('、')}` : '已清除派單');
 }
+
 
 function toggleTaskDone(idx) {
   const t = cache.tasks[idx];
@@ -1761,21 +1836,23 @@ function toggleTaskDone(idx) {
 }
 
 // 逐筆處理施工明細，遇到需要互動的工作類型就暫停，等 confirmTaskDone 後繼續
+// items 格式為 cache 格式：{ '工作內容', '機型', '機號', '舊機型', '舊機號' }
 function _processNextLineItem(customer, items, startIdx, taskData) {
   for (let i = startIdx; i < items.length; i++) {
     const li = items[i];
-    const type = li.type;
-    const model  = li.model  || '';
-    const serial = li.serial || '';
+    // 支援 cache 格式（'工作內容'）和 taskLineItems 格式（.type）
+    const type   = li['工作內容'] || li.type   || '';
+    const model  = li['機型']     || li.model  || '';
+    const serial = li['機號']     || li.serial || '';
+    const oldModel  = li['舊機型'] || li.oldModel  || '';
+    const oldSerial = li['舊機號'] || li.oldSerial || '';
     const dn = taskData['紀錄日期'];
 
     if (type === '裝機' || type === '代裝') {
       setTimeout(()=>openContractTypeChooser(customer, model, serial, dn, ()=>_processNextLineItem(customer, items, i+1, taskData)), 200);
-      return; // 暫停，等合約處理完
+      return;
     }
     if (type === '換機') {
-      const oldModel  = li.oldModel  || '';
-      const oldSerial = li.oldSerial || '';
       openReplaceModalFull(customer, model, serial, oldModel, oldSerial, dn, ()=>_processNextLineItem(customer, items, i+1, taskData));
       return;
     }
@@ -1784,32 +1861,36 @@ function _processNextLineItem(customer, items, startIdx, taskData) {
       return;
     }
     if (type === '搬回修理') {
-      const borrowLine = items.find((l,j)=> j>i && l.type==='借用機');
-      _handleRepairReturn(customer, model, serial, taskData, borrowLine, ()=>_processNextLineItem(customer, items, i+1+(borrowLine?1:0), taskData));
+      const borrowLine = items.find((l,j)=> j>i && (l['工作內容']||l.type)==='借用機');
+      _handleRepairReturn(customer, model, serial, taskData, borrowLine ? {
+        model:  borrowLine['機型']||borrowLine.model||'',
+        serial: borrowLine['機號']||borrowLine.serial||'',
+      } : null, ()=>_processNextLineItem(customer, items, i+1+(borrowLine?1:0), taskData));
       return;
     }
     if (type === '借用機') {
-      // 獨立的借用機（非搬回修理配對）
       window._borrowCustomer = customer;
       if (model || serial) {
         onBorrowMachineSelect(serial, model);
         // 繼續下一筆
       } else {
-        // 未填機型機號：開選擇器
         openBorrowMachinePicker(()=>_processNextLineItem(customer, items, i+1, taskData));
         return;
       }
     }
     if (type === '修好送回') {
-      const borrowLine = items.find((l,j)=> j>i && l.type==='借用機');
-      _handleRepairReturn2(customer, model, serial, taskData, borrowLine, ()=>_processNextLineItem(customer, items, i+1+(borrowLine?1:0), taskData));
+      const borrowLine = items.find((l,j)=> j>i && (l['工作內容']||l.type)==='借用機');
+      _handleRepairReturn2(customer, model, serial, taskData, borrowLine ? {
+        model:  borrowLine['機型']||borrowLine.model||'',
+        serial: borrowLine['機號']||borrowLine.serial||'',
+      } : null, ()=>_processNextLineItem(customer, items, i+1+(borrowLine?1:0), taskData));
       return;
     }
     if (type === '移機') {
       _handleRelocation(customer, taskData, ()=>_processNextLineItem(customer, items, i+1, taskData));
       return;
     }
-    // 其他：直接繼續
+    // 其他（保養、維修、檢修費...）：直接繼續
   }
   // 全部處理完 → 標記完成
   confirmTaskDone();
@@ -2410,7 +2491,7 @@ async function saveTask() {
   closeModal('form-modal');
   renderPage();
   showToast(editMode ? '已更新施工紀錄' : '已新增施工紀錄');
-  setTimeout(()=>{ isSaving=false; }, 500);
+  isSaving = false;
 }
 
 // 裝機選擇合約類型：租機 or 租送
@@ -2490,10 +2571,7 @@ function openContractFromTask(type, customer, model, serial, taskDateStr) {
   document.getElementById('form-modal-title').textContent='新增合約';
   document.getElementById('form-modal-body').innerHTML = contractFormAssign(mm, customer, custObj, contractType, rent, deposit, endStr);
   document.getElementById('form-modal').classList.add('open');
-  // 若有下一筆待處理，繼續；否則標記完成
-  const next = window._afterContractDone;
-  window._afterContractDone = null;
-  if (next) next(); else confirmTaskDone();
+  // ⚠️ 不在這裡呼叫 confirmTaskDone — 等用戶填完合約按儲存後，saveContract() 才處理
 }
 
 function getMachineByTaskInfo(model, serial) {
@@ -2551,266 +2629,6 @@ function appConfirm(msg, onYes, onNo, title) {
   deck.classList.add('open');
 }
 
-function afterTaskSave(customer, lineItems, model, serial, taskData) {
-  // lineItems 是 [{type, model, serial, oldModel, oldSerial}] 陣列
-  const itemList = lineItems.map(li => li.type).filter(Boolean);
-  const hasMachine = !!(model||serial);
-  const hasBorrowItem = itemList.includes('借用機');
-  const dn = taskData['紀錄日期'];
-  const norm = s=>String(s||'').trim().replace(/\s+/g,'');
-
-  // ── 裝機 ──
-  if (itemList.includes('裝機')) {
-    if (!hasMachine) {
-      appConfirm('沒有填機型機號，是否要新增機器？',
-        ()=>{
-          window._addMachineForTask = { customer, taskData, goContract: false, afterInstall: true };
-          editMode=false; editId=''; window._prefillMachineType=null;
-          document.getElementById('form-modal-title').textContent='新增機器';
-          document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer});
-          document.getElementById('form-modal').classList.add('open');
-        },
-        ()=>{ window._pendingDoneTask=null; showToast('⚠️ 請在施工紀錄中填入機型機號後再完成'); }
-      );
-    } else {
-      setTimeout(()=>openContractTypeChooser(customer, model, serial, dn), 200);
-    }
-    return;
-  }
-
-  // ── 換機 ──
-  if (itemList.includes('換機')) {
-    if (!hasMachine) {
-      window._pendingDoneTask=null;
-      showToast('⚠️ 請填入現場設備的機型機號後再完成');
-    } else {
-      openReplaceModal(customer, model, serial, dn);
-    }
-    return;
-  }
-
-  // ── 拆回 ──
-  if (itemList.includes('拆回')) {
-    if (!hasMachine) {
-      // 詢問退租還是估回
-      const deck = document.getElementById('confirm-deck');
-      document.getElementById('confirm-deck-title').textContent = '拆回處理';
-      document.getElementById('confirm-deck-msg').textContent = '請選擇拆回方式：';
-      const btns = deck.querySelector('div[style*="display:flex"]');
-      const newBtns = btns.cloneNode(false);
-      newBtns.innerHTML = `
-        <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr_btn1">退租</button>
-        <button style="flex:1;padding:12px;background:var(--accent-bg);border:1px solid var(--accent-glow);border-radius:10px;color:var(--accent2);font-size:0.929em;font-weight:700;font-family:inherit;cursor:pointer" id="_dr_btn2">估回</button>
-        <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr_btn3">取消</button>`;
-      btns.parentNode.replaceChild(newBtns, btns);
-      newBtns.querySelector('#_dr_btn1').onclick = ()=>{
-        deck.classList.remove('open');
-        window._pendingDoneTask=null;
-        showToast('⚠️ 請填入現場設備的機型機號後再完成');
-      };
-      newBtns.querySelector('#_dr_btn2').onclick = ()=>{
-        deck.classList.remove('open');
-        // 估回：新增機器（狀態預填◎進廠）→ 新增收款（預選估回）
-        window._addMachineForTask = { customer, taskData, goContract: false, isEstimateReturn: true };
-        editMode=false; editId='';
-        document.getElementById('form-modal-title').textContent='新增機器（估回）';
-        document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer, '類型':'◎進廠'});
-        document.getElementById('form-modal').classList.add('open');
-      };
-      newBtns.querySelector('#_dr_btn3').onclick = ()=>{ deck.classList.remove('open'); window._pendingDoneTask=null; };
-      deck.classList.add('open');
-    } else {
-      // 有機號：詢問退租還是估回
-      const deck = document.getElementById('confirm-deck');
-      document.getElementById('confirm-deck-title').textContent = '拆回處理';
-      document.getElementById('confirm-deck-msg').textContent = `機器：${model||''} ${serial||''}\n請選擇拆回方式：`;
-      const btns = deck.querySelector('div[style*="display:flex"]');
-      const newBtns = btns.cloneNode(false);
-      newBtns.innerHTML = `
-        <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr_btn1">退租</button>
-        <button style="flex:1;padding:12px;background:var(--accent-bg);border:1px solid var(--accent-glow);border-radius:10px;color:var(--accent2);font-size:0.929em;font-weight:700;font-family:inherit;cursor:pointer" id="_dr_btn2">估回</button>
-        <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr_btn3">取消</button>`;
-      btns.parentNode.replaceChild(newBtns, btns);
-      newBtns.querySelector('#_dr_btn1').onclick = ()=>{
-        deck.classList.remove('open');
-        // 退租：詢問待出租或◎進廠 → 更新租賃紀錄（到期日=今日，狀態=已終止）
-        const deck2 = document.getElementById('confirm-deck');
-        document.getElementById('confirm-deck-title').textContent = '退租後機器狀態';
-        document.getElementById('confirm-deck-msg').textContent = '請選擇退租後機器的處置方式：';
-        const btns2 = deck2.querySelector('div[style*="display:flex"]');
-        const newBtns2 = btns2.cloneNode(false);
-        newBtns2.innerHTML = `
-          <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr2_btn1">待出租</button>
-          <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr2_btn2">◎進廠</button>
-          <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dr2_btn3">取消</button>`;
-        btns2.parentNode.replaceChild(newBtns2, btns2);
-        const doReturnStatus = (newStatus)=>{
-          deck2.classList.remove('open');
-          updateMachineStatus(model, serial, newStatus);
-          // 更新最新合約：到期日=今日，狀態=已終止
-          const todayStr = new Date().toISOString().split('T')[0].replace(/-/g,'/');
-          const ct = cache.contracts.filter(c=>c['機號']===serial&&String(c['客戶名稱']||'').includes(customer))
-            .sort((a,b)=>String(b['租借日期']||'').localeCompare(String(a['租借日期']||'')))[0];
-          if (ct) { ct['到期日期']=todayStr; ct['類型']='已終止'; saveCache(); enqueue({action:'update',sheet:'contracts',data:ct,id:ct['合約ID']}); }
-          confirmTaskDone();
-        };
-        newBtns2.querySelector('#_dr2_btn1').onclick = ()=>doReturnStatus('待出租');
-        newBtns2.querySelector('#_dr2_btn2').onclick = ()=>doReturnStatus('◎進廠');
-        newBtns2.querySelector('#_dr2_btn3').onclick = ()=>{ deck2.classList.remove('open'); window._pendingDoneTask=null; };
-        deck2.classList.add('open');
-      };
-      newBtns.querySelector('#_dr_btn2').onclick = ()=>{
-        deck.classList.remove('open');
-        // 估回：機器狀態改◎進廠 → 新增收款（預選估回）
-        updateMachineStatus(model, serial, '◎進廠');
-        openQuickPayment(customer, taskData, ['估回']);
-        confirmTaskDone();
-      };
-      newBtns.querySelector('#_dr_btn3').onclick = ()=>{ deck.classList.remove('open'); window._pendingDoneTask=null; };
-      deck.classList.add('open');
-    }
-    return;
-  }
-
-  // ── 搬回修理 ──
-  if (itemList.includes('搬回修理')) {
-    if (!hasMachine) {
-      // 詢問客人機還是公司機（公司機需要有機型機號）
-      appConfirm(
-        '搬回修理的機器是客人自帶的嗎？\n（若為公司機器請先填入機型機號再完成）',
-        ()=>{
-          // 客人機
-          const flags = hasBorrowItem
-            ? { customer, taskData, isCustomerMachine: true, hasBorrow: true }
-            : { customer, taskData, isCustomerMachine: true };
-          window._addMachineForTask = flags;
-          editMode=false; editId='';
-          document.getElementById('form-modal-title').textContent='新增機器（客人機）';
-          document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer, '類型':'客人機'});
-          document.getElementById('form-modal').classList.add('open');
-        },
-        ()=>{ window._pendingDoneTask=null; showToast('⚠️ 請填入現場設備的機型機號後再完成'); },
-        '機器歸屬確認'
-      );
-    } else {
-      // 有機號：直接新增維修
-      // 搬回修理的機器→◎進廠
-      const repairM = getMachineByTaskInfo(model, serial);
-      if (repairM) {
-        repairM['類型'] = '◎進廠';
-        saveCache();
-        enqueue({action:'update', sheet:'machines', data:repairM, id:repairM['機號']});
-      }
-      if (hasBorrowItem) {
-        // 找借用機 line item（已填機型機號）
-        const borrowLine = lineItems.find(li => li.type === '借用機' && (li.model || li.serial));
-        if (borrowLine) {
-          // 借用機已填：直接更新狀態，不需開選擇器
-          window._borrowCustomer = customer;
-          onBorrowMachineSelect(borrowLine.serial, borrowLine.model);
-          openQuickRepairFromTask(customer, model, serial, taskData);
-        } else {
-          // 借用機未填：開選擇器讓使用者挑
-          window._borrowCustomer = customer;
-          openBorrowMachinePicker(()=>openQuickRepairFromTask(customer, model, serial, taskData));
-        }
-      } else {
-        openQuickRepairFromTask(customer, model, serial, taskData);
-      }
-    }
-    return;
-  }
-
-  // ── 修好送回 ──
-  if (itemList.includes('修好送回')) {
-    if (!hasMachine) {
-      window._pendingDoneTask=null;
-      showToast('⚠️ 請填入現場設備的機型機號後再完成');
-    } else {
-      if (hasBorrowItem) {
-        // 選借用機歸還
-        openBorrowMachineReturn(model, serial, customer, taskData);
-      } else {
-        openQuickPayment(customer, taskData, ['維修費']);
-        confirmTaskDone();
-      }
-    }
-    return;
-  }
-
-  // ── 移機 ──
-  if (itemList.includes('移機')) {
-    confirmTaskDone();
-    const custIdx = cache.customers.findIndex(x=>x['客戶名稱']===customer);
-    appConfirm(
-      `移機完成！是否要更新客戶「${customer}」的地址？`,
-      ()=>{
-        if (custIdx >= 0) {
-          setTimeout(()=>{
-            openEditItem('customer', custIdx);
-            // 編輯完成後詢問新增收款（利用 form-modal 儲存後的 hook）
-            window._afterCustomerEdit = ()=>{
-              appConfirm('是否要新增移機相關收款？',
-                ()=>openQuickPayment(customer, taskData, []),
-                ()=>{}
-              );
-            };
-          }, 300);
-        }
-      },
-      ()=>{
-        appConfirm('是否要新增移機相關收款？',
-          ()=>openQuickPayment(customer, taskData, []),
-          ()=>{}
-        );
-      },
-      '移機完成'
-    );
-    return;
-  }
-
-  // ── 搬回（舊版，保留相容）──
-  if (itemList.includes('搬回')) {
-    if (!hasMachine) {
-      appConfirm('沒有填機型機號，是否要新增機器？',
-        ()=>{
-          window._addMachineForTask = { customer, taskData, goContract: false, isDismantled: true };
-          editMode=false; editId=''; window._prefillMachineType=null;
-          document.getElementById('form-modal-title').textContent='新增機器';
-          document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer});
-          document.getElementById('form-modal').classList.add('open');
-        }
-      );
-    } else {
-      const deck = document.getElementById('confirm-deck');
-      document.getElementById('confirm-deck-title').textContent = '搬回後機器狀態';
-      document.getElementById('confirm-deck-msg').textContent = '請選擇搬回後此機器的狀態：';
-      const btns = deck.querySelector('div[style*="display:flex"]');
-      const newBtns = btns.cloneNode(false);
-      newBtns.innerHTML = `
-        <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn1">待出租</button>
-        <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn2">◎進廠</button>
-        <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_dm_btn3">取消</button>`;
-      btns.parentNode.replaceChild(newBtns, btns);
-      newBtns.querySelector('#_dm_btn1').onclick = ()=>{ deck.classList.remove('open'); updateMachineStatus(model,serial,'待出租'); confirmTaskDone(); };
-      newBtns.querySelector('#_dm_btn2').onclick = ()=>{ deck.classList.remove('open'); updateMachineStatus(model,serial,'◎進廠'); confirmTaskDone(); };
-      newBtns.querySelector('#_dm_btn3').onclick = ()=>{ deck.classList.remove('open'); window._pendingDoneTask=null; };
-      deck.classList.add('open');
-    }
-    return;
-  }
-
-  // ── 其他項目 ──
-  const specialItems = ['換機','拆回','裝機','搬回修理','修好送回','搬回','借用機'];
-  const otherItems = itemList.filter(i=>!specialItems.includes(i));
-  if (otherItems.length > 0) {
-    appConfirm(`是否標記「${otherItems.join('、')}」為完成？`, ()=>confirmTaskDone(), ()=>{ window._pendingDoneTask=null; });
-  } else {
-    confirmTaskDone();
-  }
-}
-
-// ── 工作類型處理 helpers ──
 function _handleTeardown(customer, model, serial, taskData, onDone) {
   const dn = taskData['紀錄日期'];
   const deck = document.getElementById('confirm-deck');
@@ -2880,14 +2698,13 @@ function _handleRepairReturn(customer, model, serial, taskData, borrowLine, onDo
       window._borrowCustomer = customer;
       onBorrowMachineSelect(borrowLine.serial, borrowLine.model);
       openQuickRepairFromTask(customer, model, serial, taskData);
-      if (onDone) setTimeout(onDone, 100);
+      // 完成由 saveRepair → _afterRepairDone → confirmTaskDone 觸發
     } else {
       window._borrowCustomer = customer;
-      openBorrowMachinePicker(()=>{ openQuickRepairFromTask(customer, model, serial, taskData); if(onDone) setTimeout(onDone,100); });
+      openBorrowMachinePicker(()=>openQuickRepairFromTask(customer, model, serial, taskData));
     }
   } else {
     openQuickRepairFromTask(customer, model, serial, taskData);
-    if (onDone) setTimeout(onDone, 100);
   }
 }
 
@@ -3061,7 +2878,8 @@ function openQuickRepairFromTask(customer, model, serial, taskData) {
   // 清除借用機暫存
   window._borrowMachineSerial = '';
   window._borrowMachineModel  = '';
-  confirmTaskDone();
+  // 維修紀錄儲存後標記施工完成（由 saveRepair 的 _afterRepairDone 觸發）
+  window._afterRepairDone = ()=>confirmTaskDone();
 }
 
 // 修好送回 — 借用機歸還選擇器
@@ -3304,75 +3122,136 @@ function renderMachines() {
 }
 
 // --- Payments ---
-let paymentMonthFilter = ''; // '' = 全部, 'YYYY-MM' = 特定月
-
-function setPaymentMonth(m) { paymentMonthFilter = m; renderPage(); }
+let paymentMonthFilter = '';
+function setPaymentMonth(m) { paymentMonthFilter=m; renderPage(); }
+let payViewMode = 'unpaid';
+function setPayViewMode(m) { payViewMode=m; renderPage(); }
 
 function renderPayments() {
   let list = [...cache.payments];
   const role = authState?.role;
   const myName = authState?.name||'';
-  if (role !== 'admin' && myName) {
-    list = list.filter(p => String(p['經手人']||'').split(/[,、，]/).map(s=>s.trim()).includes(myName));
+  if (role !== 'admin') {
+    list = list.filter(p => {
+      const handler = String(p['経手人']||p['經手人']||'').trim();
+      const collector = String(p['收款人']||'').trim();
+      // 無經手人 且 無收款人 → 顯示給所有人
+      if (!handler && !collector) return true;
+      const inHandler   = handler   && handler.split(/[,、，]/).map(s=>s.trim()).includes(myName);
+      const inCollector = collector && collector.split(/[,、，]/).map(s=>s.trim()).includes(myName);
+      return inHandler || inCollector;
+    });
   }
-  if (searchQuery) list = list.filter(p => JSON.stringify(p).includes(searchQuery));
+  if (searchQuery) list = list.filter(p=>JSON.stringify(p).includes(searchQuery));
 
-  // 月份選單（從資料取不重複的年月）
+  // 月份選單
   const allMonths = [...new Set(list.map(p=>{
-    const d = String(p['結帳日期']||'').replace(/\//g,'-').substring(0,7);
+    const d=String(p['結帳日期']||'').replace(/\//g,'-').substring(0,7);
     return d.match(/^\d{4}-\d{2}$/) ? d : '';
   }).filter(Boolean))].sort().reverse();
 
   // 月份篩選
-  const filtered = paymentMonthFilter
+  const byMonth = paymentMonthFilter
     ? list.filter(p=>String(p['結帳日期']||'').replace(/\//g,'-').startsWith(paymentMonthFilter))
     : list;
 
-  const total = filtered.reduce((s,p)=>s+(Number(p['金額'])||0),0);
-  const income  = filtered.filter(p=>(Number(p['金額'])||0)>0).reduce((s,p)=>s+(Number(p['金額'])||0),0);
-  const expense = filtered.filter(p=>(Number(p['金額'])||0)<0).reduce((s,p)=>s+(Number(p['金額'])||0),0);
+  const isPaid = p => String(p['收款情況']||'').trim()==='已收';
+  const unpaidList = byMonth.filter(p=>!isPaid(p));
+  const paidList   = byMonth.filter(p=>isPaid(p));
+  const showing    = payViewMode==='paid' ? paidList : unpaidList;
 
-  const monthBar = `<div style="display:flex;gap:6px;padding:10px 14px;overflow-x:auto;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:5;-webkit-overflow-scrolling:touch">
+  const unpaidTotal = unpaidList.reduce((s,p)=>s+(Number(p['金額'])||0),0);
+  const paidTotal   = paidList.reduce((s,p)=>s+(Number(p['金額'])||0),0);
+
+  const monthBar = `<div style="display:flex;gap:6px;padding:10px 14px;overflow-x:auto;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:6;-webkit-overflow-scrolling:touch">
     <button onclick="setPaymentMonth('')" class="pay-item-chip${!paymentMonthFilter?' selected':''}" style="white-space:nowrap;font-size:0.786em">全部</button>
     ${allMonths.map(m=>`<button onclick="setPaymentMonth('${m}')" class="pay-item-chip${paymentMonthFilter===m?' selected':''}" style="white-space:nowrap;font-size:0.786em">${m}</button>`).join('')}
-  </div>
-  <div style="padding:10px 14px;display:flex;gap:12px;border-bottom:1px solid var(--border);background:var(--surface)">
-    <div style="flex:1;text-align:center">
-      <div style="font-size:0.714em;color:var(--text2)">收入</div>
-      <div style="font-size:1em;font-weight:700;color:var(--green2)">NT$${income.toLocaleString()}</div>
+  </div>`;
+
+  const tabs = `<div class="task-tabs">
+    <div class="task-tab${payViewMode==='unpaid'?' active':''}" onclick="setPayViewMode('unpaid')">待收 ${unpaidList.length?`<span style="font-size:0.857em;opacity:.7">(${unpaidList.length})</span>`:''}</div>
+    <div class="task-tab${payViewMode==='paid'?' active':''}" onclick="setPayViewMode('paid')">已收 ${paidList.length?`<span style="font-size:0.857em;opacity:.7">(${paidList.length})</span>`:''}</div>
+  </div>`;
+
+  const summaryBar = `<div style="display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--border)">
+    <div style="flex:1;padding:10px 14px;border-right:1px solid var(--border)">
+      <div style="font-size:0.714em;color:var(--text2)">待收</div>
+      <div style="font-size:1.071em;font-weight:700;color:var(--danger2)">NT$${unpaidTotal.toLocaleString()}</div>
     </div>
-    ${expense<0?`<div style="flex:1;text-align:center">
-      <div style="font-size:0.714em;color:var(--text2)">支出</div>
-      <div style="font-size:1em;font-weight:700;color:var(--danger2)">NT$${expense.toLocaleString()}</div>
-    </div>`:''}
-    <div style="flex:1;text-align:center">
-      <div style="font-size:0.714em;color:var(--text2)">淨額</div>
-      <div style="font-size:1em;font-weight:700;color:var(--text)">${total>=0?'NT$'+total.toLocaleString():'－NT$'+Math.abs(total).toLocaleString()}</div>
+    <div style="flex:1;padding:10px 14px;border-right:1px solid var(--border)">
+      <div style="font-size:0.714em;color:var(--text2)">已收</div>
+      <div style="font-size:1.071em;font-weight:700;color:var(--green2)">NT$${paidTotal.toLocaleString()}</div>
     </div>
-    <div style="flex:1;text-align:center">
-      <div style="font-size:0.714em;color:var(--text2)">筆數</div>
-      <div style="font-size:1em;font-weight:700;color:var(--text)">${filtered.length}</div>
+    <div style="flex:1;padding:10px 14px">
+      <div style="font-size:0.714em;color:var(--text2)">合計</div>
+      <div style="font-size:1.071em;font-weight:700;color:var(--text)">NT$${(unpaidTotal+paidTotal).toLocaleString()}</div>
     </div>
   </div>`;
 
-  if (!filtered.length) return monthBar+'<div class="empty">沒有收款紀錄</div>';
-  return monthBar+`<div style="overflow-x:auto"><table class="pay-table">
-    <thead><tr><th>日期</th><th>客戶</th><th>項目</th><th>金額</th><th>方式</th><th>經手人</th></tr></thead>
-    <tbody>${filtered.map((p,_i)=>{
-      const realIdx = cache.payments.indexOf(p);
-      const amt = Number(p['金額'])||0;
-      return `<tr onclick="showDetail('payment',${realIdx})">
-        <td style="font-size:11px;white-space:nowrap">${String(p['結帳日期']||'').replace('T',' ').substring(0,10).replace(/-/g,'/')}</td>
-        <td>${p['客戶名稱']||''}</td>
-        <td><span class="chip chip-pay">${p['收款項目']||''}</span></td>
-        <td style="white-space:nowrap;color:${amt<0?'var(--danger2)':'var(--green2)'};font-weight:600">${amt<0?'－':''}NT$${Math.abs(amt).toLocaleString()}</td>
-        <td>${p['結帳方式']||''}</td>
-        <td>${p['經手人']||''}</td>
-      </tr>`;
-    }).join('')}</tbody>
-  </table></div>`;
+  if (!showing.length) return monthBar+tabs+summaryBar+`<div class="empty">${payViewMode==='paid'?'尚無已收款紀錄':'沒有待收款項目 ✓'}</div>`;
+
+  // 依客戶分組
+  const grouped = {};
+  showing.forEach(p=>{const n=p['客戶名稱']||'未知';if(!grouped[n])grouped[n]=[];grouped[n].push(p);});
+
+  let html2 = monthBar+tabs+summaryBar;
+  Object.entries(grouped).forEach(([name,items])=>{
+    const total=items.reduce((a,b)=>a+(Number(b['金額'])||0),0);
+    html2+=`<div class="rent-cust-hdr"><span class="rent-cust-name">${name}</span>${total?`<span class="rent-amt">$${total.toLocaleString()}</span>`:''}</div>`;
+    items.forEach(p=>{
+      const realIdx=cache.payments.indexOf(p);
+      const paid=isPaid(p);
+      const amt=Number(p['金額'])||0;
+      const items2=p.items||[];
+      const chips=items2.map(it=>`<span style="font-size:0.786em;padding:1px 6px;border-radius:99px;background:var(--surface3);border:1px solid var(--border);color:var(--text2)">${it['收款項目']}${it['金額']?' NT$'+Number(it['金額']).toLocaleString():''}</span>`).join(' ');
+      const ds=String(p['結帳日期']||'').substring(0,10).replace(/-/g,'/');
+      const statusColor=paid?'var(--green2)':'var(--danger2)';
+      const statusLabel=paid?'已收':'待收';
+      const btn=paid
+        ?`<button onclick="event.stopPropagation();markPaymentStatus(${realIdx},'待收')" style="background:rgba(67,160,71,.1);border:1px solid rgba(67,160,71,.3);color:var(--green2);border-radius:6px;padding:3px 9px;font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap">取消</button>`
+        :`<button onclick="event.stopPropagation();markPaymentStatus(${realIdx},'已收')" style="background:var(--accent-bg);border:1px solid var(--accent-glow);color:var(--accent2);border-radius:6px;padding:3px 9px;font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap">確認收款</button>`;
+      html2+=`<div class="rent-item${paid?' task-done':''}" onclick="showDetail('payment',${realIdx})">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-size:0.786em;font-weight:700;padding:1px 7px;border-radius:99px;background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}44">${statusLabel}</span>
+          <span style="font-size:0.786em;color:var(--text2)">${ds}</span>
+          ${p['結帳方式']?`<span style="font-size:0.786em;color:var(--text3)">${p['結帳方式']}</span>`:''}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">${chips||`<span style="font-size:0.857em;color:var(--text2)">${p['收款項目']||''}</span>`}</div>
+        ${p['詳細內容']?`<div style="font-size:0.786em;color:var(--text3)">${p['詳細內容']}</div>`:''}
+        ${p['經手人']?`<div style="font-size:0.786em;color:var(--accent2)">👤 ${p['經手人']}</div>`:''}
+        ${p['收款人']?`<div style="font-size:0.786em;color:var(--green2)">💰 ${p['收款人']}</div>`:''}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px">
+          <span style="font-size:1em;font-weight:700;color:${amt<0?'var(--danger2)':'var(--green2)'}">${amt<0?'－':''}NT$${Math.abs(amt).toLocaleString()}</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            ${role==='admin'?`<button onclick="event.stopPropagation();openDispatch('payment',${realIdx})" style="background:rgba(66,165,245,.1);border:1px solid rgba(66,165,245,.3);color:var(--accent2);border-radius:6px;padding:3px 9px;font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap">派單</button>`:''}
+            ${btn}
+          </div>
+        </div>
+      </div>`;
+    });
+  });
+  return html2;
 }
 
+function markPaymentStatus(idx, status) {
+  const p = cache.payments[idx];
+  if (!p) return;
+  p['收款情況'] = status;
+  // 按「確認收款」時，自動把當前登入者加到收款人（鎖定在第一位）
+  if (status === '已收') {
+    const me = authState?.name||'';
+    if (me) {
+      const existing = String(p['收款人']||'').split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
+      if (!existing.includes(me)) {
+        p['收款人'] = [me, ...existing].filter(Boolean).join('、');
+      }
+    }
+  }
+  saveCache();
+  enqueue({action:'update', sheet:'payments', data:p, id:p['收款ID']});
+  renderPage();
+  showToast(status==='已收'?'✓ 已確認收款':'已改回待收');
+}
 // --- Rent List ---
 function getPaidRents() { return JSON.parse(localStorage.getItem('paid_rents')||'{}'); }
 function savePaidRents(obj) { localStorage.setItem('paid_rents', JSON.stringify(obj)); }
@@ -3409,15 +3288,17 @@ function renderRentList() {
   const today=new Date(new Date().toDateString());
   const in3m=new Date(today); in3m.setMonth(in3m.getMonth()+3);
   let list=[...cache.contracts].filter(c=>{
+    const typ = String(c['類型']||'').trim().replace(/\s+/g,'');
+    if (typ==='已終止' || typ==='已到期') return false;  // 排除已終止/已到期
     const e=String(c['到期日期']||'').replace('T',' ').substring(0,10);
     return !e||new Date(e)>=today;
   });
 
-  // 非管理員：只顯示自己是經手人的合約（或無經手人的）
+  // 非管理員：只顯示自己是經手人的合約（未填經手人不顯示）
   if (role !== 'admin') {
     list = list.filter(c => {
       const handlers = String(c['經手人']||'').trim();
-      if (!handlers) return true;
+      if (!handlers) return false; // 未填經手人，不顯示給非管理員
       return handlers.split(/[,、，]/).map(s=>s.trim()).includes(myName);
     });
   }
@@ -3543,7 +3424,13 @@ function renderRepairs() {
 
   // 子分頁：待維修 / 已完成
   const pending = list.filter(r=>(r['狀態']||'')!=='已完成');
-  const done    = list.filter(r=>(r['狀態']||'')==='已完成');
+  const oneWeekAgo = new Date(Date.now() - 7*24*60*60*1000);
+  const done = list.filter(r => {
+    if ((r['狀態']||'') !== '已完成') return false;
+    if (role === 'admin') return true;
+    const d = String(r['完成日期']||r['紀錄日期']||'').substring(0,10).replace(/\//g,'-');
+    return d && new Date(d) >= oneWeekAgo;
+  });
   const showing = repairViewTab === 1 ? done : pending;
 
   const tabs = `<div class="task-tabs">
@@ -3557,15 +3444,29 @@ function renderRepairs() {
     ${showing.map((r,_i)=>{
       const realIdx = (cache.repairs||[]).indexOf(r);
       const items = r['維修項目']||r['工作內容']||'';
-      return `<div class="card" onclick="showRepairDetail(${realIdx})" style="cursor:pointer">
-        <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
-          ${repairStatusChip(r['狀態']||'待維修')}
-          ${repairKindChip(r['種類']||'')}
-          <span style="font-size:0.786em;color:var(--text2);margin-left:auto">${String(r['紀錄日期']||'').substring(0,10).replace(/-/g,'/')}</span>
+      const assigned = r['指派人員'] ? `<div class="li-sub" style="color:var(--accent2);font-size:0.786em">👤 ${r['指派人員']}</div>` : '';
+      const dispatchBtn = role==='admin'
+        ? `<button class="task-check-btn undone" onclick="event.stopPropagation();openDispatch('repair',${realIdx})" style="background:rgba(66,165,245,.1);color:var(--accent2);border:1px solid rgba(66,165,245,.3);white-space:nowrap">派單</button>`
+        : '';
+      const doneBtn = `<button class="task-check-btn ${r['狀態']==='已完成'?'done':'undone'}" onclick="event.stopPropagation();toggleRepairDone(${realIdx})">${r['狀態']==='已完成'?'✓ 完成':'完成'}</button>`;
+      return `<div class="list-item" onclick="showRepairDetail(${realIdx})">
+        <div class="li-body">
+          <div class="li-title" style="display:flex;align-items:center;gap:6px">
+            ${r['機型']||'—'} <span style="font-weight:400;color:var(--text2);font-size:0.857em">${r['機號']||''}</span>
+            ${repairKindChip(r['種類']||'')}
+          </div>
+          ${r['客戶名稱']?`<div class="li-sub">👤 ${r['客戶名稱']}</div>`:''}
+          ${items?`<div class="li-sub" style="color:var(--accent2)">🔧 ${items}</div>`:''}
+          ${assigned}
         </div>
-        <div style="font-size:1em;font-weight:700">${r['機型']||''} <span style="font-size:0.857em;font-weight:400;color:var(--text2)">${r['機號']||''}</span></div>
-        ${r['客戶名稱']?`<div style="font-size:0.857em;color:var(--text2);margin-top:2px">👤 ${r['客戶名稱']}</div>`:''}
-        ${items?`<div style="font-size:0.857em;color:var(--accent2);margin-top:4px">🔧 ${items}</div>`:''}
+        <div class="li-right" style="gap:6px">
+          <div style="display:flex;align-items:center;gap:4px">
+            ${repairStatusChip(r['狀態']||'待維修')}
+            <span style="font-size:0.786em;color:var(--text3)">${String(r['紀錄日期']||'').substring(0,10).replace(/-/g,'/')}</span>
+          </div>
+          ${dispatchBtn}
+          ${doneBtn}
+        </div>
       </div>`;
     }).join('')}
   </div>`;
@@ -3589,8 +3490,12 @@ function showRepairDetail(idx) {
     ['機型',      item['機型']||'—'],
     ['機號',      item['機號']||'—'],
     ['維修項目',  item['維修項目']||item['工作內容']||'—'],
+    ['指派人員',  item['指派人員']||''],
     ['備註',      item['備註']||''],
   ].filter(([,v])=>v&&v!=='—');
+  const dispatchBtn = authState?.role==='admin'
+    ? `<button class="btn-save" style="flex:1;background:rgba(66,165,245,.15);color:var(--accent2);border:1px solid rgba(66,165,245,.3)" onclick="closeModal('detail-modal');openDispatch('repair',${idx})">👤 派單</button>`
+    : '';
   body.innerHTML = `<div class="det-section">
     ${rows.map(([k,v])=>`<div class="det-row">
       <span class="det-key">${k}</span>
@@ -3599,6 +3504,7 @@ function showRepairDetail(idx) {
   </div>
   <div style="padding:14px 15px;display:flex;gap:8px">
     <button class="btn-cancel" style="flex:1;color:var(--danger2)" onclick="confirmDelete('repair',${idx})">🗑 刪除</button>
+    ${dispatchBtn}
     <button class="btn-save" style="flex:1" onclick="toggleRepairDone(${idx})">${item['狀態']==='已完成'?'↩ 標為待維修':'✓ 標為已完成'}</button>
   </div>`;
   document.getElementById('detail-modal').classList.add('open');
@@ -3988,8 +3894,11 @@ async function saveRepair() {
       : '',
   };
   if (!editMode) data['維修ID'] = 'R'+Date.now().toString(36).toUpperCase();
+  if (!editMode) data['指派人員'] = '';  // 新增時預設空
   if (editMode) {
     const idx = cache.repairs.findIndex(r=>String(r['維修ID']||'')===String(editId));
+    // 保留指派人員（不被覆蓋）
+    if (idx>=0) data['指派人員'] = cache.repairs[idx]['指派人員']||'';
     if (idx>=0) Object.assign(cache.repairs[idx], data); else cache.repairs.push(data);
     enqueue({action:'update', sheet:'repairs', data, id:editId});
   } else {
@@ -4002,6 +3911,10 @@ async function saveRepair() {
   showToast(editMode?'已更新維修紀錄':'已新增維修紀錄');
   selectedRepairItems=[];
   editMode=false; editId='';
+  // 若從施工紀錄的搬回修理流程觸發，儲存後標記施工完成
+  const afterRepair = window._afterRepairDone;
+  window._afterRepairDone = null;
+  if (afterRepair) afterRepair();
   setTimeout(()=>{ isSaving=false; },300);
 }
 
@@ -4577,6 +4490,10 @@ function renderOverview() {
   }
   const unpaidContracts = contracts.filter(c => !isRentPaidThisPeriod(c['合約ID']));
 
+  // ── 待收款統計 ──
+  const unpaidPayments = cache.payments.filter(p => String(p['收款情況']||'').trim() !== '已收');
+  const unpaidPayTotal = unpaidPayments.reduce((s,p)=>s+(Number(p['金額'])||0),0);
+
   // ── 待叫貨：材料報價 + 維修報價中狀態為「缺貨」的數量 ──
   const outOfStock = [
     ...(cache.materials||[]),
@@ -4684,6 +4601,8 @@ function renderOverview() {
         `<div style="font-size:0.786em;color:var(--text3)">已完成 ${doneRepairs.length} 筆</div>`)}
       ${card('💰','待收租', unpaidContracts.length, 'var(--green2)', 'var(--green-bg)', 4,
         `<div style="font-size:0.786em;color:var(--text3)">共 ${contracts.length} 份合約</div>`)}
+      ${card('💵','待收款', unpaidPayments.length, '#ffb74d', 'rgba(255,183,77,.1)', 3,
+        `<div style="font-size:0.786em;color:var(--text3)">NT$${unpaidPayTotal.toLocaleString()}</div>`)}
       ${card('📦','待叫貨', outOfStock.length, 'var(--yellow)', 'rgba(249,168,37,.1)', 8,
         `<div style="font-size:0.786em;color:var(--text3)">材料/維修報價缺貨</div>`)}
     </div>
@@ -4875,7 +4794,7 @@ async function testConn() {
 }
 
 function clearAllCache() {
-  cache = {customers:[],machines:[],contracts:[],payments:[],pricelist:[],staff:[],tasks:[],taskOptions:[],adminPin:'',machineStatuses:[],repairs:[],materials:[],repairPricelist:[]};
+  cache = {customers:[],machines:[],contracts:[],payments:[],pricelist:[],staff:[],tasks:[],taskOptions:[],adminPin:'',machineStatuses:[],repairs:[],materials:[],repairPricelist:[],jobs:[]};
   saveCache(); renderPage(); showToast('快取已清除');
 }
 
@@ -4891,7 +4810,7 @@ function noConfig() {
 function showDetail(type, idx) {
   detailType = type; detailIdx = idx;
   document.getElementById('detail-edit-btn').style.display = '';
-  const maps = {customer:cache.customers, machine:cache.machines, contract:cache.contracts, payment:cache.payments, task:cache.tasks};
+  const maps = {customer:cache.customers, machine:cache.machines, contract:cache.contracts, payment:cache.payments, task:cache.tasks, job:cache.jobs};
   const item = maps[type]?.[idx];
   if (!item) return;
   const title = document.getElementById('detail-modal-title');
@@ -5733,8 +5652,8 @@ function delMachineChip(groupId,field,val,customKey){
 
 
 function openAdd() {
-  editMode = false; editId = ''; payMethod = ''; selectedPayItems = []; tempPayItems = []; taskLineItems = []; selectedHandlers = []; payLineItems = [];
-  const titles = ['新增客戶','新增機器','新增施工紀錄','新增收款','新增合約','新增合約','','新增維修紀錄','新增報價','','','新增職員'];
+  editMode = false; editId = ''; payMethod = ''; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = [];
+  const titles = ['新增客戶','新增機器','新增施工紀錄','新增收款','新增合約','新增合約','','新增維修紀錄','新增報價','','','新增職員','新增工作紀錄'];
   document.getElementById('form-modal-title').textContent = titles[currentTab]||'新增';
   const body = document.getElementById('form-modal-body');
   switch(currentTab) {
@@ -5746,6 +5665,7 @@ function openAdd() {
     case 5: body.innerHTML = contractForm(null); break;
     case 7: body.innerHTML = repairForm(null); break;
     case 8: body.innerHTML = pricelistEntryForm(null); break;
+    case 11: body.innerHTML = jobForm(null); setTimeout(_renderJobLineItems,0); break;
     case 10: body.innerHTML = staffForm(null); break;
     default: return;
   }
@@ -5753,7 +5673,7 @@ function openAdd() {
 }
 
 function openEditItem(type, idx) {
-  editMode = true; isSaving = false; selectedPayItems = []; tempPayItems = []; taskLineItems = []; selectedHandlers = []; payLineItems = [];
+  editMode = true; isSaving = false; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = [];
   // staff 由 editCurrent 直接處理；這裡作為保底
   if (type === 'staff') {
     const item = (cache.staff||[])[idx];
@@ -5764,7 +5684,7 @@ function openEditItem(type, idx) {
     document.getElementById('form-modal').classList.add('open');
     return;
   }
-  const maps = {customer:cache.customers, machine:cache.machines, contract:cache.contracts, payment:cache.payments, task:cache.tasks};
+  const maps = {customer:cache.customers, machine:cache.machines, contract:cache.contracts, payment:cache.payments, task:cache.tasks, job:cache.jobs};
   const item = maps[type]?.[idx];
   if (!item) return;
   // 依資料類型取正確的 ID 欄位
@@ -5783,10 +5703,20 @@ function openEditItem(type, idx) {
     case 'customer': body.innerHTML = customerForm(item); break;
     case 'machine':  body.innerHTML = machineForm(item); break;
     case 'task':     body.innerHTML = taskForm(item); setTimeout(_renderTaskLineItems,0); break;
+    case 'job':      body.innerHTML = jobForm(item);  setTimeout(_renderJobLineItems,0);  break;
     case 'payment':
       payMethod=item['結帳方式']||'';
       if (item['收款項目']) {
         selectedPayItems = item['收款項目'].split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
+      }
+      // 編輯時從 items[] 恢復 payLineItems
+      if (item.items && item.items.length) {
+        payLineItems = item.items.map(it=>({
+          name:    it['收款項目']||'',
+          amount:  Number(it['金額'])||0,
+          taxable: !['押金'].includes(it['收款項目']||''),
+          detail:  it['細項說明']||'',
+        }));
       }
       body.innerHTML = paymentForm(item);
       break;
@@ -6637,8 +6567,8 @@ function quickCollect(contractIdx) {
 // ============================================================
 // SAVE
 // ============================================================
-const SHEET_MAP = {customer:'customers',machine:'machines',contract:'contracts',payment:'payments',task:'施工紀錄',repair:'repairs'};
-const ID_FIELD  = {customer:'客戶名稱',machine:'機號',contract:'合約ID',payment:'收款ID',task:'紀錄日期',repair:'維修ID'};
+const SHEET_MAP = {customer:'customers',machine:'machines',contract:'contracts',payment:'payments',task:'施工紀錄',repair:'repairs',job:'工作紀錄'};
+const ID_FIELD  = {customer:'客戶名稱',machine:'機號',contract:'合約ID',payment:'收款ID',task:'紀錄日期',repair:'維修ID',job:'工作ID'};
 
 function getFieldVal(fieldId, customId) {
   const el = document.getElementById(fieldId);
@@ -6664,7 +6594,6 @@ async function doSave(type, data) {
     enqueue({action:'update', sheet, data, id:editId});
   } else {
     arr.push(data);
-    // 傳入主鍵讓 App 端去重邏輯生效，防止網路重試重複送出
     const addId = data[idF] || null;
     enqueue({action:'add', sheet, data, id: addId});
   }
@@ -6672,7 +6601,7 @@ async function doSave(type, data) {
   closeModal('form-modal');
   renderPage();
   showToast(editMode?'已更新':'已新增');
-  setTimeout(() => { isSaving = false; }, 1000);
+  isSaving = false; // 立即清除，不用 setTimeout，讓後續流程可繼續
 }
 
 async function saveCustomer() {
@@ -6846,41 +6775,64 @@ async function savePayment() {
   const finalAmount = total || parseInt(document.getElementById('f-amount').value)||0;
   const invoiceNo = document.getElementById('f-invoice-no')?.value.trim()||'';
   const taxIdPay  = document.getElementById('f-tax-id-pay')?.value.trim()||'';
+  const detail    = document.getElementById('f-detail')?.value.trim()||'';
+  const dateVal   = document.getElementById('f-date').value.replace(/-/g,'/');
+  const pid       = document.getElementById('f-pid').value || ('P'+Date.now().toString(36).toUpperCase());
+  const cid       = document.getElementById('f-cid').value||'';
 
-  // 產生純文字細項說明供試算表閱讀
-  const lineItemsText = payLineItems.length
-    ? payLineItems.map(l => {
-        const tax = l.taxable ? '(含稅)' : '';
-        const det = l.detail ? ` [${l.detail}]` : '';
-        return `${l.name}: NT$${Number(l.amount||0).toLocaleString()}${tax}${det}`;
-      }).join(' / ')
-    : '';
+  // 決定要寫入的行
+  const lines = payLineItems.length ? payLineItems : [{ name: items, amount: finalAmount, taxable: true, detail: '' }];
 
-  await doSave('payment', {
-    '收款ID': document.getElementById('f-pid').value,
-    '合約ID': document.getElementById('f-cid').value,
-    '客戶名稱': customer,
-    '收款項目': items,
-    '詳細內容': document.getElementById('f-detail')?.value.trim()||'',
-    '金額': finalAmount,
-    '收款明細': payLineItems.length ? JSON.stringify(payLineItems) : '',
-    '細項說明': lineItemsText,
-    '發票': payInvoice + (invoiceNo ? ' '+invoiceNo : ''),
+  // 更新 cache（grouped 格式）
+  const payObj = {
+    '收款ID': pid, '合約ID': cid, '客戶名稱': customer,
+    '收款項目': lines.map(l=>l.name).join('、'),
+    '金額': lines.reduce((s,l)=>s+(Number(l.amount)||0),0),
+    '收款情況': '待收',
+    '詳細內容': detail,
+    '發票': payInvoice+(invoiceNo?' '+invoiceNo:''),
     '統一編號': taxIdPay,
     '結帳方式': payMethod,
-    '結帳日期': document.getElementById('f-date').value.replace(/-/g,'/'),
+    '結帳日期': dateVal,
     '經手人': handler,
+    items: lines.map((l,i)=>({'序號':i+1,'收款項目':l.name,'金額':Number(l.amount)||0,'細項說明':l.detail||''})),
+  };
+
+  isSaving=true;
+  if (editMode) {
+    const idx=cache.payments.findIndex(r=>String(r['收款ID'])===String(editId));
+    if (idx>=0) cache.payments[idx]=payObj; else cache.payments.push(payObj);
+    enqueue({action:'deletePaymentRows',sheet:'payments',data:null,id:pid});
+  } else {
+    cache.payments.push(payObj);
+  }
+  saveCache();
+
+  // 逐行 enqueue
+  lines.forEach((l,i)=>{
+    const row = {
+      pid, seq:i+1, contractId:cid, customer, date:dateVal,
+      item:l.name, amount:Number(l.amount)||0, note:l.detail||'',
+      status:'待收', method:payMethod,
+      invoice:payInvoice+(invoiceNo?' '+invoiceNo:''), taxId:taxIdPay,
+      detail:(i===0?detail:''), handler:(i===0?handler:''),
+    };
+    enqueue({action:'addPaymentRow',sheet:'payments',data:JSON.stringify(row),id:pid+'_'+i});
   });
-  selectedPayItems = []; selectedHandlers = []; payLineItems = [];
+
+  closeModal('form-modal'); renderPage();
+  showToast(editMode?'已更新收款紀錄':'已新增收款紀錄');
+  isSaving=false;
+  selectedPayItems=[]; selectedHandlers=[]; payLineItems=[];
+
   const pendingM = cache.machines.find(m => m['_pendingStatus'] === '買 斷');
   if (pendingM) {
-    pendingM['類型'] = '買 斷';
-    pendingM['目前客戶'] = customer;
-    delete pendingM['_pendingStatus'];
-    saveCache();
-    enqueue({ action:'update', sheet:'machines', data: pendingM, id: pendingM['機號'] });
+    pendingM['類型']='買 斷'; pendingM['目前客戶']=customer;
+    delete pendingM['_pendingStatus']; saveCache();
+    enqueue({action:'update',sheet:'machines',data:pendingM,id:pendingM['機號']});
   }
 }
+
 
 async function saveContract() {
   const customer = document.getElementById('f-customer').value;
@@ -6899,6 +6851,10 @@ async function saveContract() {
       enqueue({ action:'update', sheet:'machines', data: machine, id: machine['機號'] });
     }
   }
+  // 若有多筆施工明細待處理，繼續下一筆；否則標記完成
+  const next = window._afterContractDone;
+  window._afterContractDone = null;
+  if (next) next(); else confirmTaskDone();
 }
 
 // ============================================================
@@ -7167,6 +7123,268 @@ renderPage();
 if (cfg.url) {
   syncAll().then(() => { renderPage(); });
 }
+// ============================================================
+// 工作紀錄 (Tab 11)
+// ============================================================
+const JOB_TYPES = ['領貨','送貨','場勘'];
+const JOB_TYPE_COLOR = { '領貨':'#81c784','送貨':'#ffde87','場勘':'#ce93d8' };
+let jobLineItems = []; // [{ type }]
+let jobViewMode = 'undone';
+
+function getAllJobTypes() {
+  const custom = JSON.parse(localStorage.getItem('custom_job_types')||'[]');
+  return [...new Set([...JOB_TYPES, ...custom])];
+}
+
+function jobTypeChip(type) {
+  const c = JOB_TYPE_COLOR[type]||'#999';
+  return `<span style="font-size:0.75em;padding:2px 8px;border-radius:99px;background:${c}22;border:1px solid ${c}55;color:${c};font-weight:700">${type}</span>`;
+}
+
+function isJobDone(j) {
+  const v = j['完成狀態'];
+  return v==='已完成'||v===true||v==='是'||v==='true'||v===1||v==='1';
+}
+
+// ── 列表 ────────────────────────────────────────────────────
+function renderJobs() {
+  const role = authState?.role;
+  const myName = authState?.name||'';
+  let list = [...(cache.jobs||[])];
+
+  if (role !== 'admin') {
+    list = list.filter(j => {
+      const assigned = String(j['指派人員']||'').split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
+      return !assigned.length || assigned.includes(myName);
+    });
+  }
+
+  if (searchQuery) list = list.filter(j=>JSON.stringify(j).includes(searchQuery));
+
+  const undone = list.filter(j=>!isJobDone(j));
+  const oneWeekAgo = new Date(Date.now()-7*24*60*60*1000);
+  const done = list.filter(j=>{
+    if (!isJobDone(j)) return false;
+    if (role==='admin') return true;
+    const d = String(j['完成日期']||j['紀錄日期']||'').substring(0,10).replace(/\//g,'-');
+    return d && new Date(d) >= oneWeekAgo;
+  });
+
+  const showing = jobViewMode==='done' ? done : undone;
+  showing.sort((a,b)=>String(b['紀錄日期']||'').localeCompare(String(a['紀錄日期']||'')));
+
+  const tabs = `<div class="task-tabs">
+    <div class="task-tab${jobViewMode==='undone'?' active':''}" onclick="setJobView('undone')">待處理 ${undone.length?`<span style="font-size:0.857em;opacity:.7">(${undone.length})</span>`:''}</div>
+    <div class="task-tab${jobViewMode==='done'?' active':''}" onclick="setJobView('done')">已完成 ${done.length?`<span style="font-size:0.857em;opacity:.7">(${done.length})</span>`:''}</div>
+  </div>`;
+
+  if (!showing.length) return tabs + `<div class="empty">${jobViewMode==='done'?'沒有已完成的工作紀錄':'目前沒有待處理的工作 🎉'}</div>`;
+
+  return tabs + showing.map(j=>{
+    const realIdx = (cache.jobs||[]).indexOf(j);
+    const isDone = isJobDone(j);
+    const date = String(j['紀錄日期']||'').substring(0,10).replace(/-/g,'/');
+    const doneTime = j['完成日期'] ? String(j['完成日期']).substring(0,10).replace(/-/g,'/') : '';
+    const assigned = j['指派人員'] ? `<div class="li-sub" style="color:var(--accent2);font-size:0.786em">👤 ${j['指派人員']}</div>` : '';
+    const chips = (j.items||[]).map(it=>{
+      const c = JOB_TYPE_COLOR[it['工作內容']]||'#999';
+      return `<span style="font-size:0.75em;padding:2px 8px;border-radius:99px;background:${c}22;border:1px solid ${c}55;color:${c}">${it['工作內容']}</span>`;
+    }).join('');
+    const dispatchBtn = role==='admin'
+      ? `<button class="task-check-btn undone" onclick="event.stopPropagation();openDispatch('job',${realIdx})" style="background:rgba(66,165,245,.1);color:var(--accent2);border:1px solid rgba(66,165,245,.3)">派單</button>`
+      : '';
+    const doneBtn = `<button class="task-check-btn ${isDone?'done':'undone'}" onclick="event.stopPropagation();toggleJobDone(${realIdx})">${isDone?'✓ 已完成':'完成'}</button>`;
+    return `<div class="list-item${isDone?' task-done':''}" onclick="showJobDetail(${realIdx})">
+      <div class="li-body">
+        <div class="li-title">${j['客戶名稱']||'—'}</div>
+        <div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:4px">${chips}</div>
+        ${j['備註']?`<div class="li-sub" style="color:var(--yellow)">${j['備註']}</div>`:''}
+        ${assigned}
+        ${doneTime?`<div class="li-sub" style="color:var(--green2);font-size:0.786em">✓ 完成於 ${doneTime}</div>`:''}
+      </div>
+      <div class="li-right" style="gap:6px">
+        <div class="li-badge" style="font-size:0.786em">${date}</div>
+        ${j['希望時間']?`<div style="font-size:0.786em;color:var(--orange)">${j['希望時間']}</div>`:''}
+        ${dispatchBtn}
+        ${doneBtn}
+      </div>
+    </div>`;
+  }).join('');
+}
+function setJobView(m) { jobViewMode=m; renderPage(); }
+
+// ── 詳情 ────────────────────────────────────────────────────
+function showJobDetail(idx) {
+  const item = (cache.jobs||[])[idx];
+  if (!item) return;
+  const role = authState?.role;
+  document.getElementById('detail-edit-btn').style.display='';
+  document.getElementById('detail-modal-title').textContent='工作紀錄';
+  detailType='job'; detailIdx=idx;
+  const fields=[
+    ['客戶名稱', item['客戶名稱']||'—'],
+    ['紀錄日期', String(item['紀錄日期']||'').substring(0,10)],
+    ['備註',     item['備註']||''],
+    ['希望時間', item['希望時間']||''],
+    ['指派人員', item['指派人員']||''],
+  ].filter(([,v])=>v);
+  const itemsBlock = (item.items||[]).map((it,i)=>{
+    const c = JOB_TYPE_COLOR[it['工作內容']]||'#999';
+    return `<div style="background:var(--surface2);border-radius:8px;padding:9px 11px;margin-bottom:6px;border-left:3px solid ${c}">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:18px;height:18px;border-radius:50%;background:${c}22;border:1px solid ${c}55;color:${c};font-size:0.75em;font-weight:700;display:flex;align-items:center;justify-content:center">${i+1}</span>
+        <span style="font-size:0.929em;font-weight:700;color:${c}">${it['工作內容']}</span>
+      </div>
+    </div>`;
+  }).join('');
+  const dispatchBtn = role==='admin'
+    ? `<button class="btn-save" style="flex:1;background:rgba(66,165,245,.15);color:var(--accent2);border:1px solid rgba(66,165,245,.3)" onclick="closeModal('detail-modal');openDispatch('job',${idx})">👤 派單</button>`
+    : '';
+  document.getElementById('detail-modal-body').innerHTML = `
+    <div class="det-section">
+      ${fields.map(([k,v])=>`<div class="det-row"><span class="det-key">${k}</span><span class="det-val">${v}</span></div>`).join('')}
+    </div>
+    <div style="padding:12px 15px 4px">
+      <div style="font-size:0.75em;font-weight:700;color:var(--text2);letter-spacing:.5px;margin-bottom:8px">工作明細</div>
+      ${itemsBlock}
+    </div>
+    <div style="padding:14px 15px;display:flex;gap:8px">
+      <button class="btn-cancel" style="flex:1;color:var(--danger2)" onclick="confirmDelete('job',${idx})">🗑 刪除</button>
+      ${dispatchBtn}
+      <button class="btn-save" style="flex:1" onclick="toggleJobDone(${idx});closeModal('detail-modal')">${isJobDone(item)?'↩ 取消完成':'✓ 標記完成'}</button>
+    </div>`;
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+// ── 表單 ────────────────────────────────────────────────────
+function jobForm(d) {
+  const today = new Date().toISOString().split('T')[0];
+  const preDate = d?.['紀錄日期'] ? String(d['紀錄日期']).replace(/\//g,'-').substring(0,10) : today;
+  const preCustomer = d?.['客戶名稱']||'';
+  if (jobLineItems.length===0) {
+    if (d?.items?.length) {
+      jobLineItems = d.items.map(it=>({ type: it['工作內容']||'' }));
+    } else {
+      jobLineItems = [{ type: getAllJobTypes()[0]||'領貨' }];
+    }
+  }
+  const custOptions = cache.customers.map(c=>`<option value="${c['客戶名稱']}">${c['客戶名稱']}</option>`).join('');
+  return `<div class="form-body">
+    <div class="ff"><label>客戶名稱 <span class="req">*</span></label>
+      <div class="autocomplete-wrap">
+        <input class="fi" id="f-job-customer-inp" placeholder="輸入客戶名稱搜尋..."
+          value="${preCustomer}"
+          oninput="showJobCustomerSuggestions(this.value)"
+          onfocus="showJobCustomerSuggestions(this.value)"
+          onblur="setTimeout(()=>hideJobCustomerSuggestions(),200)"
+          autocomplete="off">
+        <div class="autocomplete-list" id="job-customer-suggestions" style="display:none"></div>
+      </div>
+      <div id="f-job-customer-hint" style="font-size:0.786em;color:var(--text2);margin-top:5px;padding:0 2px"></div>
+    </div>
+    <div class="ff"><label>紀錄日期 <span class="req">*</span></label>
+      <input class="fi" type="date" id="f-job-date" value="${preDate}">
+    </div>
+    <div class="ff"><label>工作明細 <span class="req">*</span></label>
+      <div id="job-line-items-wrap"></div>
+      <button type="button" onclick="jobLineItemAdd()" style="width:100%;margin-top:8px;padding:9px;background:transparent;border:1px dashed var(--border);border-radius:9px;color:var(--text3);font-size:0.857em;font-family:inherit;cursor:pointer">＋ 新增工作項目</button>
+    </div>
+    <div class="ff"><label>備註</label><input class="fi" id="f-job-note" placeholder="選填" value="${d?.['備註']||''}"></div>
+    <div class="ff"><label>希望時間</label><input class="fi" id="f-job-time" placeholder="如：下午2點、盡快..." value="${d?.['希望時間']||''}"></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn-cancel" onclick="closeModal('form-modal')">取消</button>
+    <button class="btn-save" onclick="if(!isSaving)saveJob()">儲存</button>
+  </div>`;
+}
+
+function showJobCustomerSuggestions(val) {
+  const list=document.getElementById('job-customer-suggestions'); if(!list)return;
+  const q=val.trim();
+  const matches=q?cache.customers.filter(c=>c['客戶名稱']&&c['客戶名稱'].includes(q)):cache.customers.slice(0,8);
+  if(!matches.length){list.style.display='none';return;}
+  list.innerHTML=matches.map(c=>{const n=c['客戶名稱'];const hi=q?n.replace(q,`<mark>${q}</mark>`):n;return`<div class="autocomplete-item" onmousedown="selectJobCustomer('${n.replace(/'/g,"\\'")}')"><b>${hi}</b><span style="color:var(--text2);font-size:0.857em;margin-left:8px">${c['地址']||''}</span></div>`;}).join('');
+  list.style.display='block';
+}
+function selectJobCustomer(name){const inp=document.getElementById('f-job-customer-inp');if(inp)inp.value=name;hideJobCustomerSuggestions();const c=cache.customers.find(x=>x['客戶名稱']===name);const h=document.getElementById('f-job-customer-hint');if(h&&c)h.textContent=(c['地址']?'📍 '+c['地址']:'')+(c['電話']?' · 📞 '+c['電話']:'');else if(h)h.textContent='';}
+function hideJobCustomerSuggestions(){const l=document.getElementById('job-customer-suggestions');if(l)l.style.display='none';}
+
+// ── Line items ─────────────────────────────────────────────
+function _renderJobLineItems(){
+  const wrap=document.getElementById('job-line-items-wrap');
+  if(wrap) wrap.innerHTML=jobLineItems.map((item,i)=>_jobLineItemHtml(item,i)).join('');
+}
+function _jobLineItemHtml(item,idx){
+  const opts=getAllJobTypes().map(o=>`<option value="${o}"${item.type===o?' selected':''}>${o}</option>`).join('');
+  const c=JOB_TYPE_COLOR[item.type]||'#999';
+  return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;border-left:4px solid ${c}">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="width:20px;height:20px;border-radius:50%;background:${c}22;border:1px solid ${c}55;color:${c};font-size:0.75em;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${idx+1}</span>
+      <select style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-size:0.86em;font-family:inherit;outline:none" onchange="jobLineItemType(${idx},this.value)">${opts}</select>
+      <button type="button" style="width:28px;height:28px;border-radius:7px;background:var(--surface3);border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:14px" onclick="jobLineItemRemove(${idx})">✕</button>
+    </div>
+  </div>`;
+}
+function jobLineItemAdd(){jobLineItems.push({type:getAllJobTypes()[0]||'領貨'});_renderJobLineItems();}
+function jobLineItemRemove(idx){if(jobLineItems.length<=1){showToast('至少保留一個工作項目');return;}jobLineItems.splice(idx,1);_renderJobLineItems();}
+function jobLineItemType(idx,val){if(jobLineItems[idx])jobLineItems[idx].type=val;_renderJobLineItems();}
+
+// ── 儲存 ────────────────────────────────────────────────────
+async function saveJob(){
+  const customer=document.getElementById('f-job-customer-inp')?.value.trim();
+  if(!customer){showToast('請填寫客戶名稱');return;}
+  if(!jobLineItems.length||!jobLineItems[0].type){showToast('請至少填寫一項工作內容');return;}
+  if(!cfg.url){showToast('請先設定試算表連結');return;}
+  const today=new Date();
+  const todayStr=`${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+  const rawDate=document.getElementById('f-job-date')?.value||todayStr;
+  const dateStr=rawDate.replace(/-/g,'/');
+  const note=document.getElementById('f-job-note')?.value.trim()||'';
+  const wantTime=document.getElementById('f-job-time')?.value.trim()||'';
+  const jobId=editMode?String(editId):'J'+Date.now().toString(36).toUpperCase();
+  const orig=editMode?cache.jobs.find(j=>String(j['工作ID'])===String(editId)):null;
+  const apiItems=jobLineItems.map((li,i)=>({
+    jobId,seq:i+1,
+    date:orig?.['紀錄日期']||dateStr,customer,note,wantTime,
+    done:orig?.['完成狀態']||'未完成',
+    doneDate:orig?.['完成日期']||'',
+    assignees:orig?.['指派人員']||'',
+    type:li.type,
+  }));
+  const jobObj={
+    '工作ID':jobId,'紀錄日期':orig?.['紀錄日期']||dateStr,'客戶名稱':customer,
+    '備註':note,'希望時間':wantTime,
+    '完成狀態':orig?.['完成狀態']||'未完成','完成日期':orig?.['完成日期']||'','指派人員':orig?.['指派人員']||'',
+    items:jobLineItems.map((li,i)=>({'序號':i+1,'工作內容':li.type})),
+  };
+  isSaving=true;
+  if(editMode){const idx=cache.jobs.findIndex(j=>String(j['工作ID'])===String(editId));if(idx>=0)cache.jobs[idx]=jobObj;else cache.jobs.push(jobObj);}
+  else cache.jobs.push(jobObj);
+  saveCache();
+  if(editMode) enqueue({action:'deleteJobRows',sheet:'工作紀錄',data:null,id:jobId});
+  apiItems.forEach((row,i)=>enqueue({action:'addJobRow',sheet:'工作紀錄',data:JSON.stringify(row),id:jobId+'_'+i}));
+  closeModal('form-modal'); renderPage();
+  showToast(editMode?'已更新工作紀錄':'已新增工作紀錄');
+  isSaving=false;
+}
+
+// ── 完成 ────────────────────────────────────────────────────
+function toggleJobDone(idx){
+  const j=(cache.jobs||[])[idx];
+  if(!j)return;
+  const now=new Date();
+  const dateStr=`${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+  if(isJobDone(j)){
+    j['完成狀態']='未完成';delete j['完成日期'];saveCache();
+    if(cfg.url)enqueue({action:'updateJobMeta',sheet:'工作紀錄',data:JSON.stringify({'完成狀態':'未完成','完成日期':''}),id:j['工作ID']});
+    renderPage();showToast('已取消完成');return;
+  }
+  j['完成狀態']='已完成';j['完成日期']=dateStr;saveCache();
+  if(cfg.url)enqueue({action:'updateJobMeta',sheet:'工作紀錄',data:JSON.stringify({'完成狀態':'已完成','完成日期':dateStr}),id:j['工作ID']});
+  renderPage();showToast('✓ 已標記完成');
+}
+
+// ── openAdd / openEdit 清除 jobLineItems（已在 openAdd/openEdit 重置）──
 startAutoSync();
 </script>
 </body>
