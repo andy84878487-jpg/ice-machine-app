@@ -1288,7 +1288,7 @@ async function syncAllExcept(skip) {
           if (!payMap[id]) { payMap[id] = { '收款ID': id, items: [] }; }
           const seq = Number(row['序號'])||1;
           if (seq === 1) {
-            ['結帳日期','客戶名稱','合約ID','收款情況','結帳方式','發票','統一編號','詳細內容','經手人'].forEach(f => {
+            ['結帳日期','客戶名稱','合約ID','收款情況','結帳方式','發票','統一編號','詳細內容','經手人','紀錄日期','收款人'].forEach(f => {
               if (row[f] !== undefined && row[f] !== '') payMap[id][f] = row[f];
             });
           }
@@ -2021,7 +2021,7 @@ function _taskLineItemHtml(item, idx) {
   }
 
   const addBtn = sugg.showAdd
-    ? '<button type="button" style="margin-top:6px;padding:3px 10px;background:transparent;border:1px dashed var(--border);border-radius:7px;color:var(--text3);font-size:0.75em;cursor:pointer;font-family:inherit" onclick="taskLineAddClientMachine('+idx+')">＋ 新增客人機</button>'
+    ? '<button type="button" style="margin-top:6px;padding:3px 10px;background:transparent;border:1px dashed var(--border);border-radius:7px;color:var(--text3);font-size:0.75em;cursor:pointer;font-family:inherit" onclick="taskLineAddClientMachine('+idx+')">＋ 新增機器</button>'
     : '';
 
   return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px">'
@@ -2082,11 +2082,11 @@ function taskLineAddClientMachine(idx) {
     date:  document.getElementById('f-task-date')?.value||'',
     items: [...taskLineItems],
   };
-  window._addMachineForTaskLineIdx = idx; // 儲存後回填到哪一行
+  window._addMachineForTaskLineIdx = idx;
   window._returnToTask = true;
   editMode=false; editId='';
-  document.getElementById('form-modal-title').textContent='新增機器（客人機）';
-  document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer, '類型':'客人機'});
+  document.getElementById('form-modal-title').textContent='新增機器（儲存後跳回）';
+  document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer});
 }
 
 function _renderTaskLineItems() {
@@ -2221,7 +2221,7 @@ function getLineSuggestions(type, customer) {
         old: cache.machines.filter(m => custMachines(m) && ['出租中','借用機'].some(t=>norm(t)===norm(m['類型']||''))),
       };
     case '拆回':
-      return { new: cache.machines.filter(custMachines), old: [] };
+      return { new: cache.machines.filter(custMachines), old: [], showAdd: true };
     case '搬回修理':
       // 修理的機器：客戶名下（排除出租中）
       return { new: cache.machines.filter(m => custMachines(m) && norm(m['類型']||'')!=='出租中'), old: [] };
@@ -2534,8 +2534,44 @@ function openContractTypeChooser(customer, model, serial, taskDateStr, onDone) {
           <div style="font-size:0.786em;color:var(--text2);margin-top:3px">跳至新增收款，預填裝機費</div>
         </div>
       </div>
+      <div class="status-opt" onclick="openBuyoutFromInstall('${cust}','${mod}','${ser}','${taskDateStr}')" style="padding:16px;border-radius:12px;background:var(--surface2);border:1px solid var(--border)">
+        <div class="status-opt-dot" style="background:var(--orange)"></div>
+        <div>
+          <div class="status-opt-label" style="font-size:1em;font-weight:700">買斷</div>
+          <div style="font-size:0.786em;color:var(--text2);margin-top:3px">
+            售價：${priceRow?.['售價'] ? 'NT$'+Number(priceRow['售價']).toLocaleString() : '—'}
+          </div>
+        </div>
+      </div>
     </div>`;
   document.getElementById('detail-modal').classList.add('open');
+}
+
+function openBuyoutFromInstall(customer, model, serial, taskDateStr) {
+  closeModal('detail-modal');
+  const mm = getMachineByTaskInfo(model, serial);
+  const priceRow = cache.pricelist.find(p=>p['廠牌']===mm?.['廠牌'] && p['機型']===mm?.['機型']);
+  const price = Number(priceRow?.['售價']||0);
+  const detail = [model, serial].filter(Boolean).join(' ');
+  const taskData = cache.tasks.find(t=>t['任務ID']===taskDateStr||t['紀錄日期']===taskDateStr)||{'客戶名稱':customer};
+  // 機器狀態改為「買斷」
+  if (mm) {
+    mm['_pendingStatus'] = '買 斷'; // savePayment 完成後更新
+    mm['目前客戶'] = customer;
+    saveCache();
+  }
+  selectedPayItems = ['機器買斷']; selectedHandlers=[]; payLineItems=[]; payMethod=''; editMode=false; editId='';
+  initPayLines(null, {'機器買斷': price});
+  document.getElementById('form-modal-title').textContent='新增收款（買斷）';
+  document.getElementById('form-modal-body').innerHTML=paymentForm({
+    '客戶名稱': customer,
+    '收款項目': '機器買斷',
+    '詳細內容': detail,
+  });
+  document.getElementById('form-modal').classList.add('open');
+  const next = window._afterContractDone;
+  window._afterContractDone = null;
+  if (next) next(); else confirmTaskDone();
 }
 
 function openPaymentFromInstall(customer, model, serial, taskDateStr) {
@@ -2601,14 +2637,14 @@ function markTaskDoneById(dateStr) {
   saveCache();
   enqueue({action:'updateTaskMeta', sheet:'施工紀錄', data: JSON.stringify(t), id: t['任務ID']});
 }
-function openQuickPayment(customer, taskData, preItems) {
+function openQuickPayment(customer, taskData, preItems, prefillDetail) {
   selectedPayItems = preItems||[]; selectedHandlers=[]; payLineItems=[]; payMethod=''; editMode=false; editId='';
   if (preItems) initPayLines(null);
   document.getElementById('form-modal-title').textContent='新增收款';
   document.getElementById('form-modal-body').innerHTML=paymentForm({
     '客戶名稱': customer,
     '收款項目': (preItems||[]).join('、'),
-    '詳細內容': [taskData?.['機型'],taskData?.['機號']].filter(Boolean).join(' '),
+    '詳細內容': prefillDetail || [taskData?.['機型'],taskData?.['機號']].filter(Boolean).join(' '),
   });
   document.getElementById('form-modal').classList.add('open');
 }
@@ -2638,7 +2674,7 @@ function _handleTeardown(customer, model, serial, taskData, onDone) {
   const nb = btns.cloneNode(false);
   nb.innerHTML = `
     <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_td_btn1">退租</button>
-    <button style="flex:1;padding:12px;background:var(--accent-bg);border:1px solid var(--accent-glow);border-radius:10px;color:var(--accent2);font-size:0.929em;font-weight:700;font-family:inherit;cursor:pointer" id="_td_btn2">估回</button>
+    <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_td_btn2">估回</button>
     <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_td_btn3">取消</button>`;
   btns.parentNode.replaceChild(nb, btns);
   nb.querySelector('#_td_btn1').onclick = ()=>{
@@ -2651,8 +2687,8 @@ function _handleTeardown(customer, model, serial, taskData, onDone) {
     const b2 = d2.querySelector('div[style*="display:flex"]');
     const nb2 = b2.cloneNode(false);
     nb2.innerHTML = `
-      <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:0.929em;font-family:inherit;cursor:pointer" id="_td2_1">待出租</button>
-      <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:0.929em;font-family:inherit;cursor:pointer" id="_td2_2">◎進廠</button>
+      <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_td2_1">待出租</button>
+      <button style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.929em;font-family:inherit;cursor:pointer" id="_td2_2">◎進廠</button>
       <button style="flex:1;padding:12px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text3);font-size:0.929em;font-family:inherit;cursor:pointer" id="_td2_3">取消</button>`;
     b2.parentNode.replaceChild(nb2, b2);
     const doStatus = st => {
@@ -2681,7 +2717,8 @@ function _handleTeardown(customer, model, serial, taskData, onDone) {
     } else {
       const m = getMachineByTaskInfo(model, serial);
       if (m) { m['類型']='◎進廠'; m['目前客戶']=''; saveCache(); enqueue({action:'update',sheet:'machines',data:m,id:m['機號']}); }
-      openQuickPayment(customer, taskData, ['估回']);
+      const estimateDetail = [model, serial].filter(Boolean).join(' ');
+      openQuickPayment(customer, taskData, ['估回'], estimateDetail);
       if (onDone) onDone(); else confirmTaskDone();
     }
   };
@@ -5654,7 +5691,7 @@ function delMachineChip(groupId,field,val,customKey){
 
 
 function openAdd() {
-  editMode = false; editId = ''; payMethod = ''; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = [];
+  editMode = false; editId = ''; payMethod = ''; payStatus = '待收'; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = [];
   const titles = ['新增客戶','新增機器','新增施工紀錄','新增收款','新增合約','新增合約','','新增維修紀錄','新增報價','','','新增職員','新增工作紀錄'];
   document.getElementById('form-modal-title').textContent = titles[currentTab]||'新增';
   const body = document.getElementById('form-modal-body');
@@ -5842,11 +5879,19 @@ function machineForm(d) {
 
 function onBrandChange(val) {
   document.getElementById('f-brand-new').style.display = val === '__new__' ? 'block' : 'none';
-  if (val === '__new__' || !val) return;
-  const models = getModelsForBrand(val);
   const modelSel = document.getElementById('f-model');
+  const modelCustom = document.getElementById('f-model-custom');
+  if (val === '__new__') {
+    // 新增廠牌時，機型也改成手動輸入
+    modelSel.innerHTML = '<option value="__custom__">手動輸入</option>';
+    modelSel.value = '__custom__';
+    if (modelCustom) modelCustom.style.display = 'block';
+    return;
+  }
+  if (!val) return;
+  const models = getModelsForBrand(val);
   modelSel.innerHTML = `<option value="">請選擇機型</option>${models.length ? sel(models, '', '<option value="__custom__">其他（手動輸入）</option>') : '<option value="__custom__">手動輸入</option>'}`;
-  document.getElementById('f-model-custom').style.display = 'none';
+  if (modelCustom) modelCustom.style.display = 'none';
 }
 
 function onModelSelect(val) {
@@ -5877,7 +5922,8 @@ function onCustomOpt(sel, divId) {
 
 // ---- Payment Form ----
 let payInvoice = '不開發票';
-let payLineItems = []; // [{name, amount, taxable, detail}]
+let payStatus  = '待收';   // '待收' | '已收'
+let payLineItems = [];
 
 function initPayLines(d, prefillAmounts) {
   // prefillAmounts: {項目名: 金額} 例如 {租金: 3000}
@@ -5954,6 +6000,7 @@ function paymentForm(d) {
     selectedPayItems = d['收款項目'].split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
   }
   payInvoice = d?.['發票']||'不開發票';
+  payStatus  = d?.['收款情況']||'待收';
   const preCustomer = d?.['客戶名稱']||'';
   const allPayItems = getPayItems();
   // 合併臨時項目（不寫入選項庫，只本次顯示）
@@ -6021,11 +6068,8 @@ function paymentForm(d) {
         <input class="fi" id="f-tax-id-pay" placeholder="統一編號（公司戶）" value="${d?.['統一編號']||''}">
       </div>
     </div>
-    <div class="ff"><label>結帳方式<span class="req">*</span></label>
-      <div class="pay-m-row">${methods.map(m=>`<button class="pay-m-btn${payMethod===m?' sel':''}" onclick="selMethod('${m}')">${m}</button>`).join('')}</div>
-    </div>
-    <div class="ff"><label>結帳日期</label><input class="fi" id="f-date" type="date" value="${d?.['結帳日期']?d['結帳日期'].replace(/\//g,'-'):new Date().toISOString().split('T')[0]}"></div>
-    <div class="ff"><label>經手人<span class="req">*</span>（可複選）</label>
+    <div class="ff"><label>紀錄日期</label><input class="fi" id="f-record-date" type="date" value="${d?.['紀錄日期']?String(d['紀錄日期']).replace(/\//g,'-').substring(0,10):new Date().toISOString().split('T')[0]}"></div>
+    <div class="ff"><label>經收人<span class="req">*</span>（可複選）</label>
       <div id="handler-wrap" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px">
         ${allHandlers.map(h=>{
           const isMe=h===loginName, isSel=selectedHandlers.includes(h);
@@ -6033,10 +6077,27 @@ function paymentForm(d) {
         }).join('')}
       </div>
       <div style="display:flex;gap:8px">
-        <input class="fi" id="f-handler-txt" placeholder="新增經手人..." style="flex:1">
+        <input class="fi" id="f-handler-txt" placeholder="新增經收人..." style="flex:1">
         <button type="button" onclick="addCustomHandler()" style="padding:10px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;font-size:0.929em;white-space:nowrap">＋ 新增</button>
       </div>
-      <div style="font-size:0.714em;color:var(--text3);margin-top:5px">長按可刪除自訂經手人</div>
+      <div style="font-size:0.714em;color:var(--text3);margin-top:5px">長按可刪除自訂經收人</div>
+    </div>
+    <div class="ff"><label>收款情況<span class="req">*</span></label>
+      <div style="display:flex;gap:8px">
+        <button type="button" id="pay-status-unpaid" class="pay-m-btn${(!d?.['收款情況']||d['收款情況']==='待收')?' sel':''}"
+          onclick="selectPayStatus('待收')"
+          style="${(!d?.['收款情況']||d['收款情況']==='待收')?'background:rgba(229,57,53,.12);border-color:rgba(229,57,53,.45);color:var(--danger2)':''}">待收</button>
+        <button type="button" id="pay-status-paid" class="pay-m-btn${d?.['收款情況']==='已收'?' sel':''}"
+          onclick="selectPayStatus('已收')"
+          style="${d?.['收款情況']==='已收'?'background:rgba(67,160,71,.12);border-color:rgba(67,160,71,.45);color:var(--green2)':''}">已收</button>
+      </div>
+    </div>
+    <div id="paid-extra-fields" style="${d?.['收款情況']==='已收'?'':'display:none'}">
+      <div class="ff"><label>結帳方式</label>
+        <div class="pay-m-row">${methods.map(m=>`<button class="pay-m-btn${payMethod===m?' sel':''}" onclick="selMethod('${m}')">${m}</button>`).join('')}</div>
+      </div>
+      <div class="ff"><label>結帳日期</label><input class="fi" id="f-date" type="date" value="${d?.['結帳日期']?d['結帳日期'].replace(/\//g,'-'):new Date().toISOString().split('T')[0]}"></div>
+      <div class="ff"><label>收款人</label><input class="fi" id="f-collector" placeholder="選填" value="${d?.['收款人']||''}"></div>
     </div>
   </div>
   <div class="form-actions">
@@ -6105,6 +6166,26 @@ function contractForm(d, prefillMachine, prefillCustomer) {
   </div>`;
 }
 
+function selectPayStatus(s) {
+  payStatus = s;
+  const unpaid = document.getElementById('pay-status-unpaid');
+  const paid   = document.getElementById('pay-status-paid');
+  if (unpaid) {
+    unpaid.classList.toggle('sel', s==='待收');
+    unpaid.style.background = s==='待收' ? 'rgba(229,57,53,.12)' : '';
+    unpaid.style.borderColor = s==='待收' ? 'rgba(229,57,53,.45)' : '';
+    unpaid.style.color = s==='待收' ? 'var(--danger2)' : '';
+  }
+  if (paid) {
+    paid.classList.toggle('sel', s==='已收');
+    paid.style.background = s==='已收' ? 'rgba(67,160,71,.12)' : '';
+    paid.style.borderColor = s==='已收' ? 'rgba(67,160,71,.45)' : '';
+    paid.style.color = s==='已收' ? 'var(--green2)' : '';
+  }
+  // 已收時才顯示 結帳方式/結帳日期/收款人
+  const extra = document.getElementById('paid-extra-fields');
+  if (extra) extra.style.display = s==='已收' ? '' : 'none';
+}
 function selMethod(m) {
   payMethod = m;
   document.querySelectorAll('.pay-m-btn:not(.pay-inv-btn)').forEach(b => b.classList.toggle('sel', b.textContent.trim() === m));
@@ -6617,6 +6698,13 @@ async function saveCustomer() {
   const note  = document.getElementById('f-note')?.value.trim()||'';
   const wasEdit = editMode;
   const oldName = editId;
+  // 提前備份 flag，避免 doSave→renderPage 清掉
+  const returnToTask  = !!window._returnToTask;
+  const taskBackup    = window._taskFormBackup ? {...window._taskFormBackup, items:[...(window._taskFormBackup.items||[])]} : {};
+  const addMachineIdx = window._addMachineForTaskLineIdx;
+  window._returnToTask = false;
+  window._addMachineForTaskLineIdx = null;
+
   await doSave('customer', {'客戶名稱':name,'電話':phone,'地址':addr,'統一編號':taxId,'負責人':owner,'負責人 資訊':ownerInfo,'客戶備註':note});
   if (wasEdit && oldName) {
     cache.tasks.forEach(t => {
@@ -6634,28 +6722,24 @@ async function saveCustomer() {
     saveCache();
   }
   // 若從新增施工紀錄跳過來，儲存後跳回
-  if (window._returnToTask) {
-    window._returnToTask = false;
-    const bk = window._taskFormBackup||{};
-    taskLineItems = bk.items||[];
-    // 若是從 +新增客人機 過來，把機型機號填入對應行
-    const lineIdx = window._addMachineForTaskLineIdx;
-    if (lineIdx !== undefined && lineIdx !== null && taskLineItems[lineIdx]) {
-      taskLineItems[lineIdx].model  = data['機型']||'';
-      taskLineItems[lineIdx].serial = data['機號']||'';
-      window._addMachineForTaskLineIdx = null;
+  if (returnToTask) {
+    taskLineItems = taskBackup.items||[];
+    if (addMachineIdx !== undefined && addMachineIdx !== null && taskLineItems[addMachineIdx]) {
+      taskLineItems[addMachineIdx].model  = '';
+      taskLineItems[addMachineIdx].serial = '';
     }
     setTimeout(()=>{
       editMode=false; editId='';
       document.getElementById('form-modal-title').textContent='新增施工紀錄';
       document.getElementById('form-modal-body').innerHTML=taskForm({
-        '客戶名稱': bk.customer||name,
-        '備註': bk.note||'', '希望施工時間': bk.time||'',
-        '紀錄日期': bk.date||'',
+        '客戶名稱': taskBackup.customer||name,
+        '備註': taskBackup.note||'', '希望施工時間': taskBackup.time||'',
+        '紀錄日期': taskBackup.date||'',
       });
       setTimeout(_renderTaskLineItems, 50);
       document.getElementById('form-modal').classList.add('open');
     },200);
+    return;
   }
   // 移機完成後的回呼（更新地址後詢問新增收款）
   if (window._afterCustomerEdit) {
@@ -6695,7 +6779,36 @@ async function saveMachine() {
   const arrivedEl = document.getElementById('f-arrived-customer');
   const arrivedVal = arrivedEl?.value.trim() || '';
   if (arrivedVal) data['目前客戶'] = arrivedVal;
+
+  // 提前備份 flag，避免 doSave→renderPage 清掉
+  const returnToTask  = !!window._returnToTask;
+  const taskBackup    = window._taskFormBackup ? {...window._taskFormBackup, items:[...(window._taskFormBackup.items||[])]} : {};
+  const addMachineIdx = window._addMachineForTaskLineIdx;
+  if (returnToTask) { window._returnToTask = false; window._addMachineForTaskLineIdx = null; }
+
   await doSave('machine', data);
+
+  // 若從施工表單「＋新增機器」跳過來，儲存後跳回施工表單
+  if (returnToTask) {
+    taskLineItems = taskBackup.items||[];
+    if (addMachineIdx !== undefined && addMachineIdx !== null && taskLineItems[addMachineIdx]) {
+      taskLineItems[addMachineIdx].model  = data['機型']||'';
+      taskLineItems[addMachineIdx].serial = data['機號']||'';
+    }
+    const customer = taskBackup.customer||'';
+    setTimeout(()=>{
+      editMode=false; editId='';
+      document.getElementById('form-modal-title').textContent='新增施工紀錄';
+      document.getElementById('form-modal-body').innerHTML=taskForm({
+        '客戶名稱': customer,
+        '備註': taskBackup.note||'', '希望施工時間': taskBackup.time||'',
+        '紀錄日期': taskBackup.date||'',
+      });
+      setTimeout(_renderTaskLineItems, 50);
+      document.getElementById('form-modal').classList.add('open');
+    },200);
+    return;
+  }
 
   // 新增機器後連動施工紀錄
   if (window._addMachineForTask) {
@@ -6766,21 +6879,23 @@ function getAllHandlers() {
 async function savePayment() {
   const customer = document.getElementById('f-pay-customer-inp')?.value.trim() || document.getElementById('f-customer')?.value;
   if (!customer) { showToast('請填寫客戶名稱'); return; }
-  if (!payMethod) { showToast('請選擇結帳方式'); return; }
+  if (payStatus==='已收' && !payMethod) { showToast('請選擇結帳方式'); return; }
   const items = selectedPayItems.length ? selectedPayItems.join('、') : '';
   if (!items) { showToast('請選擇收款項目'); return; }
   if (!payInvoice) { showToast('請選擇發票選項'); return; }
   const handler = selectedHandlers.join('、');
-  if (!handler) { showToast('請選擇經手人'); return; }
+  if (!handler) { showToast('請選擇經收人'); return; }
   updatePayTotal();
   const {total} = calcPayTotal();
   const finalAmount = total || parseInt(document.getElementById('f-amount').value)||0;
-  const invoiceNo = document.getElementById('f-invoice-no')?.value.trim()||'';
-  const taxIdPay  = document.getElementById('f-tax-id-pay')?.value.trim()||'';
-  const detail    = document.getElementById('f-detail')?.value.trim()||'';
-  const dateVal   = document.getElementById('f-date').value.replace(/-/g,'/');
-  const pid       = document.getElementById('f-pid').value || ('P'+Date.now().toString(36).toUpperCase());
-  const cid       = document.getElementById('f-cid').value||'';
+  const invoiceNo  = document.getElementById('f-invoice-no')?.value.trim()||'';
+  const taxIdPay   = document.getElementById('f-tax-id-pay')?.value.trim()||'';
+  const detail     = document.getElementById('f-detail')?.value.trim()||'';
+  const recordDate = (document.getElementById('f-record-date')?.value||new Date().toISOString().split('T')[0]).replace(/-/g,'/');
+  const dateVal    = payStatus==='已收' ? (document.getElementById('f-date')?.value||'').replace(/-/g,'/') : '';
+  const collector  = payStatus==='已收' ? (document.getElementById('f-collector')?.value.trim()||'') : '';
+  const pid        = document.getElementById('f-pid').value || ('P'+Date.now().toString(36).toUpperCase());
+  const cid        = document.getElementById('f-cid').value||'';
 
   // 決定要寫入的行
   const lines = payLineItems.length ? payLineItems : [{ name: items, amount: finalAmount, taxable: true, detail: '' }];
@@ -6790,13 +6905,15 @@ async function savePayment() {
     '收款ID': pid, '合約ID': cid, '客戶名稱': customer,
     '收款項目': lines.map(l=>l.name).join('、'),
     '金額': lines.reduce((s,l)=>s+(Number(l.amount)||0),0),
-    '收款情況': '待收',
+    '紀錄日期': recordDate,
+    '收款情況': payStatus||'待收',
     '詳細內容': detail,
     '發票': payInvoice+(invoiceNo?' '+invoiceNo:''),
     '統一編號': taxIdPay,
-    '結帳方式': payMethod,
+    '結帳方式': dateVal ? payMethod : '',
     '結帳日期': dateVal,
     '經手人': handler,
+    '收款人': collector,
     items: lines.map((l,i)=>({'序號':i+1,'收款項目':l.name,'金額':Number(l.amount)||0,'細項說明':l.detail||''})),
   };
 
@@ -6813,11 +6930,12 @@ async function savePayment() {
   // 逐行 enqueue
   lines.forEach((l,i)=>{
     const row = {
-      pid, seq:i+1, contractId:cid, customer, date:dateVal,
+      pid, seq:i+1, contractId:cid, customer, recordDate, date:dateVal,
       item:l.name, amount:Number(l.amount)||0, note:l.detail||'',
-      status:'待收', method:payMethod,
+      status:payStatus||'待收', method:payStatus==='已收'?payMethod:'',
       invoice:payInvoice+(invoiceNo?' '+invoiceNo:''), taxId:taxIdPay,
       detail:(i===0?detail:''), handler:(i===0?handler:''),
+      collector:(i===0?collector:''),
     };
     enqueue({action:'addPaymentRow',sheet:'payments',data:JSON.stringify(row),id:pid+'_'+i});
   });
