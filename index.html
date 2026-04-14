@@ -7506,6 +7506,13 @@ function toggleJobDone(idx){
 
 // ── openAdd / openEdit 清除 jobLineItems（已在 openAdd/openEdit 重置）──
 startAutoSync();
+
+// ── Service Worker 註冊（PWA 離線支援）──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/ice-machine-app/sw.js')
+    .then(() => console.log('SW 已註冊'))
+    .catch(e => console.warn('SW 註冊失敗：', e));
+}
 </script>
 </body>
 </html>
