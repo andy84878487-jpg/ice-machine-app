@@ -468,7 +468,7 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
         客戶資料
       </div>
-      <div class="sidemenu-item" onclick="closeSideMenu();showMachineListPage()">
+      <div class="sidemenu-item" onclick="closeSideMenu();switchTab(1)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
         機器清單
       </div>
@@ -978,7 +978,7 @@ function updateSideMenuForRole(role, allowedTabs) {
   // 依 allowedTabs 控制各側選單項目顯示
   // 各選單項透過 onclick 內的 switchTab(N) 判斷
   const menuTabMap = [
-    {tab:1, selector:'[onclick*="showMachineListPage"]'},
+    {tab:1, selector:'[onclick*="switchTab(1)"]'},
     {tab:5, selector:'[onclick*="switchTab(5)"]'},
     {tab:2, selector:'[onclick*="switchTab(2)"]'},
     {tab:7, selector:'[onclick*="switchTab(7)"]'},
@@ -1533,9 +1533,9 @@ function onSearch(v) {
     case 7: html = renderRepairs(); break;
     case 8: html = renderPriceList(); break;
     case 9: html = renderOverview(); break;
-    default: html = renderSettings(); break;
     case 10: html = renderStaffList(); break;
     case 11: html = renderJobs(); break;
+    default: html = renderSettings(); break;
   }
   // 只替換 search-bar 以下的內容
   const sb = c.querySelector('.search-bar');
@@ -4646,7 +4646,7 @@ function renderOverview() {
         `<div style="font-size:0.786em;color:var(--text3)">材料/維修報價缺貨</div>`) : ''}
     </div>
 
-    <div onclick="switchTab(3)" (3)" style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:14px 16px;cursor:pointer;border-left:4px solid var(--green2)"
+    <div onclick="switchTab(3)" style="background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:14px 16px;cursor:pointer;border-left:4px solid var(--green2)"
       onpointerdown="this.style.background='var(--surface2)'" onpointerup="this.style.background='var(--surface)'" onpointercancel="this.style.background='var(--surface)'">
       <div style="font-size:0.786em;font-weight:700;color:var(--text2);margin-bottom:8px">💵 本月收入（${new Date().getMonth()+1}月）</div>
       <div style="display:flex;gap:0">
@@ -5692,6 +5692,7 @@ function delMachineChip(groupId,field,val,customKey){
 
 function openAdd() {
   editMode = false; editId = ''; payMethod = ''; payStatus = '待收'; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = [];
+  _repairStatus = '待維修'; _repairKind = '';
   const titles = ['新增客戶','新增機器','新增施工紀錄','新增收款','新增合約','新增合約','','新增維修紀錄','新增報價','','','新增職員','新增工作紀錄'];
   document.getElementById('form-modal-title').textContent = titles[currentTab]||'新增';
   const body = document.getElementById('form-modal-body');
@@ -5713,6 +5714,7 @@ function openAdd() {
 
 function openEditItem(type, idx) {
   editMode = true; isSaving = false; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = [];
+  _repairStatus = '待維修'; _repairKind = '';
   // staff 由 editCurrent 直接處理；這裡作為保底
   if (type === 'staff') {
     const item = (cache.staff||[])[idx];
@@ -6882,7 +6884,6 @@ async function savePayment() {
   if (payStatus==='已收' && !payMethod) { showToast('請選擇結帳方式'); return; }
   const items = selectedPayItems.length ? selectedPayItems.join('、') : '';
   if (!items) { showToast('請選擇收款項目'); return; }
-  if (!payInvoice) { showToast('請選擇發票選項'); return; }
   const handler = selectedHandlers.join('、');
   if (!handler) { showToast('請選擇經收人'); return; }
   updatePayTotal();
