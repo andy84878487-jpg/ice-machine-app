@@ -7515,12 +7515,41 @@ if ('serviceWorker' in navigator) {
         const newSW = reg.installing;
         newSW.addEventListener('statechange', () => {
           if (newSW.state === 'activated') {
-            window.location.reload();
+            showUpdateBanner();
           }
         });
       });
     })
     .catch(e => console.warn('SW 註冊失敗：', e));
+}
+
+function showUpdateBanner() {
+  // 避免重複顯示
+  if (document.getElementById('update-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'update-banner';
+  banner.style.cssText = `
+    position:fixed;bottom:calc(var(--nav-h) + 16px);left:50%;
+    transform:translateX(-50%);
+    background:#1565c0;color:#fff;
+    padding:12px 20px;border-radius:12px;
+    font-size:0.857em;font-family:inherit;
+    z-index:9999;display:flex;align-items:center;gap:12px;
+    box-shadow:0 4px 20px rgba(0,0,0,.4);white-space:nowrap;
+  `;
+  banner.innerHTML = `
+    <span>🆕 有新版本可用</span>
+    <button onclick="window.location.reload()" style="
+      background:#fff;color:#1565c0;border:none;
+      border-radius:8px;padding:6px 14px;
+      font-size:1em;font-weight:700;cursor:pointer;font-family:inherit;
+    ">立即更新</button>
+    <button onclick="this.parentElement.remove()" style="
+      background:none;border:none;color:rgba(255,255,255,.7);
+      font-size:1.2em;cursor:pointer;padding:0 4px;
+    ">✕</button>
+  `;
+  document.body.appendChild(banner);
 }
 </script>
 </body>
