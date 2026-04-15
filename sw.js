@@ -1,4 +1,4 @@
-const CACHE = 'ice-machine-v3';
+const CACHE = 'ice-machine-v4';
 const ASSETS = [
   '/ice-machine-app/',
   '/ice-machine-app/index.html',
