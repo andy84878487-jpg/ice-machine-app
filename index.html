@@ -2561,7 +2561,7 @@ function openBuyoutFromInstall(customer, model, serial, taskDateStr) {
     mm['目前客戶'] = customer;
     saveCache();
   }
-  selectedPayItems = ['機器買斷']; selectedHandlers=[]; payLineItems=[]; payMethod=''; editMode=false; editId='';
+  selectedPayItems = ['機器買斷']; selectedHandlers=[]; payLineItems=[]; payNewLines=[]; payMethod=''; editMode=false; editId='';
   initPayLines(null, {'機器買斷': price});
   document.getElementById('form-modal-title').textContent='新增收款（買斷）';
   document.getElementById('form-modal-body').innerHTML=paymentForm({
@@ -2639,7 +2639,7 @@ function markTaskDoneById(dateStr) {
   enqueue({action:'updateTaskMeta', sheet:'施工紀錄', data: JSON.stringify(t), id: t['任務ID']});
 }
 function openQuickPayment(customer, taskData, preItems, prefillDetail) {
-  selectedPayItems = preItems||[]; selectedHandlers=[]; payLineItems=[]; payMethod=''; editMode=false; editId='';
+  selectedPayItems = preItems||[]; selectedHandlers=[]; payLineItems=[]; payNewLines=[]; payMethod=''; editMode=false; editId='';
   if (preItems) initPayLines(null);
   document.getElementById('form-modal-title').textContent='新增收款';
   document.getElementById('form-modal-body').innerHTML=paymentForm({
@@ -3620,7 +3620,7 @@ function toggleRepairDone(idx) {
       });
 
       // 開啟收款表單
-      selectedPayItems = [...preItems]; selectedHandlers=[]; payLineItems=[]; payMethod=''; editMode=false; editId='';
+      selectedPayItems = [...preItems]; selectedHandlers=[]; payLineItems=[]; payNewLines=[]; payMethod=''; editMode=false; editId='';
       payInvoice='';
       initPayLines(null, priceMap);
       document.getElementById('form-modal-title').textContent='新增收款';
@@ -5223,7 +5223,7 @@ function editCurrent() {
     const item = (sources[priceTab]||[])[idx];
     if (!item) return;
     editMode = true;
-    editId = priceTab===0 ? (item['廠牌']+'|'+item['機型']) : (item['報價ID']||'');
+    editId = priceTab===0 ? (item['廠牌']+'|'+item['機型']) : (item['報價ID']||item['名稱']||Object.values(item).find(v=>v&&typeof v==='string')||'');
     const titles = ['編輯製冰機報價','編輯材料報價','編輯維修報價'];
     document.getElementById('form-modal-title').textContent = titles[priceTab];
     document.getElementById('form-modal-body').innerHTML = pricelistEntryForm(item);
@@ -5692,9 +5692,9 @@ function delMachineChip(groupId,field,val,customKey){
 
 
 function openAdd() {
-  editMode = false; editId = ''; payMethod = ''; payStatus = '待收'; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = [];
+  editMode = false; editId = ''; payMethod = ''; payStatus = '待收'; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = []; payNewLines = [];
   _repairStatus = '待維修'; _repairKind = '';
-  const titles = ['新增客戶','新增機器','新增施工紀錄','新增收款','新增合約','新增合約','','新增維修紀錄','新增報價','','','新增職員','新增工作紀錄'];
+  const titles = ['新增客戶','新增機器','新增施工紀錄','新增收款','新增合約','新增合約','','新增維修紀錄','新增報價','','新增職員','新增工作紀錄'];
   document.getElementById('form-modal-title').textContent = titles[currentTab]||'新增';
   const body = document.getElementById('form-modal-body');
   switch(currentTab) {
@@ -5714,7 +5714,7 @@ function openAdd() {
 }
 
 function openEditItem(type, idx) {
-  editMode = true; isSaving = false; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = [];
+  editMode = true; isSaving = false; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = []; payNewLines = [];
   _repairStatus = '待維修'; _repairKind = '';
   // staff 由 editCurrent 直接處理；這裡作為保底
   if (type === 'staff') {
@@ -5924,97 +5924,211 @@ function onCustomOpt(sel, divId) {
 }
 
 // ---- Payment Form ----
-let payInvoice = '不開發票';
-let payStatus  = '待收';   // '待收' | '已收'
-let payLineItems = [];
+let payInvoice   = '不開發票';
+let payStatus    = '待收';
+let payLineItems = []; // 保留舊版相容（savePayment 仍讀取）
+let payNewLines  = []; // 新版行系統 [{id,catKey,name,note,qty,unitPrice,taxable}]
+let _payLineUid  = 1;
 
-function initPayLines(d, prefillAmounts) {
-  // prefillAmounts: {項目名: 金額} 例如 {租金: 3000}
-  if (d?.['收款明細']) {
-    try { payLineItems = JSON.parse(d['收款明細']); return; } catch(e) {}
+const PAY_CATEGORIES = [
+  { key:'rent',    label:'租賃',  fixed:['租金','押金'] },
+  { key:'install', label:'施工',  fixed:['裝機費','買斷','估回','移機費'] },
+  { key:'repair',  label:'維修',  dynamic:true },
+  { key:'goods',   label:'物品',  dynamic:true },
+  { key:'other',   label:'其他',  fixed:[] },
+];
+
+function getCatPayItems(catKey) {
+  if (catKey==='repair') {
+    const src = cache.repairPricelist||[];
+    const k = src.length ? (['名稱','維修項目','項目'].find(k=>src[0][k]!==undefined)||Object.keys(src[0])[0]||'') : '';
+    return [...new Set(src.map(r=>String(r[k]||'')).filter(Boolean))];
   }
-  payLineItems = selectedPayItems.map(name => ({
-    name,
-    amount: (prefillAmounts && prefillAmounts[name]) || 0,
-    taxable: !['押金'].includes(name),
-    detail: ''
-  }));
+  if (catKey==='goods') {
+    const src = cache.materials||[];
+    const k = src.length ? (['名稱','材料','項目'].find(k=>src[0][k]!==undefined)||Object.keys(src[0])[0]||'') : '';
+    return [...new Set(src.map(r=>String(r[k]||'')).filter(Boolean))];
+  }
+  return PAY_CATEGORIES.find(c=>c.key===catKey)?.fixed||[];
 }
 
-function calcPayTotal() {
-  let subtotal = 0, tax = 0;
-  payLineItems.forEach(item => {
-    const amt = parseFloat(item.amount)||0;
-    subtotal += amt;
-    if (item.taxable) tax += Math.round(amt * 0.05);
-  });
-  return { subtotal, tax, total: subtotal + tax };
+function payLineCalc(line) {
+  const raw = (Number(line.qty)||1) * (Number(line.unitPrice)||0);
+  const tax = line.taxable ? Math.round(raw*0.05) : 0;
+  return {raw, tax, total:raw+tax};
 }
 
-function updatePayTotal() {
-  payLineItems.forEach((item, i) => {
-    const amtEl = document.getElementById('pay-line-amt-'+i);
-    const taxEl = document.getElementById('pay-line-tax-'+i);
-    const detEl = document.getElementById('pay-line-det-'+i);
-    if (amtEl) item.amount = parseFloat(amtEl.value)||0;
-    if (taxEl) item.taxable = taxEl.checked;
-    if (detEl) item.detail = detEl.value;
-  });
-  const {subtotal, tax, total} = calcPayTotal();
-  const s = document.getElementById('pay-subtotal');
-  const t = document.getElementById('pay-tax');
-  const tot = document.getElementById('pay-total');
-  if (s) s.textContent = 'NT$' + subtotal.toLocaleString();
-  if (t) t.textContent = 'NT$' + tax.toLocaleString();
-  if (tot) tot.textContent = 'NT$' + total.toLocaleString();
+function addPayNewLine(catKey) {
+  payNewLines.push({id:_payLineUid++, catKey, name:'', note:'', qty:1, unitPrice:0, taxable:false});
+  _renderPayNewLines();
+}
+
+function removePayNewLine(id) {
+  payNewLines = payNewLines.filter(l=>l.id!==id);
+  _renderPayNewLines();
+}
+
+function updatePayNewField(id, field, val) {
+  const line = payNewLines.find(l=>l.id===id);
+  if (!line) return;
+  line[field] = val;
+  if (field==='taxable') _autoInvoice();
+  _updatePayNewTotals();
+}
+
+function _autoInvoice() {
+  const anyTax = payNewLines.some(l=>l.taxable);
+  const target  = anyTax ? '開發票' : '不開發票';
+  if (payInvoice !== target) setInvoice(target);
+}
+
+function _updatePayNewTotals() {
+  const taxTotal   = payNewLines.reduce((s,l)=>s+payLineCalc(l).tax,0);
+  const grandTotal = payNewLines.reduce((s,l)=>s+payLineCalc(l).total,0);
+  // 更新隱藏金額欄（savePayment 讀取）
   const fAmt = document.getElementById('f-amount');
-  if (fAmt) fAmt.value = total;
+  if (fAmt) fAmt.value = grandTotal;
+  // 更新稅額/合計顯示
+  const taxEl = document.getElementById('pay-new-tax');
+  const totEl = document.getElementById('pay-new-total');
+  if (taxEl) { taxEl.style.display = taxTotal>0 ? '' : 'none'; taxEl.querySelector('span:last-child').textContent = 'NT$'+taxTotal.toLocaleString(); }
+  if (totEl) totEl.querySelector('span:last-child').textContent = 'NT$'+grandTotal.toLocaleString();
+  // 更新各行小計
+  payNewLines.forEach(line=>{
+    const {raw,tax,total} = payLineCalc(line);
+    const el = document.getElementById('pay-line-sub-'+line.id);
+    if (!el) return;
+    if (line.taxable) {
+      el.style.display='flex';
+      el.innerHTML = `<span style="color:var(--text3);font-size:0.786em">NT$${raw.toLocaleString()} + 稅 NT$${tax.toLocaleString()}</span><span style="font-weight:700;color:var(--green2);font-size:0.857em">小計 NT$${total.toLocaleString()}</span>`;
+    } else {
+      el.style.display='none';
+    }
+  });
 }
 
-function renderPayLines() {
-  return payLineItems.map((item, i) => `
-    <div class="pay-line-item" style="flex-wrap:wrap;gap:6px">
-      <span class="pay-line-name">${item.name}</span>
-      <div class="amt-row pay-line-amt">
-        <span class="amt-pre" style="font-size:0.786em">NT$</span>
-        <input class="amt-inp" type="number" id="pay-line-amt-${i}" value="${item.amount||''}" min="0" placeholder="0" oninput="updatePayTotal()" style="font-size:0.929em">
+function showPayLineAc(id) {
+  const el  = document.getElementById('pay-line-ac-'+id);
+  const inp = document.getElementById('pay-line-name-'+id);
+  if (!el||!inp) return;
+  const q = inp.value.trim();
+  const line = payNewLines.find(l=>l.id===id); if(!line) return;
+  const items = getCatPayItems(line.catKey);
+  const filtered = q ? items.filter(o=>o.includes(q)) : items;
+  if (!filtered.length) { el.style.display='none'; return; }
+  el.innerHTML = filtered.map(o=>`<div class="autocomplete-item" onmousedown="updatePayNewField(${id},'name','${o.replace(/'/g,"\\'") }');document.getElementById('pay-line-name-${id}').value='${o.replace(/'/g,"\\'")}';hidePayLineAc(${id})">${o}</div>`).join('');
+  el.style.display='block';
+}
+function hidePayLineAc(id) { const el=document.getElementById('pay-line-ac-'+id); if(el) el.style.display='none'; }
+
+function _renderPayNewLines() {
+  const wrap = document.getElementById('pay-new-lines-wrap'); if (!wrap) return;
+  if (!payNewLines.length) { wrap.innerHTML='<div style="padding:16px 0;text-align:center;color:var(--text3);font-size:0.857em">點上方分類新增收款項目</div>'; _updatePayNewTotals(); return; }
+  const catOrder = PAY_CATEGORIES.map(c=>c.key);
+  const sorted = [...payNewLines].sort((a,b)=>{ const ai=catOrder.indexOf(a.catKey),bi=catOrder.indexOf(b.catKey); return ai!==bi?ai-bi:a.id-b.id; });
+  let lastCat=null;
+  wrap.innerHTML = sorted.map(line=>{
+    const cat = PAY_CATEGORIES.find(c=>c.key===line.catKey);
+    const {raw,tax,total} = payLineCalc(line);
+    const isNewCat = lastCat!==line.catKey; lastCat=line.catKey;
+    const catHdr = isNewCat ? `<div style="font-size:0.714em;font-weight:700;color:var(--text3);padding:8px 2px 4px;letter-spacing:.5px">${cat.label.toUpperCase()}</div>` : '';
+    return catHdr+`
+    <div style="margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:${line.taxable?'3px':'6px'}">
+        <div style="position:relative;flex:0 0 90px">
+          <input class="fi" id="pay-line-name-${line.id}" value="${line.name.replace(/"/g,'&quot;')}" placeholder="項目..."
+            oninput="updatePayNewField(${line.id},'name',this.value);showPayLineAc(${line.id})"
+            onfocus="showPayLineAc(${line.id})"
+            onblur="setTimeout(()=>hidePayLineAc(${line.id}),200)"
+            style="font-size:0.857em;padding:9px 10px;width:100%">
+          <div id="pay-line-ac-${line.id}" class="autocomplete-list" style="display:none;min-width:110px"></div>
+        </div>
+        <div style="display:flex;align-items:center;flex:0 0 110px;background:var(--bg);border:1px solid var(--border);border-radius:7px;overflow:hidden">
+          <span style="padding:9px 4px 9px 8px;color:var(--text3);font-size:0.714em;flex-shrink:0">NT$</span>
+          <input type="number" id="pay-line-price-${line.id}" value="${line.unitPrice||''}" placeholder="金額"
+            oninput="updatePayNewField(${line.id},'unitPrice',parseFloat(this.value)||0);_updatePayNewTotals()"
+            style="background:none;border:none;color:var(--text);padding:9px 8px 9px 2px;width:100%;font-size:0.857em;outline:none;font-family:inherit">
+        </div>
+        <label style="display:flex;align-items:center;gap:3px;font-size:0.786em;color:var(--text2);cursor:pointer;flex-shrink:0">
+          <input type="checkbox" ${line.taxable?'checked':''}
+            onchange="updatePayNewField(${line.id},'taxable',this.checked);_updatePayNewTotals()"
+            style="accent-color:var(--accent2);width:13px;height:13px">
+          稅
+        </label>
+        <input class="fi" id="pay-line-note-${line.id}" value="${line.note.replace(/"/g,'&quot;')}" placeholder="細項說明..."
+          oninput="updatePayNewField(${line.id},'note',this.value)"
+          style="flex:1;min-width:0;font-size:0.786em;padding:9px 10px;color:var(--text2)">
+        <div style="display:flex;align-items:center;flex:0 0 54px;background:var(--bg);border:1px solid var(--border);border-radius:7px;overflow:hidden">
+          <span style="padding:9px 2px 9px 7px;color:var(--text3);font-size:0.714em;flex-shrink:0">×</span>
+          <input type="number" id="pay-line-qty-${line.id}" value="${line.qty||1}" placeholder="1"
+            oninput="updatePayNewField(${line.id},'qty',parseFloat(this.value)||1);_updatePayNewTotals()"
+            style="background:none;border:none;color:var(--text);padding:9px 6px 9px 2px;width:100%;font-size:0.857em;outline:none;font-family:inherit;text-align:center">
+        </div>
+        <button type="button" onclick="removePayNewLine(${line.id})"
+          style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 2px;flex-shrink:0;line-height:1">✕</button>
       </div>
-      <label class="pay-line-tax">
-        <input type="checkbox" id="pay-line-tax-${i}" ${item.taxable?'checked':''} onchange="updatePayTotal()">
-        含稅
-      </label>
-      <input class="fi" type="text" id="pay-line-det-${i}" value="${item.detail||''}" placeholder="細項說明..." oninput="updatePayTotal()" style="flex:1;min-width:120px;font-size:0.857em;margin-top:0;padding:6px 10px">
-    </div>`).join('');
+      <div id="pay-line-sub-${line.id}" style="display:${line.taxable?'flex':'none'};justify-content:space-between;padding:2px 4px 6px">
+        <span style="color:var(--text3);font-size:0.786em">NT$${raw.toLocaleString()} + 稅 NT$${tax.toLocaleString()}</span>
+        <span style="font-weight:700;color:var(--green2);font-size:0.857em">小計 NT$${total.toLocaleString()}</span>
+      </div>
+    </div>`;
+  }).join('');
+  _updatePayNewTotals();
 }
 
-
+// 舊版相容（其他地方呼叫 initPayLines 的保留）
+function initPayLines(d, prefillAmounts) {
+  if (!prefillAmounts) return;
+  // 舊版 preItems 轉換到新版 payNewLines
+  Object.entries(prefillAmounts).forEach(([name, amount]) => {
+    // 依名稱猜分類
+    let catKey = 'other';
+    if (['租金','押金'].includes(name)) catKey='rent';
+    else if (['裝機費','買斷','估回','移機費'].includes(name)) catKey='install';
+    else if (getCatPayItems('repair').includes(name)) catKey='repair';
+    else if (getCatPayItems('goods').includes(name)) catKey='goods';
+    payNewLines.push({id:_payLineUid++, catKey, name, note:'', qty:1, unitPrice:Number(amount)||0, taxable:!['押金'].includes(name)});
+  });
+}
+function calcPayTotal() {
+  const grandTotal = payNewLines.reduce((s,l)=>s+payLineCalc(l).total,0);
+  const tax        = payNewLines.reduce((s,l)=>s+payLineCalc(l).tax,0);
+  return {subtotal:grandTotal-tax, tax, total:grandTotal};
+}
+function updatePayTotal() { _updatePayNewTotals(); }
 
 function paymentForm(d) {
   const methods = ['匯款','付現','支票'];
   const allHandlers = getAllHandlers();
-  if (selectedHandlers.length === 0) {
-    if (d?.['經手人']) {
-      selectedHandlers = d['經手人'].split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
-    }
-    const loginName = authState?.name;
+  const loginName = authState?.name||'';
+  if (selectedHandlers.length===0) {
+    if (d?.['經手人']) selectedHandlers=d['經手人'].split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
     if (loginName && !selectedHandlers.includes(loginName)) selectedHandlers.unshift(loginName);
-  }
-  if (selectedPayItems.length === 0 && d?.['收款項目']) {
-    selectedPayItems = d['收款項目'].split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
   }
   payInvoice = d?.['發票']||'不開發票';
   payStatus  = d?.['收款情況']||'待收';
   const preCustomer = d?.['客戶名稱']||'';
-  const allPayItems = getPayItems();
-  // 合併臨時項目（不寫入選項庫，只本次顯示）
-  const allPayItemsWithTemp = [...new Set([...allPayItems, ...tempPayItems])];
-  const loginName = authState?.name||'';
-  if (!payLineItems.length) initPayLines(d);
+
+  // 編輯時從 items[] 還原 payNewLines
+  if (editMode && d?.items?.length && !payNewLines.length) {
+    d.items.forEach(it=>{
+      const name = it['收款項目']||'';
+      let catKey='other';
+      if(['租金','押金'].includes(name)) catKey='rent';
+      else if(['裝機費','買斷','估回','移機費'].includes(name)) catKey='install';
+      else if(getCatPayItems('repair').includes(name)) catKey='repair';
+      else if(getCatPayItems('goods').includes(name)) catKey='goods';
+      payNewLines.push({id:_payLineUid++, catKey, name, note:it['細項說明']||'', qty:1, unitPrice:Number(it['金額'])||0, taxable:!['押金'].includes(name)});
+    });
+  }
+
   if (preCustomer) setTimeout(()=>{
-    const inp = document.getElementById('f-pay-customer-inp');
+    const inp=document.getElementById('f-pay-customer-inp');
     if(inp){inp.value=preCustomer;onPayCustomerChange(preCustomer);}
+    _renderPayNewLines();
   },0);
-  const {subtotal, tax, total} = calcPayTotal();
+  else setTimeout(()=>_renderPayNewLines(),0);
+
   return `<div class="form-body">
     <div class="ff"><label>收款ID<span class="req">*</span></label><input class="fi" id="f-pid" value="${d?.['收款ID']||genId()}" ${editMode?'readonly style="color:var(--text2)"':''}></div>
     <div class="ff"><label>合約ID</label><input class="fi" id="f-cid" value="${d?.['合約ID']||''}"></div>
@@ -6029,39 +6143,33 @@ function paymentForm(d) {
       </div>
       <div id="f-pay-customer-hint" style="font-size:0.786em;color:var(--text2);margin-top:5px;padding:0 2px"></div>
     </div>
-    <div class="ff"><label>收款項目（可複選）</label>
-      <div style="display:flex;align-items:flex-start;gap:8px">
-        <div id="pay-items-wrap" style="display:flex;flex-wrap:wrap;gap:7px;flex:1">
-          ${allPayItemsWithTemp.map(item=>{
-            const isTemp = tempPayItems.includes(item) && !allPayItems.includes(item);
-            return `<button type="button" class="pay-item-chip${selectedPayItems.includes(item)?' selected':''}"
-              onclick="togglePayItemAndLine('${item.replace(/'/g,"\\'")}')"
-              ${!isTemp?`oncontextmenu="event.preventDefault();confirmDeletePayItem('${item.replace(/'/g,"\\'")}')" ontouchstart="startLongPress('${item.replace(/'/g,"\\'")}') " ontouchend="cancelLongPress()" ontouchmove="cancelLongPress()"`:''}>
-              ${item}${isTemp?'<span style="opacity:.5;font-size:0.8em;margin-left:2px">⏱</span>':''}
-            </button>`;
-          }).join('')}
+
+    <div class="ff">
+      <label>收款明細</label>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px">
+        ${PAY_CATEGORIES.map(cat=>`<button type="button" onclick="addPayNewLine('${cat.key}')"
+          style="padding:6px 13px;border-radius:99px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:0.857em;cursor:pointer;font-family:inherit">
+          ＋ ${cat.label}
+        </button>`).join('')}
+      </div>
+      <div id="pay-new-lines-wrap" style="min-height:20px">
+        <div style="padding:16px 0;text-align:center;color:var(--text3);font-size:0.857em">點上方分類新增收款項目</div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:6px;margin-top:4px">
+        <div id="pay-new-tax" style="display:none;justify-content:space-between;padding:4px 4px">
+          <span style="font-size:0.786em;color:var(--text3)">稅額（含稅×5%）</span>
+          <span style="font-size:0.857em;color:var(--text3)">NT$0</span>
         </div>
-        <button type="button" onclick="openPayItemEditor()"
-          style="flex-shrink:0;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:0.857em;cursor:pointer;white-space:nowrap">✏️ 編輯</button>
+        <div id="pay-new-total" style="display:flex;justify-content:space-between;padding:7px 4px">
+          <span style="font-size:1em;font-weight:700">合計</span>
+          <span style="font-size:1.143em;font-weight:900">NT$0</span>
+        </div>
       </div>
+      <input type="hidden" id="f-amount" value="0">
     </div>
-    <div class="ff" id="pay-lines-section" style="${payLineItems.length?'':'display:none'}">
-      <label>各項金額</label>
-      <div id="pay-lines-wrap">${renderPayLines()}</div>
-      <div class="pay-total-row"><span>小計</span><span id="pay-subtotal">NT$${subtotal.toLocaleString()}</span></div>
-      <div class="pay-total-row"><span>稅額（含稅項目×5%）</span><span id="pay-tax">NT$${tax.toLocaleString()}</span></div>
-      <div class="pay-total-row pay-total-final"><span>合計</span><span id="pay-total">NT$${total.toLocaleString()}</span></div>
-    </div>
-    <div class="ff"><label>金額（合計）</label>
-      <div class="amt-row">
-        <span class="amt-pre">NT$</span>
-        <input class="amt-inp" type="number" id="f-amount" value="${total||d?.['金額']||0}">
-        <button class="amt-btn" onclick="addAmt(-100)">－</button>
-        <button class="amt-btn" onclick="addAmt(100)">＋</button>
-      </div>
-    </div>
+
     <div class="ff"><label>詳細內容</label><input class="fi" id="f-detail" placeholder="選填，如機型機號、說明..." value="${d?.['詳細內容']||''}"></div>
-    <div class="ff"><label>發票<span class="req">*</span></label>
+    <div class="ff"><label>發票</label>
       <div style="display:flex;gap:8px;margin-bottom:8px">
         <button type="button" class="pay-m-btn pay-inv-btn${payInvoice==='不開發票'?' sel':''}" data-val="不開發票" onclick="setInvoice('不開發票')">不開發票</button>
         <button type="button" class="pay-m-btn pay-inv-btn${payInvoice==='開發票'?' sel':''}" data-val="開發票" onclick="setInvoice('開發票')">開發票</button>
@@ -6883,13 +6991,10 @@ async function savePayment() {
   const customer = document.getElementById('f-pay-customer-inp')?.value.trim() || document.getElementById('f-customer')?.value;
   if (!customer) { showToast('請填寫客戶名稱'); return; }
   if (payStatus==='已收' && !payMethod) { showToast('請選擇結帳方式'); return; }
-  const items = selectedPayItems.length ? selectedPayItems.join('、') : '';
-  if (!items) { showToast('請選擇收款項目'); return; }
+  if (!payNewLines.length) { showToast('請新增至少一項收款項目'); return; }
   const handler = selectedHandlers.join('、');
   if (!handler) { showToast('請選擇經收人'); return; }
-  updatePayTotal();
-  const {total} = calcPayTotal();
-  const finalAmount = total || parseInt(document.getElementById('f-amount').value)||0;
+
   const invoiceNo  = document.getElementById('f-invoice-no')?.value.trim()||'';
   const taxIdPay   = document.getElementById('f-tax-id-pay')?.value.trim()||'';
   const detail     = document.getElementById('f-detail')?.value.trim()||'';
@@ -6899,23 +7004,31 @@ async function savePayment() {
   const pid        = document.getElementById('f-pid').value || ('P'+Date.now().toString(36).toUpperCase());
   const cid        = document.getElementById('f-cid').value||'';
 
-  // 決定要寫入的行
-  const lines = payLineItems.length ? payLineItems : [{ name: items, amount: finalAmount, taxable: true, detail: '' }];
+  // 轉換 payNewLines → 寫入格式
+  const lines = payNewLines.map(l=>({
+    name:   l.name||'（未命名）',
+    amount: payLineCalc(l).total,
+    taxable:l.taxable,
+    detail: l.note||'',
+    qty:    l.qty||1,
+    unitPrice: l.unitPrice||0,
+  }));
 
-  // 更新 cache（grouped 格式）
+  const grandTotal = lines.reduce((s,l)=>s+(Number(l.amount)||0),0);
+
   const payObj = {
-    '收款ID': pid, '合約ID': cid, '客戶名稱': customer,
+    '收款ID':   pid, '合約ID': cid, '客戶名稱': customer,
     '收款項目': lines.map(l=>l.name).join('、'),
-    '金額': lines.reduce((s,l)=>s+(Number(l.amount)||0),0),
+    '金額':     grandTotal,
     '紀錄日期': recordDate,
     '收款情況': payStatus||'待收',
     '詳細內容': detail,
-    '發票': payInvoice+(invoiceNo?' '+invoiceNo:''),
+    '發票':     payInvoice+(invoiceNo?' '+invoiceNo:''),
     '統一編號': taxIdPay,
     '結帳方式': dateVal ? payMethod : '',
     '結帳日期': dateVal,
-    '經手人': handler,
-    '收款人': collector,
+    '經手人':   handler,
+    '收款人':   collector,
     items: lines.map((l,i)=>({'序號':i+1,'收款項目':l.name,'金額':Number(l.amount)||0,'細項說明':l.detail||''})),
   };
 
@@ -6929,7 +7042,6 @@ async function savePayment() {
   }
   saveCache();
 
-  // 逐行 enqueue
   lines.forEach((l,i)=>{
     const row = {
       pid, seq:i+1, contractId:cid, customer, recordDate, date:dateVal,
@@ -6945,7 +7057,7 @@ async function savePayment() {
   closeModal('form-modal'); renderPage();
   showToast(editMode?'已更新收款紀錄':'已新增收款紀錄');
   isSaving=false;
-  selectedPayItems=[]; selectedHandlers=[]; payLineItems=[];
+  selectedPayItems=[]; selectedHandlers=[]; payLineItems=[]; payNewLines=[];
 
   const pendingM = cache.machines.find(m => m['_pendingStatus'] === '買 斷');
   if (pendingM) {
