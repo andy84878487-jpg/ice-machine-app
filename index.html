@@ -1289,7 +1289,7 @@ async function syncAllExcept(skip) {
           if (!payMap[id]) { payMap[id] = { '收款ID': id, items: [] }; }
           const seq = Number(row['序號'])||1;
           if (seq === 1) {
-            ['結帳日期','客戶名稱','合約ID','收款情況','結帳方式','發票','統一編號','詳細內容','經手人','紀錄日期','收款人'].forEach(f => {
+            ['結帳日期','客戶名稱','合約ID','收款情況','結帳方式','發票','統一編號','詳細內容','經手人','紀錄日期','收款人','來源ID'].forEach(f => {
               if (row[f] !== undefined && row[f] !== '') payMap[id][f] = row[f];
             });
           }
@@ -2075,6 +2075,9 @@ function taskLineFillClose(idx, modelField, model, serialField, serial, listId) 
 // 新增客人機（裝機/代裝）：開啟機器表單預填客人機
 function taskLineAddClientMachine(idx) {
   const customer = document.getElementById('f-task-customer-inp')?.value.trim()||'';
+  const lineType = taskLineItems[idx]?.type || '';
+  // 依工作類型決定預填的機器類型
+  const prefillType = '客人機';
   // 備份目前表單狀態
   window._taskFormBackup = {
     customer,
@@ -2085,9 +2088,10 @@ function taskLineAddClientMachine(idx) {
   };
   window._addMachineForTaskLineIdx = idx;
   window._returnToTask = true;
+  window._prefillMachineType = prefillType;
   editMode=false; editId='';
   document.getElementById('form-modal-title').textContent='新增機器（儲存後跳回）';
-  document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer});
+  document.getElementById('form-modal-body').innerHTML=machineForm({'目前客戶': customer, '類型': prefillType});
 }
 
 function _renderTaskLineItems() {
@@ -2224,8 +2228,8 @@ function getLineSuggestions(type, customer) {
     case '拆回':
       return { new: cache.machines.filter(custMachines), old: [], showAdd: true };
     case '搬回修理':
-      // 修理的機器：客戶名下（排除出租中）
-      return { new: cache.machines.filter(m => custMachines(m) && norm(m['類型']||'')!=='出租中'), old: [] };
+      // 修理的機器：客戶名下（排除出租中），若找不到可新增客人機
+      return { new: cache.machines.filter(m => custMachines(m) && norm(m['類型']||'')!=='出租中'), old: [], showAdd: true };
     case '修好送回':
       // 送回的機器：目前在◎進廠狀態（搬回修理後狀態），或客戶名下的客人機
       return { new: [...byType('◎進廠'), ...cache.machines.filter(m => custMachines(m) && norm(m['類型']||'')==='客人機')], old: [] };
@@ -2236,6 +2240,9 @@ function getLineSuggestions(type, customer) {
       }
       // 搬回修理情境：借出機器，推薦待出租
       return { new: byType('待出租'), old: [] };
+    case '移機':
+      // 移機：客戶名下所有機器
+      return { new: cache.machines.filter(custMachines), old: [], showAdd: true };
     default:
       return { new: [], old: [] };
   }
@@ -2578,7 +2585,7 @@ function openBuyoutFromInstall(customer, model, serial, taskDateStr) {
 function openPaymentFromInstall(customer, model, serial, taskDateStr) {
   closeModal('detail-modal');
   const taskData = cache.tasks.find(t=>t['任務ID']===taskDateStr||t['紀錄日期']===taskDateStr) || {'客戶名稱':customer};
-  openQuickPayment(customer, taskData, ['裝機費']);
+  openQuickPayment(customer, taskData, ['裝機費'], null, taskData?.['任務ID']||'');
   // 若有下一筆待處理，繼續；否則標記完成
   const next = window._afterContractDone;
   window._afterContractDone = null;
@@ -2638,8 +2645,9 @@ function markTaskDoneById(dateStr) {
   saveCache();
   enqueue({action:'updateTaskMeta', sheet:'施工紀錄', data: JSON.stringify(t), id: t['任務ID']});
 }
-function openQuickPayment(customer, taskData, preItems, prefillDetail) {
+function openQuickPayment(customer, taskData, preItems, prefillDetail, sourceId) {
   selectedPayItems = preItems||[]; selectedHandlers=[]; payLineItems=[]; payNewLines=[]; payMethod=''; editMode=false; editId='';
+  paySourceId = sourceId || '';
   if (preItems) initPayLines(null);
   document.getElementById('form-modal-title').textContent='新增收款';
   document.getElementById('form-modal-body').innerHTML=paymentForm({
@@ -2719,7 +2727,7 @@ function _handleTeardown(customer, model, serial, taskData, onDone) {
       const m = getMachineByTaskInfo(model, serial);
       if (m) { m['類型']='◎進廠'; m['目前客戶']=''; saveCache(); enqueue({action:'update',sheet:'machines',data:m,id:m['機號']}); }
       const estimateDetail = [model, serial].filter(Boolean).join(' ');
-      openQuickPayment(customer, taskData, ['估回'], estimateDetail);
+      openQuickPayment(customer, taskData, ['估回'], estimateDetail, taskData?.['任務ID']||'');
       if (onDone) onDone(); else confirmTaskDone();
     }
   };
@@ -2782,7 +2790,7 @@ function _handleRepairReturn2(customer, model, serial, taskData, borrowLine, onD
         saveCache();
         enqueue({action:'update', sheet:'machines', data:bm, id:bm['機號']});
         showToast('✓ 借用機歸還 → '+st);
-        openQuickPayment(customer, taskData, ['維修費']);
+        openQuickPayment(customer, taskData, ['維修費'], null, taskData?.['任務ID']||'');
         if (onDone) onDone(); else confirmTaskDone();
       };
       nb.querySelector('#_rr_1').onclick = ()=>finish('待出租');
@@ -2801,7 +2809,7 @@ function _handleRepairReturn2(customer, model, serial, taskData, borrowLine, onD
   }
 
   // 沒有借用機：直接完成
-  openQuickPayment(customer, taskData, ['維修費']);
+  openQuickPayment(customer, taskData, ['維修費'], null, taskData?.['任務ID']||'');
   if (onDone) onDone(); else confirmTaskDone();
 }
 
@@ -2945,7 +2953,7 @@ function skipBorrowReturn() {
     saveCache();
     enqueue({action:'update', sheet:'machines', data:rm, id:rm['機號']});
   }
-  openQuickPayment(d.customer, d.taskData, ['維修費']);
+  openQuickPayment(d.customer, d.taskData, ['維修費'], null, d.taskData?.['任務ID']||'');
   confirmTaskDone();
 }
 
@@ -3540,6 +3548,7 @@ function showRepairDetail(idx) {
       <span class="det-val">${v}</span>
     </div>`).join('')}
   </div>
+  ${relatedPaymentsBlock(item['維修ID'], 'repair', idx)}
   <div style="padding:14px 15px;display:flex;gap:8px">
     <button class="btn-cancel" style="flex:1;color:var(--danger2)" onclick="confirmDelete('repair',${idx})">🗑 刪除</button>
     ${dispatchBtn}
@@ -3574,29 +3583,14 @@ function toggleRepairDone(idx) {
   renderPage();
   showToast('✓ 已標記完成');
 
-  // 詢問是否新增收款
+  // 詢問是否新增收款（種類為「公司」不詢問）
+  if (item['種類']==='公司') { renderPage(); return; }
   appConfirm('是否要新增維修相關收款？',
     ()=>{
-      // 依維修項目自動對應收款項目
+      // 直接使用維修紀錄的原始項目名稱，不做改名
       const repairItemStr = String(item['維修項目']||'');
       const repairItems = repairItemStr.split(/[,、，]/).map(s=>s.trim()).filter(Boolean);
-      const preItems = [];
-      const miscItems = []; // 其他項目 → 臨時加入收款 chip，不存入選項庫
-
-      repairItems.forEach(ri=>{
-        if (['檢修費','檢修'].includes(ri)) {
-          if (!preItems.includes('維修費')) preItems.push('維修費');
-        } else if (['大保養','保養'].includes(ri)) {
-          if (!preItems.includes('保養費')) preItems.push('保養費');
-        } else {
-          miscItems.push(ri);
-        }
-      });
-      // 其他項目也加入收款選取，但以 tempPayItems 存放（不寫入選項庫）
-      miscItems.forEach(mi=>{ if(!preItems.includes(mi)) preItems.push(mi); });
-      if (!preItems.length) preItems.push('維修費');
-
-      tempPayItems = miscItems; // 本次臨時項目
+      const preItems = repairItems.length ? repairItems : ['維修費'];
 
       const custName = item['客戶名稱']||'';
       const taskDataForPay = {
@@ -3605,24 +3599,21 @@ function toggleRepairDone(idx) {
         '機號': item['機號']||'',
         '紀錄日期': item['完成日期']||'',
       };
-      // 從「維修 報價」抓對應價格
-      // 對照表：preItems 中每個項目 → 找 repairPricelist 的「名稱」欄位比對
+
+      // 從「維修 報價」抓對應價格（直接比對原始名稱）
       const priceMap = {};
       const rl = cache.repairPricelist||[];
+      const nameKey = rl.length ? (['名稱','維修項目','項目'].find(k=>rl[0][k]!==undefined)||Object.keys(rl[0])[0]||'') : '名稱';
       preItems.forEach(payItem=>{
-        // 找直接同名的
-        let row = rl.find(r=>String(r['名稱']||'').trim()===payItem);
-        // 找不到時，試著找維修項目中對應的原始名稱（例如「維修費」對應「檢修費」）
-        if (!row && payItem==='維修費') row = rl.find(r=>['檢修費','檢修','維修費'].includes(String(r['名稱']||'').trim()));
-        if (!row && payItem==='保養費') row = rl.find(r=>['大保養','保養費','保養'].includes(String(r['名稱']||'').trim()));
+        const row = rl.find(r=>String(r[nameKey]||'').trim()===payItem);
         const price = Number(row?.['價格']||row?.['單價']||0);
         if (price) priceMap[payItem] = price;
       });
 
-      // 開啟收款表單
+      // 開啟收款表單，所有項目預設為「維修」分類
       selectedPayItems = [...preItems]; selectedHandlers=[]; payLineItems=[]; payNewLines=[]; payMethod=''; editMode=false; editId='';
-      payInvoice='';
-      initPayLines(null, priceMap);
+      payInvoice=''; paySourceId = item['維修ID']||'';
+      initPayLines(null, priceMap, 'repair');
       document.getElementById('form-modal-title').textContent='新增收款';
       document.getElementById('form-modal-body').innerHTML = paymentForm({
         '客戶名稱': custName,
@@ -4847,6 +4838,103 @@ function noConfig() {
 // ============================================================
 // DETAIL
 // ============================================================
+// ── 相關收款區塊（施工/維修/工作詳細頁用）──
+function relatedPaymentsBlock(sourceId, sourceType, sourceIdx) {
+  if (!sourceId) return '';
+  const related = cache.payments.filter(p => String(p['來源ID']||'').trim() === String(sourceId).trim());
+  const isPaid = p => String(p['收款情況']||'').trim()==='已收';
+  const total  = related.reduce((s,p)=>s+(Number(p['金額'])||0),0);
+
+  // 新增收款按鈕
+  const addBtn = `<button onclick="openPaymentFromSource('${sourceType}',${sourceIdx})"
+    style="background:var(--accent-bg);border:1px solid var(--accent-glow);color:var(--accent2);border-radius:6px;padding:3px 10px;font-size:11px;font-family:inherit;cursor:pointer">＋ 新增收款</button>`;
+
+  if (!related.length) return `<div class="det-section">
+    <div class="det-sec-title" style="display:flex;justify-content:space-between;align-items:center">
+      相關收款 ${addBtn}
+    </div>
+    <div style="color:var(--text3);font-size:0.786em;padding:6px 0">尚無相關收款</div>
+  </div>`;
+
+  return `<div class="det-section">
+    <div class="det-sec-title" style="display:flex;justify-content:space-between;align-items:center">
+      相關收款（${related.length}筆）
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-weight:700;color:var(--green2)">NT$${total.toLocaleString()}</span>
+        ${addBtn}
+      </div>
+    </div>
+    ${related.map(p=>{
+      const pidx = cache.payments.indexOf(p);
+      const paid = isPaid(p);
+      const amt  = Number(p['金額'])||0;
+      const date = String(p['結帳日期']||p['紀錄日期']||'').substring(0,10).replace(/-/g,'/');
+      return `<div class="det-row" style="cursor:pointer" onclick="closeModal('detail-modal');showDetail('payment',${pidx})">
+        <div style="flex:1;min-width:0">
+          <span style="font-size:0.857em">${p['收款項目']||'—'}</span>
+          ${date?`<span style="font-size:0.786em;color:var(--text3);margin-left:6px">${date}</span>`:''}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <span style="font-size:0.786em;font-weight:700;padding:1px 7px;border-radius:99px;
+            background:${paid?'rgba(67,160,71,.12)':'rgba(229,57,53,.12)'};
+            color:${paid?'var(--green2)':'var(--danger2)'}">
+            ${paid?'已收':'待收'}
+          </span>
+          <span style="font-weight:700;color:${amt<0?'var(--danger2)':'var(--green2)'};font-size:0.857em">
+            NT$${Math.abs(amt).toLocaleString()}
+          </span>
+          <span style="color:var(--text3);font-size:12px">›</span>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// ── 來源區塊（收款詳細頁用）──
+function paymentSourceBlock(sourceId) {
+  if (!sourceId) return '';
+  // 判斷來源類型
+  const task   = cache.tasks.find(t=>t['任務ID']===sourceId);
+  const repair = (cache.repairs||[]).find(r=>r['維修ID']===sourceId);
+  const job    = (cache.jobs||[]).find(j=>j['工作ID']===sourceId);
+  const source = task ? {type:'task',   icon:'🔨', label:'施工紀錄', item:task,   idx:cache.tasks.indexOf(task)}
+               : repair ? {type:'repair', icon:'🔧', label:'維修紀錄', item:repair, idx:(cache.repairs||[]).indexOf(repair)}
+               : job    ? {type:'job',    icon:'📋', label:'工作紀錄', item:job,    idx:(cache.jobs||[]).indexOf(job)}
+               : null;
+  if (!source) return '';
+  const date = String(source.item['紀錄日期']||'').substring(0,10).replace(/-/g,'/');
+  const cust = source.item['客戶名稱']||'';
+  return `<div class="det-section">
+    <div class="det-sec-title">來源</div>
+    <div class="det-row" style="cursor:pointer" onclick="closeModal('detail-modal');${
+      source.type==='task'   ? `showDetail('task',${source.idx})` :
+      source.type==='repair' ? `showRepairDetail(${source.idx})` :
+                               `showJobDetail(${source.idx})`
+    }">
+      <div style="flex:1">
+        <span style="font-size:0.929em">${source.icon} ${source.label}</span>
+        ${cust?`<span style="font-size:0.857em;color:var(--text2);margin-left:6px">${cust}</span>`:''}
+        ${date?`<span style="font-size:0.786em;color:var(--text3);margin-left:6px">${date}</span>`:''}
+      </div>
+      <span style="color:var(--text3);font-size:12px">›</span>
+    </div>
+  </div>`;
+}
+
+// 從來源（施工/維修/工作）快速開新增收款
+function openPaymentFromSource(sourceType, sourceIdx) {
+  const maps = {task:cache.tasks, repair:cache.repairs, job:cache.jobs||[]};
+  const item  = maps[sourceType]?.[sourceIdx]; if (!item) return;
+  const sid   = sourceType==='task'?item['任務ID']:sourceType==='repair'?item['維修ID']:item['工作ID'];
+  const cust  = item['客戶名稱']||'';
+  selectedPayItems=[]; selectedHandlers=[]; payLineItems=[]; payNewLines=[]; payMethod=''; editMode=false; editId='';
+  payInvoice=''; paySourceId = sid||'';
+  closeModal('detail-modal');
+  document.getElementById('form-modal-title').textContent='新增收款';
+  document.getElementById('form-modal-body').innerHTML = paymentForm({'客戶名稱': cust});
+  document.getElementById('form-modal').classList.add('open');
+}
+
 function showDetail(type, idx) {
   detailType = type; detailIdx = idx;
   document.getElementById('detail-edit-btn').style.display = '';
@@ -4919,6 +5007,7 @@ function showDetail(type, idx) {
         ${itemsBlock}
       </div>
       ${machineBlock}
+      ${relatedPaymentsBlock(item['任務ID'], 'task', idx)}
       <div style="padding:14px 15px;display:flex;gap:8px">
         <button class="btn-cancel" style="flex:1;color:var(--danger2)" onclick="confirmDelete('task',${idx})">🗑 刪除</button>
         <button class="btn-save" style="flex:1" onclick="toggleTaskDone(${idx});closeModal('detail-modal')">${isTaskDone(item)?'↩ 取消完成':'✓ 標記完成'}</button>
@@ -4991,7 +5080,6 @@ function showDetail(type, idx) {
       <div class="det-section">
         <div class="det-sec-title" style="display:flex;justify-content:space-between;align-items:center">
           租賃合約${activeContracts.length?`（${activeContracts.length}筆）`:''}
-          <button onclick="openAddMachineForCustomer('${item['客戶名稱'].replace(/'/g,"&apos;")}')" style="background:var(--accent-bg);border:1px solid var(--accent-glow);color:var(--accent2);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer">＋機器</button>
         </div>
         ${activeContracts.length ? activeContracts.map(ct=>{
           const endStr = String(ct['到期日期']||'').replace('T',' ').substring(0,10);
@@ -5010,9 +5098,12 @@ function showDetail(type, idx) {
           </div>`;
         }).join('') : '<div style="color:var(--text3);font-size:12px;padding:8px 0">無有效租賃合約</div>'}
       </div>
-      ${ownedMachines.length ? `<div class="det-section">
-        <div class="det-sec-title">擁有の機器</div>
-        ${ownedMachines.map(m=>{
+      ${`<div class="det-section">
+        <div class="det-sec-title" style="display:flex;justify-content:space-between;align-items:center">
+          擁有の機器
+          <button onclick="openAddMachineForCustomer('${item['客戶名稱'].replace(/'/g,"&apos;")}')" style="background:var(--accent-bg);border:1px solid var(--accent-glow);color:var(--accent2);border-radius:6px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer">＋機器</button>
+        </div>
+        ${ownedMachines.length ? ownedMachines.map(m=>{
           const col = getChipColor(m['類型'])||'gray';
           const expired = isMachineExpired(m);
           return `<div class="det-row" style="align-items:center">
@@ -5025,20 +5116,20 @@ function showDetail(type, idx) {
               ${chipHtml(m['類型']||'')}
             </div>
           </div>`;
-        }).join('')}
-      </div>` : ''}
+        }).join('') : '<div style="color:var(--text3);font-size:12px;padding:8px 0">尚無自有機器</div>'}
+      </div>`}
       ${(()=>{
-        const custPayments = cache.payments.filter(p=>p['客戶名稱']===item['客戶名稱']);
+        const custPayments = cache.payments.filter(p=>p['客戶名稱']===item['客戶名稱'] && String(p['收款情況']||'').trim()!=='已收');
         if (!custPayments.length) return '';
         const total = custPayments.reduce((s,p)=>s+(Number(p['金額'])||0),0);
         return `<div class="det-section">
           <div class="det-sec-title" style="display:flex;justify-content:space-between;align-items:center">
-            收款紀錄（${custPayments.length}筆）
-            <span style="color:var(--green2);font-weight:700">合計 NT$${total.toLocaleString()}</span>
+            未收款項（${custPayments.length}筆）
+            <span style="color:var(--danger2);font-weight:700">NT$${total.toLocaleString()}</span>
           </div>
-          ${custPayments.slice(-5).reverse().map(p=>`<div class="det-row">
-            <span class="det-key" style="font-size:0.786em">${String(p['結帳日期']||'').substring(0,10).replace(/-/g,'/')}</span>
-            <span class="det-val"><span class="chip chip-pay" style="font-size:0.714em">${p['收款項目']||''}</span> <span style="color:var(--green2);font-weight:600">NT$${Number(p['金額']||0).toLocaleString()}</span></span>
+          ${custPayments.slice(0,5).map(p=>`<div class="det-row">
+            <span class="det-key" style="font-size:0.786em">${String(p['結帳日期']||p['紀錄日期']||'').substring(0,10).replace(/-/g,'/')}</span>
+            <span class="det-val"><span class="chip chip-pay" style="font-size:0.714em">${p['收款項目']||''}</span> <span style="color:var(--danger2);font-weight:600">NT$${Number(p['金額']||0).toLocaleString()}</span></span>
           </div>`).join('')}
         </div>`;
       })()}
@@ -5185,7 +5276,15 @@ function showDetail(type, idx) {
         </div>`).join('')}
         ${lineItemsHtml}
       </div>
-      <div style="padding:14px 15px">
+      ${paymentSourceBlock(item['來源ID']||'')}
+      <div style="padding:14px 15px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:8px">
+          ${authState?.role==='admin' ? `<button class="btn-cancel" style="flex:1;color:var(--accent2);border-color:var(--accent2)" onclick="closeModal('detail-modal');openDispatch('payment',${idx})">👤 派單</button>` : ''}
+          ${String(item['收款情況']||'').trim()==='已收'
+            ? `<button class="btn-save" style="flex:1;background:var(--surface2);color:var(--text2);border:1px solid var(--border)" onclick="markPaymentStatus(${idx},'待收');closeModal('detail-modal')">↩ 取消收款</button>`
+            : `<button class="btn-save" style="flex:1;background:var(--green);border-color:var(--green)" onclick="markPaymentStatus(${idx},'已收');closeModal('detail-modal')">✓ 確認收款</button>`
+          }
+        </div>
         <button class="btn-cancel" style="width:100%;color:var(--danger2)" onclick="confirmDelete('payment',${idx})">🗑 刪除</button>
       </div>`;
   }
@@ -5692,7 +5791,7 @@ function delMachineChip(groupId,field,val,customKey){
 
 
 function openAdd() {
-  editMode = false; editId = ''; payMethod = ''; payStatus = '待收'; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = []; payNewLines = [];
+  editMode = false; editId = ''; payMethod = ''; payStatus = '待收'; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = []; payNewLines = []; paySourceId = '';
   _repairStatus = '待維修'; _repairKind = '';
   const titles = ['新增客戶','新增機器','新增施工紀錄','新增收款','新增合約','新增合約','','新增維修紀錄','新增報價','','新增職員','新增工作紀錄'];
   document.getElementById('form-modal-title').textContent = titles[currentTab]||'新增';
@@ -5714,7 +5813,7 @@ function openAdd() {
 }
 
 function openEditItem(type, idx) {
-  editMode = true; isSaving = false; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = []; payNewLines = [];
+  editMode = true; isSaving = false; selectedPayItems = []; tempPayItems = []; taskLineItems = []; jobLineItems = []; selectedHandlers = []; payLineItems = []; payNewLines = []; paySourceId = '';
   _repairStatus = '待維修'; _repairKind = '';
   // staff 由 editCurrent 直接處理；這裡作為保底
   if (type === 'staff') {
@@ -5734,6 +5833,8 @@ function openEditItem(type, idx) {
     editId = item['任務ID']||item['紀錄日期']||'';
   } else if (type === 'repair') {
     editId = item['維修ID']||item[Object.keys(item)[0]]||'';
+  } else if (type === 'job') {
+    editId = item['工作ID']||'';
   } else {
     editId = item['收款ID']||item['合約ID']||item['機號']||item['客戶名稱']||item['紀錄日期']||item['報價ID']||'';
   }
@@ -5850,13 +5951,13 @@ function machineForm(d) {
     <div class="ff"><label>機型</label>
       <select class="fi fi-sel" id="f-model" onchange="onModelSelect(this.value)">
         <option value="">請選擇機型</option>
-        ${models.length ? sel(models, d?.['機型'], '<option value="__custom__">其他（手動輸入）</option>') : (d?'<option value="__custom__">手動輸入</option>':'')}
+        ${models.length ? sel(models, models.includes(d?.['機型']) ? d?.['機型'] : '', '<option value="__custom__">其他（手動輸入）</option>') : (d?'<option value="__custom__">手動輸入</option>':'')}
       </select>
       <div id="f-model-custom" style="${(d?.['機型']&&!models.includes(d?.['機型']))||(!models.length&&d)?'':'display:none'};margin-top:8px">
-        <input class="fi" id="f-model-txt" placeholder="輸入機型" value="${d?.['機型']&&!models.includes(d?.['機型'])?d?.['機型']:''}">
+        <input class="fi" id="f-model-txt" placeholder="輸入機型" value="${d?.['機型']&&!models.includes(d?.['機型'])?d?.['機型']:d?.['機型']&&!models.length?d?.['機型']:''}">
       </div>
     </div>
-    <div class="ff"><label>機號<span class="req">*</span></label><input class="fi" id="f-serial" value="${d?.['機號']||''}"></div>
+    <div class="ff"><label>機號<span class="req">*</span></label><input class="fi" type="text" id="f-serial" inputmode="text" value="${d?.['機號']||''}"></div>
     <div class="ff"><label>冰型</label>${mkChips('chip-ice','iceType',getIceTypes(),'custom_ice_types','新增冰型...')}</div>
     <div class="ff"><label>磅數</label>${mkChips('chip-lbs','lbs',getLbsOptions(),'custom_lbs','新增磅數...')}</div>
     <div class="ff"><label>電壓</label>${mkChips('chip-voltage','voltage',getVoltages(),'custom_voltages','新增電壓...')}</div>
@@ -5927,6 +6028,7 @@ function onCustomOpt(sel, divId) {
 let payInvoice   = '不開發票';
 let payStatus    = '待收';
 let payLineItems = []; // 保留舊版相容（savePayment 仍讀取）
+let paySourceId  = ''; // 來源ID（任務ID / 維修ID / 工作ID）
 let payNewLines  = []; // 新版行系統 [{id,catKey,name,note,qty,unitPrice,taxable}]
 let _payLineUid  = 1;
 
@@ -6016,10 +6118,37 @@ function showPayLineAc(id) {
   const items = getCatPayItems(line.catKey);
   const filtered = q ? items.filter(o=>o.includes(q)) : items;
   if (!filtered.length) { el.style.display='none'; return; }
-  el.innerHTML = filtered.map(o=>`<div class="autocomplete-item" onmousedown="updatePayNewField(${id},'name','${o.replace(/'/g,"\\'") }');document.getElementById('pay-line-name-${id}').value='${o.replace(/'/g,"\\'")}';hidePayLineAc(${id})">${o}</div>`).join('');
+  el.innerHTML = filtered.map(o=>`<div class="autocomplete-item" onmousedown="selectPayLineItem(${id},'${o.replace(/'/g,"\\'")}')">${o}</div>`).join('');
   el.style.display='block';
 }
 function hidePayLineAc(id) { const el=document.getElementById('pay-line-ac-'+id); if(el) el.style.display='none'; }
+
+function selectPayLineItem(id, name) {
+  const line = payNewLines.find(l=>l.id===id); if(!line) return;
+  line.name = name;
+  const inp = document.getElementById('pay-line-name-'+id);
+  if (inp) inp.value = name;
+  hidePayLineAc(id);
+  // 自動預填金額：從維修/材料報價抓取
+  let price = 0;
+  if (line.catKey==='repair') {
+    const src = cache.repairPricelist||[];
+    const nk = src.length ? (['名稱','維修項目','項目'].find(k=>src[0][k]!==undefined)||Object.keys(src[0])[0]||'') : '';
+    const row = src.find(r=>String(r[nk]||'').trim()===name);
+    price = Number(row?.['價格']||row?.['單價']||0);
+  } else if (line.catKey==='goods') {
+    const src = cache.materials||[];
+    const nk = src.length ? (['名稱','材料','項目'].find(k=>src[0][k]!==undefined)||Object.keys(src[0])[0]||'') : '';
+    const row = src.find(r=>String(r[nk]||'').trim()===name);
+    price = Number(row?.['價格']||row?.['單價']||0);
+  }
+  if (price) {
+    line.unitPrice = price;
+    const priceEl = document.getElementById('pay-line-price-'+id);
+    if (priceEl) priceEl.value = price;
+  }
+  _updatePayNewTotals();
+}
 
 function _renderPayNewLines() {
   const wrap = document.getElementById('pay-new-lines-wrap'); if (!wrap) return;
@@ -6077,12 +6206,12 @@ function _renderPayNewLines() {
 }
 
 // 舊版相容（其他地方呼叫 initPayLines 的保留）
-function initPayLines(d, prefillAmounts) {
+function initPayLines(d, prefillAmounts, defaultCatKey) {
   if (!prefillAmounts) return;
   // 舊版 preItems 轉換到新版 payNewLines
   Object.entries(prefillAmounts).forEach(([name, amount]) => {
-    // 依名稱猜分類
-    let catKey = 'other';
+    // 依名稱猜分類，找不到時用 defaultCatKey（預設 'other'）
+    let catKey = defaultCatKey || 'other';
     if (['租金','押金'].includes(name)) catKey='rent';
     else if (['裝機費','買斷','估回','移機費'].includes(name)) catKey='install';
     else if (getCatPayItems('repair').includes(name)) catKey='repair';
@@ -6767,9 +6896,10 @@ const ID_FIELD  = {customer:'客戶名稱',machine:'機號',contract:'合約ID',
 function getFieldVal(fieldId, customId) {
   const el = document.getElementById(fieldId);
   if (!el) return '';
-  if (el.value === '__new__' || el.value === '__custom__') {
+  if (el.value === '__new__' || el.value === '__custom__' || el.value === '') {
     const custom = document.getElementById(customId);
-    return custom ? custom.value.trim() : '';
+    const cv = custom ? custom.value.trim() : '';
+    if (cv) return cv;
   }
   return el.value;
 }
@@ -6953,11 +7083,11 @@ async function saveMachine() {
         deck.classList.add('open');
       } else if (afterInstall) {
         // 裝機（無機號→新增機器）→ 直接跳新增收款（裝機費）
-        openQuickPayment(taskCustomer, taskData, ['裝機費']);
+        openQuickPayment(taskCustomer, taskData, ['裝機費'], null, taskData?.['任務ID']||'');
         confirmTaskDone();
       } else if (isEstimateReturn) {
         // 拆回估回：機器已建（◎進廠），新增收款（估回）
-        openQuickPayment(taskCustomer, { '客戶名稱':taskCustomer, '機型':data['機型'], '機號':data['機號'] }, ['估回']);
+        openQuickPayment(taskCustomer, { '客戶名稱':taskCustomer, '機型':data['機型'], '機號':data['機號'] }, ['估回'], null, taskData?.['任務ID']||'');
         confirmTaskDone();
       } else if (isCustomerMachine) {
         // 搬回修理客人機：機器已建 → 若有借用機先選
@@ -6971,7 +7101,7 @@ async function saveMachine() {
         }
       } else {
         // 一般裝機：直接跳新增收款（裝機費）
-        openQuickPayment(taskCustomer, taskData, ['裝機費']);
+        openQuickPayment(taskCustomer, taskData, ['裝機費'], null, taskData?.['任務ID']||'');
         confirmTaskDone();
       }
     }, 400);
@@ -7020,6 +7150,7 @@ async function savePayment() {
     '收款ID':   pid, '合約ID': cid, '客戶名稱': customer,
     '收款項目': lines.map(l=>l.name).join('、'),
     '金額':     grandTotal,
+    '來源ID':   paySourceId||'',
     '紀錄日期': recordDate,
     '收款情況': payStatus||'待收',
     '詳細內容': detail,
@@ -7050,6 +7181,7 @@ async function savePayment() {
       invoice:payInvoice+(invoiceNo?' '+invoiceNo:''), taxId:taxIdPay,
       detail:(i===0?detail:''), handler:(i===0?handler:''),
       collector:(i===0?collector:''),
+      sourceId:(i===0?paySourceId||'':''),
     };
     enqueue({action:'addPaymentRow',sheet:'payments',data:JSON.stringify(row),id:pid+'_'+i});
   });
@@ -7057,7 +7189,7 @@ async function savePayment() {
   closeModal('form-modal'); renderPage();
   showToast(editMode?'已更新收款紀錄':'已新增收款紀錄');
   isSaving=false;
-  selectedPayItems=[]; selectedHandlers=[]; payLineItems=[]; payNewLines=[];
+  selectedPayItems=[]; selectedHandlers=[]; payLineItems=[]; payNewLines=[]; paySourceId='';
 
   const pendingM = cache.machines.find(m => m['_pendingStatus'] === '買 斷');
   if (pendingM) {
@@ -7482,6 +7614,7 @@ function showJobDetail(idx) {
       <div style="font-size:0.75em;font-weight:700;color:var(--text2);letter-spacing:.5px;margin-bottom:8px">工作明細</div>
       ${itemsBlock}
     </div>
+    ${relatedPaymentsBlock(item['工作ID'], 'job', idx)}
     <div style="padding:14px 15px;display:flex;gap:8px">
       <button class="btn-cancel" style="flex:1;color:var(--danger2)" onclick="confirmDelete('job',${idx})">🗑 刪除</button>
       ${dispatchBtn}
@@ -7600,6 +7733,26 @@ async function saveJob(){
   closeModal('form-modal'); renderPage();
   showToast(editMode?'已更新工作紀錄':'已新增工作紀錄');
   isSaving=false;
+
+  // 若含「送貨」項目，詢問是否新增收款
+  const hasDelivery = jobLineItems.some(li=>(li.type||'').trim()==='送貨');
+  if (hasDelivery) {
+    setTimeout(()=>{
+      appConfirm('工作含「送貨」，是否新增收款？',
+        ()=>{
+          selectedPayItems=[]; selectedHandlers=[]; payLineItems=[]; payNewLines=[]; payMethod=''; editMode=false; editId='';
+          payInvoice=''; paySourceId = jobId;
+          document.getElementById('form-modal-title').textContent='新增收款（送貨）';
+          document.getElementById('form-modal-body').innerHTML = paymentForm({
+            '客戶名稱': customer,
+            '詳細內容': note||'',
+          });
+          document.getElementById('form-modal').classList.add('open');
+        },
+        ()=>{}
+      );
+    }, 300);
+  }
 }
 
 // ── 完成 ────────────────────────────────────────────────────
