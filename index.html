@@ -381,6 +381,10 @@ body.theme-light .sync-dot.ok{background:var(--green2)}
 .role-pin-input{flex:1;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:12px 14px;color:#fff;font-size:22px;font-family:monospace;outline:none;letter-spacing:10px;text-align:center;transition:border-color .2s}
 .role-pin-input:focus{border-color:#e53935}
 .role-pin-eye{padding:12px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;color:#666;cursor:pointer;font-size:16px;flex-shrink:0}
+/* 隱藏 number input 的上下箭頭 */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+input[type=number] { -moz-appearance:textfield; }
 </style>
 </head>
 <body>
@@ -1042,7 +1046,7 @@ const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbwCt1TYbm01DRPA-YFw
 let cfg = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
 // 相容舊版設定
 if (!cfg.url) cfg.url = cfg.mainUrl || DEFAULT_URL;
-let cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{"customers":[],"machines":[],"contracts":[],"payments":[],"pricelist":[],"staff":[],"tasks":[],"taskOptions":[],"adminPin":"","machineStatuses":[],"repairs":[],"materials":[],"repairPricelist":[]}');
+let cache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{"customers":[],"machines":[],"contracts":[],"payments":[],"pricelist":[],"staff":[],"tasks":[],"taskOptions":[],"adminPin":"","machineStatuses":[],"repairs":[],"materials":[],"repairPricelist":[],"jobs":[]}');
 let pendingQueue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
 
 function saveCfg() { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); }
@@ -2568,7 +2572,7 @@ function openBuyoutFromInstall(customer, model, serial, taskDateStr) {
     mm['目前客戶'] = customer;
     saveCache();
   }
-  selectedPayItems = ['機器買斷']; selectedHandlers=[]; payLineItems=[]; payNewLines=[]; payMethod=''; editMode=false; editId='';
+  selectedPayItems = ['機器買斷']; selectedHandlers=[]; payLineItems=[]; payNewLines=[]; paySourceId=''; payMethod=''; editMode=false; editId='';
   initPayLines(null, {'機器買斷': price});
   document.getElementById('form-modal-title').textContent='新增收款（買斷）';
   document.getElementById('form-modal-body').innerHTML=paymentForm({
@@ -2646,7 +2650,7 @@ function markTaskDoneById(dateStr) {
   enqueue({action:'updateTaskMeta', sheet:'施工紀錄', data: JSON.stringify(t), id: t['任務ID']});
 }
 function openQuickPayment(customer, taskData, preItems, prefillDetail, sourceId) {
-  selectedPayItems = preItems||[]; selectedHandlers=[]; payLineItems=[]; payNewLines=[]; payMethod=''; editMode=false; editId='';
+  selectedPayItems = preItems||[]; selectedHandlers=[]; payLineItems=[]; payNewLines=[]; paySourceId=''; payMethod=''; editMode=false; editId='';
   paySourceId = sourceId || '';
   if (preItems) initPayLines(null);
   document.getElementById('form-modal-title').textContent='新增收款';
@@ -3179,7 +3183,7 @@ function renderPayments() {
   const myName = authState?.name||'';
   if (role !== 'admin') {
     list = list.filter(p => {
-      const handler = String(p['経手人']||p['經手人']||'').trim();
+      const handler = String(p['經手人']||'').trim();
       const collector = String(p['收款人']||'').trim();
       // 無經手人 且 無收款人 → 顯示給所有人
       if (!handler && !collector) return true;
@@ -5226,33 +5230,28 @@ function showDetail(type, idx) {
     title.textContent = `收款 ${item['收款ID']||''}`;
     const fmtDate = v => String(v||'').replace('T',' ').substring(0,10).replace(/-/g,'/');
 
-    // 解析收款明細 JSON，產生細項表格
+    // 收款細項明細（從 items[] 顯示）
     let lineItemsHtml = '';
-    if (item['收款明細']) {
-      try {
-        const lines = JSON.parse(item['收款明細']);
-        if (lines.length) {
-          lineItemsHtml = `
-          <div class="det-row" style="flex-direction:column;align-items:flex-start;gap:6px">
-            <span class="det-key">細項明細</span>
-            <div style="width:100%;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:2px">
-              ${lines.map((l,i)=>`
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;${i>0?'border-top:1px solid var(--border)':''}">
-                <div style="min-width:0">
-                  <span style="font-size:0.929em">${l.name}</span>
-                  ${l.detail?`<span style="font-size:0.786em;color:var(--text2);margin-left:6px">${l.detail}</span>`:''}
-                  ${l.taxable?`<span style="font-size:0.714em;color:var(--accent2);margin-left:4px">含稅</span>`:''}
-                </div>
-                <span style="font-weight:700;color:var(--green2);white-space:nowrap;margin-left:10px">NT$${Number(l.amount||0).toLocaleString()}</span>
-              </div>`).join('')}
-              <div style="display:flex;justify-content:space-between;padding:9px 12px;border-top:1px solid var(--border);background:var(--surface2)">
-                <span style="font-size:0.857em;color:var(--text2)">合計</span>
-                <span style="font-weight:700">NT$${Number(item['金額']||0).toLocaleString()}</span>
-              </div>
+    const payItems = item.items||[];
+    if (payItems.length > 1 || (payItems.length === 1 && payItems[0]['細項說明'])) {
+      lineItemsHtml = `
+      <div class="det-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+        <span class="det-key">細項明細</span>
+        <div style="width:100%;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:2px">
+          ${payItems.map((l,i)=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;${i>0?'border-top:1px solid var(--border)':''}">
+            <div style="min-width:0">
+              <span style="font-size:0.929em">${l['收款項目']||''}</span>
+              ${l['細項說明']?`<span style="font-size:0.786em;color:var(--text2);margin-left:6px">${l['細項說明']}</span>`:''}
             </div>
-          </div>`;
-        }
-      } catch(e) {}
+            <span style="font-weight:700;color:var(--green2);white-space:nowrap;margin-left:10px">NT$${Number(l['金額']||0).toLocaleString()}</span>
+          </div>`).join('')}
+          <div style="display:flex;justify-content:space-between;padding:9px 12px;border-top:1px solid var(--border);background:var(--surface2)">
+            <span style="font-size:0.857em;color:var(--text2)">合計</span>
+            <span style="font-weight:700">NT$${Number(item['金額']||0).toLocaleString()}</span>
+          </div>
+        </div>
+      </div>`;
     }
 
     const fields = [
@@ -5463,19 +5462,17 @@ function openContractFromStatus(machineIdx, newStatus) {
 // 從狀態更改→新增收款（買斷）
 function openPaymentFromStatus(machineIdx) {
   const m = cache.machines[machineIdx];
-  // 從價目表抓售價
   const priceRow = cache.pricelist.find(p => p['廠牌']===m['廠牌'] && p['機型']===m['機型']);
   const price = Number(priceRow?.['售價']||priceRow?.['買斷']||priceRow?.['機器買斷']||0);
-  editMode = false; editId = ''; payMethod = '';
+  editMode = false; editId = ''; payMethod = ''; selectedHandlers = []; payLineItems = []; payNewLines = []; paySourceId = '';
   selectedPayItems = ['機器買斷'];
+  initPayLines(null, {'機器買斷': price});
   document.getElementById('form-modal-title').textContent = '新增收款（買斷）';
   document.getElementById('form-modal-body').innerHTML = paymentForm({
     '收款項目': '機器買斷',
     '詳細內容': `${m['機型']||''} ${m['機號']||''}`.trim(),
-    '金額': price,
   });
-  // 同時更新機器狀態為買斷
-  m['_pendingStatus'] = '買 斷'; // 儲存後再更新
+  m['_pendingStatus'] = '買 斷';
   document.getElementById('form-modal').classList.add('open');
 }
 
@@ -5839,7 +5836,7 @@ function openEditItem(type, idx) {
     editId = item['收款ID']||item['合約ID']||item['機號']||item['客戶名稱']||item['紀錄日期']||item['報價ID']||'';
   }
   detailType = type; detailIdx = idx;
-  const titles = {customer:'編輯客戶',machine:'編輯機器',contract:'編輯合約',payment:'編輯收款',task:'編輯施工紀錄'};
+  const titles = {customer:'編輯客戶',machine:'編輯機器',contract:'編輯合約',payment:'編輯收款',task:'編輯施工紀錄',job:'編輯工作紀錄'};
   document.getElementById('form-modal-title').textContent = titles[type];
   const body = document.getElementById('form-modal-body');
   switch(type) {
@@ -6236,6 +6233,8 @@ function paymentForm(d) {
   }
   payInvoice = d?.['發票']||'不開發票';
   payStatus  = d?.['收款情況']||'待收';
+  // 編輯時還原來源ID
+  if (editMode && d?.['來源ID']) paySourceId = d['來源ID'];
   const preCustomer = d?.['客戶名稱']||'';
 
   // 編輯時從 items[] 還原 payNewLines
@@ -6775,7 +6774,7 @@ function onAssignType(type) {
     const priceRow = cache.pricelist.find(p=>p['廠牌']===m['廠牌'] && p['機型']===m['機型']);
     const price = Number(priceRow?.['售價']||priceRow?.['買斷']||priceRow?.['機器買斷']||0);
     selectedPayItems = ['機器買斷'];
-    payMethod = ''; selectedHandlers = []; payLineItems = [];
+    payMethod = ''; selectedHandlers = []; payLineItems = []; payNewLines = []; paySourceId = '';
     initPayLines(null, {'機器買斷': price});
     document.getElementById('form-modal-title').textContent = '新增收款（買斷）';
     document.getElementById('form-modal-body').innerHTML = paymentForm({
@@ -6875,8 +6874,7 @@ function quickCollect(contractIdx) {
   const c = cache.contracts[contractIdx];
   if (!c) return;
   const rent = Number(c['租金'])||0;
-  editMode = false; editId = ''; payMethod = ''; selectedPayItems = ['租金']; selectedHandlers = []; payLineItems = [];
-  // 先建立空的payLineItems，讓initPayLines用prefill填入租金
+  editMode = false; editId = ''; payMethod = ''; selectedPayItems = ['租金']; selectedHandlers = []; payLineItems = []; payNewLines = []; paySourceId = '';
   initPayLines(null, {'租金': rent});
   document.getElementById('form-modal-title').textContent = '新增收款';
   document.getElementById('form-modal-body').innerHTML = paymentForm({
@@ -6958,6 +6956,18 @@ async function saveCustomer() {
       if (c['客戶名稱'] === oldName || c['客戶名稱'] === name) {
         c['客戶名稱'] = name; c['電話'] = phone; c['地址'] = addr;
         enqueue({action:'update', sheet:'contracts', data:c, id:c['合約ID']});
+      }
+    });
+    cache.payments.forEach(p => {
+      if (p['客戶名稱'] === oldName) {
+        p['客戶名稱'] = name;
+        enqueue({action:'update', sheet:'payments', data:p, id:p['收款ID']});
+      }
+    });
+    (cache.repairs||[]).forEach(r => {
+      if (r['客戶名稱'] === oldName) {
+        r['客戶名稱'] = name;
+        enqueue({action:'update', sheet:'repairs', data:r, id:r['維修ID']});
       }
     });
     saveCache();
@@ -7425,19 +7435,21 @@ async function saveStaff() {
 // ============================================================
 function confirmDelete(type, idx) {
   if (!confirm('確定要刪除這筆資料嗎？')) return;
-  const sheet = SHEET_MAP[type]; // 用於 enqueue 的工作表名稱
-  // 依類型取 cache 陣列（task 的 cache key 是 'tasks'，不是工作表名稱）
-  const cacheKey = type === 'task' ? 'tasks' : sheet;
+  const sheet = SHEET_MAP[type];
+  // 依類型取正確的 cache 陣列（task→tasks，job→jobs，其他→工作表名稱）
+  const cacheKey = type === 'task' ? 'tasks' : type === 'job' ? 'jobs' : sheet;
   const arr = cache[cacheKey];
   const item = arr?.[idx];
   if (!item) return;
-  const id = type === 'task'
-    ? (item['任務ID'])
-    : item[ID_FIELD[type]];
+  const id = type === 'task' ? item['任務ID']
+           : type === 'job'  ? item['工作ID']
+           : item[ID_FIELD[type]];
   arr.splice(idx, 1);
   saveCache();
   if (type === 'task') {
     enqueue({ action:'deleteTaskRows', sheet:'施工紀錄', data: null, id });
+  } else if (type === 'job') {
+    enqueue({ action:'deleteJobRows', sheet:'工作紀錄', data: null, id });
   } else {
     enqueue({ action:'delete', sheet, data:null, id });
   }
