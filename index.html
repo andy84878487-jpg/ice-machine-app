@@ -1827,13 +1827,7 @@ function toggleTaskDone(idx) {
       data: JSON.stringify({'完成狀態':'未完成','完成日期':''}), id: t['任務ID'] });
     renderPage(); showToast('已取消完成'); return;
   }
-  // 完成前：檢查所有工作明細的機型機號不能為空
-  const emptyItems = (t.items||[]).filter(it => !it['機型'] || !it['機號']);
-  if (emptyItems.length) {
-    const types = emptyItems.map(it=>it['工作內容']||'未知').join('、');
-    showToast(`⚠️ 請先填寫機型機號：${types}`);
-    return;
-  }
+  // 完成前：不再強制檢查機型機號（換機流程會在完成時跳窗填寫）
   const customer = String(t['客戶名稱']||'');
   window._pendingDoneTask = { idx, t, dateStr };
   // 逐筆處理 line items，遇到需要互動的先暫停
@@ -1909,8 +1903,29 @@ function confirmTaskDone() {
   t['完成日期'] = dateStr;
   saveCache();
   if (cfg.url) {
-    enqueue({ action:'updateTaskMeta', sheet:'施工紀錄',
-      data: JSON.stringify({'完成狀態':'已完成','完成日期':dateStr}), id: t['任務ID'] });
+    const taskId = t['任務ID'];
+    // 重新寫入所有行（帶有最新機型機號 + 完成狀態）
+    enqueue({ action:'deleteTaskRows', sheet:'施工紀錄', data:null, id: taskId });
+    (t.items||[]).forEach((li, si) => {
+      const row = {
+        taskId,
+        seq:       si+1,
+        date:      t['紀錄日期']||'',
+        customer:  t['客戶名稱']||'',
+        worker:    '',
+        note:      t['備註']||'',
+        wantTime:  t['希望施工時間']||'',
+        done:      '已完成',
+        doneDate:  dateStr,
+        assignees: t['指派人員']||'',
+        type:      li['工作內容']||li.type||'',
+        model:     li['機型']||li.model||'',
+        serial:    li['機號']||li.serial||'',
+        oldModel:  li['舊機型']||li.oldModel||'',
+        oldSerial: li['舊機號']||li.oldSerial||'',
+      };
+      enqueue({ action:'addTaskRow', sheet:'施工紀錄', data:JSON.stringify(row), id: taskId+'_'+(si+1) });
+    });
   }
   renderPage();
   showToast('✓ 已標記完成');
@@ -2692,7 +2707,6 @@ function _handleTeardown(customer, model, serial, taskData, onDone) {
   btns.parentNode.replaceChild(nb, btns);
   nb.querySelector('#_td_btn1').onclick = ()=>{
     deck.classList.remove('open');
-    if (!model && !serial) { showToast('⚠️ 請填入機型機號後再完成'); window._pendingDoneTask=null; return; }
     // 詢問退租後機器狀態
     const d2 = document.getElementById('confirm-deck');
     document.getElementById('confirm-deck-title').textContent = '退租後機器狀態';
@@ -3066,6 +3080,20 @@ function confirmReplace(customer, oldModel, oldSerial, taskDateStr) {
     ct['機型']=newModel; ct['機號']=newSerial; saveCache();
     enqueue({action:'update',sheet:'contracts',data:ct,id:ct['合約ID']});
   });
+
+  // ── 把新機型機號寫回施工紀錄的工作明細（cache）──
+  const pt = window._pendingDoneTask?.t;
+  if (pt?.items) {
+    pt.items.forEach(li => {
+      if ((li['工作內容']||li.type||'')==='換機') {
+        li['機型']  = newModel;  li.model  = newModel;
+        li['機號']  = newSerial; li.serial = newSerial;
+        if (!li['舊機型'] && oldModel)  { li['舊機型'] = oldModel;  li.oldModel  = oldModel; }
+        if (!li['舊機號'] && oldSerial) { li['舊機號'] = oldSerial; li.oldSerial = oldSerial; }
+      }
+    });
+  }
+
   if (taskDateStr) confirmTaskDone();
   closeModal('detail-modal');
   showToast(`✓ 換機完成：${oldModel||oldSerial} → ${newModel}`);
